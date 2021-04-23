@@ -2,11 +2,11 @@
 - Low dev fee of 0.5%
 - Beautiful Windows GUI (Command Line Interface is optional)
 - Remote management of all mining rigs on your network
-- Fastest Ethereum/ethash miner (from limited testing)
+- Fastest Cuda Ethereum/ethash miner (from limited testing)
 - Control pool/algorithm/wallet mining PER device!
 
 ## Current planned major features by version (not including minor releases)
-- v2.0 OpenCL/AMD Ethereum/Ethash mining
+- v2.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
 - v3.0 Linux support
 - v4.0 KawPow (RVN/Ravencoin) support
 
