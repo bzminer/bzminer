@@ -1,16 +1,11 @@
-### Hi there 👋
+### Why use BZ Miner (v1.0)?
+- Low dev fee of 0.5%
+- Beautiful Windows GUI
+- Remote management of all mining rigs on your network
+- Fastest Ethereum/ethash miner (from limited testing)
+- Control pool/algorithm/wallet mining PER device!
 
-<!--
-**bzminer/bzminer** is a ✨ _special_ ✨ repository because its `README.md` (this file) appears on your GitHub profile.
-
-Here are some ideas to get you started:
-
-- 🔭 I’m currently working on ...
-- 🌱 I’m currently learning ...
-- 👯 I’m looking to collaborate on ...
-- 🤔 I’m looking for help with ...
-- 💬 Ask me about ...
-- 📫 How to reach me: ...
-- 😄 Pronouns: ...
-- ⚡ Fun fact: ...
--->
+### Current planned major features by version (not including minor releases)
+- v2.0 OpenCL/AMD Ethereum/Ethash mining
+- v3.0 Linux support
+- v4.0 RavenCoin (RVN/KawPow) support
