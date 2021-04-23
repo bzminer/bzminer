@@ -1,6 +1,6 @@
 ## Why use BZ Miner (v1.0)?
 - Low dev fee of 0.5%
-- Beautiful Windows GUI
+- Beautiful Windows GUI (Command Line Interface is optional)
 - Remote management of all mining rigs on your network
 - Fastest Ethereum/ethash miner (from limited testing)
 - Control pool/algorithm/wallet mining PER device!
