@@ -1,9 +1,9 @@
-## Why use BZ Miner (v1.0)?
+## Why use BzMiner (v1.0)?
 - Low dev fee of 0.5%
 - Beautiful Easy to use Windows GUI miner (Command Line Interface is optional, cli.exe)
 - Remote management of all mining rigs on your network
 - Fastest Cuda Ethereum/ethash miner (from limited testing)
-- Control pool/algorithm/wallet mining PER device!
+- Control algorithm/pool/wallet mining PER device!
 
 ## Current planned major features by version (not including minor releases)
 - v2.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
