@@ -8,7 +8,7 @@
 ## Current planned major features by version (not including minor releases)
 - v2.0 OpenCL/AMD Ethereum/Ethash mining
 - v3.0 Linux support
-- v4.0 RavenCoin (RVN/KawPow) support
+- v4.0 KawPow (RVN/Ravencoin) support
 
 ## Discord Server
 https://discord.gg/sh8aNUWAYA
