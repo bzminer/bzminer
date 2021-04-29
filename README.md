@@ -28,7 +28,7 @@ There is no need to run both `cli.exe` and `bzminer.exe`, although if `bzminer.e
 Either launch `bzminer.exe` and update your wallet and pool address there, or edit `config.txt` and launch `cli.exe`.
 
 
-### GUI (bzminer.exe)
+## GUI (bzminer.exe)
 The BzMiner graphical user interface allows you to remotely monitor and manage all instances of BzMiner on your network.
 
 When `bzminer.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`cli.exe` or another `bzminer.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
@@ -36,7 +36,7 @@ When `bzminer.exe` is launched, it first checks to see if there's a local instan
 ![image](https://user-images.githubusercontent.com/83083846/116612543-4b647880-a8fd-11eb-89d4-7394c5ca71f6.png)
 
 
-### CLI (cli.exe)
+## CLI (cli.exe)
 BzMiner comes with an optional, lighter weight, command line interface, `cli.exe`. Simply update `config.txt` and launch `cli.exe`.
 
 `cli.exe` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `cli.exe -c custom_config.txt`.
@@ -44,7 +44,7 @@ BzMiner comes with an optional, lighter weight, command line interface, `cli.exe
 ![image](https://user-images.githubusercontent.com/83083846/116620914-17db1b80-a908-11eb-9e8c-6beb6c2b9ffa.png)
 
 
-### The Configuration File (config.txt)
+## The Configuration File (config.txt)
 The configuration file is in the json file format, and can be manually updated, or updated through `bzminer.exe`'s remote commands.
 
 BzMiner reads and saves to the configuration file. Upon first running BzMiner, the configuration file will be updated with a new property called `device_overrides`, which contain a list of all the mining devices found on the pc. This is where individual device settings can be found.
