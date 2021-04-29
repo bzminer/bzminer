@@ -6,6 +6,16 @@
 - Control algorithm/pool/wallet mining PER device!
 
 
+## Current planned major features by version (not including minor releases)
+- v2.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
+- v3.0 Linux support
+- v4.0 KawPow (RVN/Ravencoin) support
+
+
+## Discord Server
+https://discord.gg/sh8aNUWAYA
+
+
 ## Requirements
 - Cuda v11.2 Runtime
 
@@ -98,12 +108,3 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     ]
 }
 ```
-
-
-## Current planned major features by version (not including minor releases)
-- v2.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
-- v3.0 Linux support
-- v4.0 KawPow (RVN/Ravencoin) support
-
-## Discord Server
-https://discord.gg/sh8aNUWAYA
