@@ -33,7 +33,7 @@ The BzMiner graphical user interface allows you to remotely monitor and manage a
 
 When `bzminer.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`cli.exe` or another `bzminer.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
 
-![image](https://user-images.githubusercontent.com/83083846/116612543-4b647880-a8fd-11eb-89d4-7394c5ca71f6.png)
+![image](https://user-images.githubusercontent.com/83083846/116637736-55e93700-a92a-11eb-9989-48cf907bbf88.png)
 
 
 ## CLI (cli.exe)
@@ -41,7 +41,7 @@ BzMiner comes with an optional, lighter weight, command line interface, `cli.exe
 
 `cli.exe` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `cli.exe -c custom_config.txt`.
 
-![image](https://user-images.githubusercontent.com/83083846/116620914-17db1b80-a908-11eb-9e8c-6beb6c2b9ffa.png)
+![image](https://user-images.githubusercontent.com/83083846/116637828-921c9780-a92a-11eb-9ae1-7f87fc651d3a.png)
 
 
 ## The Configuration File (config.txt)
