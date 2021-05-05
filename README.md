@@ -17,7 +17,7 @@ https://discord.gg/sh8aNUWAYA
 
 
 ## Requirements
-- Cuda v11.2 Runtime
+- At least one Nvidia GPU and Nvidia drivers
 
 
 ## Getting Started
