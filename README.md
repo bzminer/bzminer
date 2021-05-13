@@ -1,19 +1,18 @@
-## Why use BzMiner (v1.0)?
+## Why use BzMiner (v2.0)?
 - Low dev fee of 0.5%
-- Awesome Easy to use Windows GUI miner (Command Line Interface is optional, `cli.exe`)
+- Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
 - Remote management of all mining rigs on your network
-- Fastest Cuda v11.2 Ethereum/ethash miner (from limited testing)
+- Fastest Cuda v11 Ethereum/ethash miner (from limited testing)
 - Control algorithm/pool/wallet mining PER device!
 
 
 ## Current planned major features by version (not including minor releases)
-- v2.0 Linux support
 - v3.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
 - v4.0 KawPow (RVN/Ravencoin) support
 
 
 ## Discord Server
-https://discord.gg/sh8aNUWAYA
+https://discord.gg/NRty3PCVdB
 
 
 ## Requirements
@@ -21,25 +20,47 @@ https://discord.gg/sh8aNUWAYA
 
 
 ## Getting Started
-There are two ways to run BzMiner. Either through the command line interface (`cli.exe`), or through the graphical user interface (`bzminer.exe`).
+There are two ways to run BzMiner. Either through the command line interface (`bzminer.exe`), or through the graphical user interface (`bzminergui.exe`).
 
-There is no need to run both `cli.exe` and `bzminer.exe`, although if `bzminer.exe` detects `cli.exe` is already running, it will not run the miner.
+There is no need to run both `bzminer.exe` and `bzminergui.exe`, although if `bzminergui.exe` detects `bzminer.exe` is already running, it will not run the miner.
 
-Either launch `bzminer.exe` and update your wallet and pool address there, or edit `config.txt` and launch `cli.exe`.
+Either launch `bzminergui.exe` and update your wallet and pool address there, or edit `config.txt` and launch `bzminer.exe`.
+
+Optionally you can launch `bzminer.exe` with the wallet, pool url, and rig (worker) name as arguments, such as:
+
+`bzminer.exe -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p stratum+tcp:us1.ethermine.org -r rigname`
 
 
-## GUI (bzminer.exe)
+## GUI (bzminergui.exe)
 The BzMiner graphical user interface allows you to remotely monitor and manage all instances of BzMiner on your network.
 
-When `bzminer.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`cli.exe` or another `bzminer.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
+When `bzminergui.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`bzminer.exe` or another `bzminergui.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
 
-![image](https://user-images.githubusercontent.com/83083846/116637736-55e93700-a92a-11eb-9989-48cf907bbf88.png)
+![image](https://user-images.githubusercontent.com/83083846/118182675-e893d680-b3fe-11eb-9e85-4b6ace6ac94f.png)
 
 
-## CLI (cli.exe)
-BzMiner comes with an optional, lighter weight, command line interface, `cli.exe`. Simply update `config.txt` and launch `cli.exe`.
+## CLI (bzminer.exe)
+BzMiner comes with an optional, lighter weight, command line interface, `bzminer.exe`. Simply update `config.txt` and launch `bzminer.exe`.
 
-`cli.exe` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `cli.exe -c custom_config.txt`.
+`bzminer.exe` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer.exe -c custom_config.txt`.
+
+`bzminer.exe` also has optional parameters for overriding the pool url, wallet address, algorithm (ethash only supported right now) and rig name. These will be saved in the config for all device overrides
+
+```
+>bzminer.exe --help
+BZMiner is an enhanced CUDA Ethereum Ethash miner
+Usage: bzminer.exe [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  -a TEXT                     Mining algorithm. eg. 'ethash'
+  -r TEXT                     Rig (worker) name. eg. 'Rig'
+  -o TEXT                     If provided, output will be logged to this file
+  -w TEXT                     Wallet Address
+  -p TEXT                     Pool Address
+  -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
+  -c TEXT                     Config file to load settings from. Default is config.txt
+  ```
 
 ![image](https://user-images.githubusercontent.com/83083846/116637828-921c9780-a92a-11eb-9ae1-7f87fc651d3a.png)
 
@@ -61,9 +82,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "rig": "rig", // name of this rig. A.K.A. worker name
     
-    "launch_cli_on_start": false, // whether cli.exe should start on reboot
+    "launch_cli_on_start": false, // whether cli.exe should start on reboot (windows only)
     
-    "launch_gui_on_start": false, // whether bzminer.exe should start on reboot. If both are true, only bzminer.exe will start
+    "launch_gui_on_start": false, // whether bzminer.exe should start on reboot. If both are true, only bzminer.exe will start (windows only)
     
     "log_file": "", // file to output logs to. leave blank to disable logging to a file
     
