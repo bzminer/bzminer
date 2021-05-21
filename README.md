@@ -139,3 +139,18 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     ]
 }
 ```
+
+
+## Pool URLs
+
+Urls should be in the form of `{protocol}+{tcp/ssl}:<{username}:{password}@>{url}:{port}` (username and password are optional)
+
+eg. `stratum+tcp://us1.ethermine.org:4444`
+
+BzMiner supports 4 network protocols
+- Stratum - use `stratum`
+- Eth Proxy - use `ethproxy`
+- Ethereum Stratum v1.0.0 - use `ethstratum`
+- Ethereum Stratum v2.0.0 - use `ethstratum2`
+
+BzMiner will attempt to auto select the protocol if the provided protocol does not succeed in establishing a connection with the pool.
