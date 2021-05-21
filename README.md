@@ -36,7 +36,7 @@ The BzMiner graphical user interface allows you to remotely monitor and manage a
 
 When `bzminergui.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`bzminer.exe` or another `bzminergui.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
 
-![image](https://user-images.githubusercontent.com/83083846/118182675-e893d680-b3fe-11eb-9e85-4b6ace6ac94f.png)
+![image](https://user-images.githubusercontent.com/83083846/119206551-0e555700-ba61-11eb-8dfa-dbd3ae1d2f7e.png)
 
 
 ## CLI (bzminer.exe)
@@ -47,9 +47,9 @@ BzMiner comes with an optional, lighter weight, command line interface, `bzminer
 `bzminer.exe` also has optional parameters for overriding the pool url, wallet address, algorithm (ethash only supported right now) and rig name. These will be saved in the config for all device overrides
 
 ```
->bzminer.exe --help
+>bzminer --help
 BZMiner is an enhanced CUDA Ethereum Ethash miner
-Usage: bzminer.exe [OPTIONS]
+Usage: bzminer [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
@@ -60,9 +60,11 @@ Options:
   -p TEXT                     Pool Address
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   -c TEXT                     Config file to load settings from. Default is config.txt
+  -i INT                      Set mining intensity (1 - 32). Higher means more gpu spends more time hashing. Default is 8.
+  -u INT                      Update frequency in milliseconds. Default is 10000.
   ```
 
-![image](https://user-images.githubusercontent.com/83083846/116637828-921c9780-a92a-11eb-9ae1-7f87fc651d3a.png)
+![image](https://user-images.githubusercontent.com/83083846/119206455-d221f680-ba60-11eb-817d-ecc5085ee7ca.png)
 
 
 ## The Configuration File (config.txt)
@@ -94,6 +96,10 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "temp_stop": 120, // default pause mining on device if over this temp (120 is basically disable pausing on temp)
     
+    "intensity": 8 // default value between 1 and 32. Higher value means more time calculating hashes but higher chance of stales
+    
+    "update_frequency": 10000, // update output frequency in milliseconds
+    
     "device_overrides": [ // list of individual device settings
         {
             "uid": "37:0", // pci bus id : pci device id. this uniquely identifies the device as long as it doesn't change pci slots
@@ -110,6 +116,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "start_mining": true // whether to start mining on this device when BzMiner starts
             
+            "intensity": 8 // value between 1 and 32. Higher value means more time calculating hashes but higher chance of stales
+            
         },
         {
             "uid": "39:0",
@@ -125,6 +133,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             "temp_stop": 120,
             
             "start_mining": true
+            
+            "intensity": 8
         }
     ]
 }
