@@ -1,9 +1,11 @@
 ## Why use BzMiner (v2.0)?
 - Low dev fee of 0.5%
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
+- HTTP API!
 - Remote management of all mining rigs on your network
 - Fastest Cuda v11 Ethereum/ethash miner (from limited testing)
 - Control algorithm/pool/wallet mining PER device!
+- Constantly being improved based on feedback from you!
 
 
 ## Current planned major features by version (not including minor releases)
@@ -18,6 +20,10 @@ https://discord.gg/NRty3PCVdB
 ## Requirements
 - At least one Nvidia GPU and Nvidia drivers
 
+## Quick Start
+Launch `bzminer.exe` with the wallet and pool address as parameters:
+
+`bzminer.exe -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444`
 
 ## Getting Started
 There are two ways to run BzMiner. Either through the command line interface (`bzminer.exe`), or through the graphical user interface (`bzminergui.exe`).
@@ -28,7 +34,7 @@ Either launch `bzminergui.exe` and update your wallet and pool address there, or
 
 Optionally you can launch `bzminer.exe` with the wallet, pool url, and rig (worker) name as arguments, such as:
 
-`bzminer.exe -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p stratum+tcp:us1.ethermine.org -r rigname`
+`bzminer.exe -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r rigname`
 
 
 ## GUI (bzminergui.exe)
@@ -36,7 +42,7 @@ The BzMiner graphical user interface allows you to remotely monitor and manage a
 
 When `bzminergui.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`bzminer.exe` or another `bzminergui.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
 
-![image](https://user-images.githubusercontent.com/83083846/119206551-0e555700-ba61-11eb-8dfa-dbd3ae1d2f7e.png)
+![image](https://user-images.githubusercontent.com/83083846/125998861-d1a1fccf-fa53-4045-af45-8107a01e025f.png)
 
 
 ## CLI (bzminer.exe)
@@ -62,9 +68,14 @@ Options:
   -c TEXT                     Config file to load settings from. Default is config.txt
   -i INT                      Set mining intensity (1 - 32). Higher means more gpu spends more time hashing. Default is 8.
   -u INT                      Update frequency in milliseconds. Default is 10000.
+  -t INT                      Thrashing. 0 = off (default), 1 = on. Turns stales to valid solutions at cost of high CPU usage. less stales
+  -s INT                      Stales are ok. 1 = OK, 0 = Not ok. default 0. If OK, spend more time mining, get more valid shares. more stales
+  --test INT                  Test mine. Useful for setting up overclocks.
+  --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
+  --http_port INT             Set which port the HTTP API listens on. default is 4014.
   ```
 
-![image](https://user-images.githubusercontent.com/83083846/119206455-d221f680-ba60-11eb-817d-ecc5085ee7ca.png)
+![image](https://user-images.githubusercontent.com/83083846/125998755-6d0b5f9f-757d-4d40-bcb9-5204429ff6a7.png)
 
 
 ## The Configuration File (config.txt)
@@ -98,7 +109,15 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "intensity": 8 // default value between 1 and 32. Higher value means more time calculating hashes but higher chance of stales
     
-    "update_frequency": 10000, // update output frequency in milliseconds
+    "update_frequency": 10000, // update output frequency in milliseconds,
+    
+    "thrash": false, // Turn thrashing on or off. Thrashing utilizes more CPU in an attemp to turn stale solutions into valid solutions
+    
+    "stales_ok": false, // Some pools pay for stales. If this is true, BzMiner will not attempt to prevent stales, allowing more time to mine.
+    
+    "http_password": "", // HTTP API password. If this is empty, HTTP API is disabled.
+    
+    "http_port": 4014, // HTTP API listen port
     
     "device_overrides": [ // list of individual device settings
         {
@@ -116,8 +135,15 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "start_mining": true // whether to start mining on this device when BzMiner starts
             
-            "intensity": 8 // value between 1 and 32. Higher value means more time calculating hashes but higher chance of stales
+            "intensity": 8 // value between 1 and 32. Higher value means more time calculating hashes but higher chance of stales,
             
+            "thrash": false, // Turn thrashing on or off. Thrashing utilizes more CPU in an attemp to turn stale solutions into valid solutions
+            
+            "stales_ok": true, // Some pools pay for stales. If this is true, BzMiner will not attempt to prevent stales, allowing more time to mine.
+            
+            "test": false, // Run this device in test mode. This is useful for getting overclocks just the way you want.
+            
+            "test_diff": 1 // test mode difficulty
         },
         {
             "uid": "39:0",
@@ -134,7 +160,15 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "start_mining": true
             
-            "intensity": 8
+            "intensity": 8,
+            
+            "thrash": false,
+            
+            "stales_ok": false,
+            
+            "test": false,
+            
+            "test_diff": 1
         }
     ]
 }
@@ -154,3 +188,12 @@ BzMiner supports 4 network protocols
 - Ethereum Stratum v2.0.0 - use `ethstratum2`
 
 BzMiner will attempt to auto select the protocol if the provided protocol does not succeed in establishing a connection with the pool.
+
+
+## HTTP API
+
+HTTP API can be enabled by setting the http_password in the config file or in the command line interface.
+
+For more details, set an http password to enable the HTTP API, and go to `http://{ip address}:{http port}/help`. If you are on the same computer, you can use `localhost` as the ip address.
+
+A simple viewer can be found at `/index` when HTTP API is enabled.
