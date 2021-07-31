@@ -53,7 +53,7 @@ BzMiner comes with an optional, lighter weight, command line interface, `bzminer
 `bzminer.exe` also has optional parameters for overriding the pool url, wallet address, algorithm (ethash only supported right now) and rig name. These will be saved in the config for all device overrides
 
 ```
->bzminer --help
+>bzminer -h
 BZMiner is an enhanced CUDA Ethereum Ethash miner
 Usage: bzminer [OPTIONS]
 
@@ -70,9 +70,13 @@ Options:
   -u INT                      Update frequency in milliseconds. Default is 10000.
   -t INT                      Thrashing. 0 = off (default), 1 = on. Turns stales to valid solutions at cost of high CPU usage. less stales
   -s INT                      Stales are ok. 1 = OK, 0 = Not ok. default 0. If OK, spend more time mining, get more valid shares. more stales
+  -g INT                      Ramp up miner rather than start at full speed.
+  --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --test INT                  Test mine. Useful for setting up overclocks.
-  --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
+  --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
+  --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
+  --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   ```
 
 ![image](https://user-images.githubusercontent.com/83083846/125998755-6d0b5f9f-757d-4d40-bcb9-5204429ff6a7.png)
@@ -115,9 +119,17 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "stales_ok": false, // Some pools pay for stales. If this is true, BzMiner will not attempt to prevent stales, allowing more time to mine.
     
-    "http_password": "", // HTTP API password. If this is empty, HTTP API is disabled.
+    "ramp_up": true, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
+    
+    "cpu_validate": false, // Whether or not solutions should be validated on the CPU before sending to the pool
+    
+    "http_enabled": true, // Whether the HTTP API should be enabled or not. Default is enabled
+    
+    "http_address": "0.0.0.0", // IP address HTTP API will listen on. Default is 0.0.0.0 (all ip addresses)
     
     "http_port": 4014, // HTTP API listen port
+    
+    "http_password": "", // HTTP API password. If this is empty, HTTP API is disabled.
     
     "device_overrides": [ // list of individual device settings
         {
@@ -143,7 +155,11 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "test": false, // Run this device in test mode. This is useful for getting overclocks just the way you want.
             
-            "test_diff": 1 // test mode difficulty
+            "test_diff": 1 // test mode difficulty,
+            
+            "ramp_up": true, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
+            
+            "cpu_validate": false // Whether the HTTP API should be enabled or not. Default is enabled
         },
         {
             "uid": "39:0",
@@ -168,7 +184,11 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "test": false,
             
-            "test_diff": 1
+            "test_diff": 1,
+            
+            "ramp_up": true,
+            
+            "cpu_validate": false
         }
     ]
 }
@@ -192,8 +212,8 @@ BzMiner will attempt to auto select the protocol if the provided protocol does n
 
 ## HTTP API
 
-HTTP API can be enabled by setting the http_password in the config file or in the command line interface.
+HTTP API can be enabled by launching bzminer with the --http_enabled flag, or by setting "http_enabled": true in the config file.
 
-For more details, set an http password to enable the HTTP API, and go to `http://{ip address}:{http port}/help`. If you are on the same computer, you can use `localhost` as the ip address.
+For more details, enable the http api, and go to `http://{http_address}:{http port}/help`. If you are on the same computer, you can use `localhost` or `127.0.0.1` as the http_address.
 
-A simple viewer can be found at `/index` when HTTP API is enabled.
+A simple viewer can be found at `/index` when the HTTP API is enabled.
