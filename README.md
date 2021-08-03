@@ -1,11 +1,13 @@
 ## Why use BzMiner (v2.0)?
 - Low dev fee of 0.5%
+- Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
 - HTTP API!
 - Remote management of all mining rigs on your network
 - Fastest Cuda v11 Ethereum/ethash miner (from limited testing)
 - Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
+- Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
 
 
 ## Current planned major features by version (not including minor releases)
@@ -42,7 +44,7 @@ The BzMiner graphical user interface allows you to remotely monitor and manage a
 
 When `bzminergui.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`bzminer.exe` or another `bzminergui.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
 
-![image](https://user-images.githubusercontent.com/83083846/125998861-d1a1fccf-fa53-4045-af45-8107a01e025f.png)
+![image](https://user-images.githubusercontent.com/83083846/128022812-6b8d4940-ea56-4493-b8b4-dd8ea0112249.png)
 
 
 ## CLI (bzminer.exe)
@@ -79,7 +81,7 @@ Options:
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   ```
 
-![image](https://user-images.githubusercontent.com/83083846/125998755-6d0b5f9f-757d-4d40-bcb9-5204429ff6a7.png)
+![image](https://user-images.githubusercontent.com/83083846/128022584-de6f6a29-7060-4a05-8c1a-1f2b8402ff63.png)
 
 
 ## The Configuration File (config.txt)
@@ -159,7 +161,15 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "ramp_up": true, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
             
-            "cpu_validate": false // Whether the HTTP API should be enabled or not. Default is enabled
+            "cpu_validate": false, // Whether the HTTP API should be enabled or not. Default is enabled
+            
+            "oc_fan_speed": -1, // set the devices fan speed. -1 = do not change, 0 = auto, >0 = lock at percentage
+            
+            "oc_power_limit": 0, // set the max power consumption (watts) the device will use. 0 = do not change, >0 = max watts
+            
+            "oc_core_clock": 0, // set the core clock speed offset in MHz. 0 = do not change, !0 = set clock speed offset
+            
+            "oc_memory_clock": 0 // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
         },
         {
             "uid": "39:0",
@@ -188,7 +198,15 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "ramp_up": true,
             
-            "cpu_validate": false
+            "cpu_validate": false,
+            
+            "oc_fan_speed": -1,
+            
+            "oc_power_limit": 0,
+            
+            "oc_core_clock": 0,
+            
+            "oc_memory_clock": 0
         }
     ]
 }
