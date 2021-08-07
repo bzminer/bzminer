@@ -8,6 +8,7 @@
 - Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
+- Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 
 
 ## Current planned major features by version (not including minor releases)
