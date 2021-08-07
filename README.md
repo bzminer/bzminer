@@ -74,6 +74,7 @@ Options:
   -t INT                      Thrashing. 0 = off (default), 1 = on. Turns stales to valid solutions at cost of high CPU usage. less stales
   -s INT                      Stales are ok. 1 = OK, 0 = Not ok. default 0. If OK, spend more time mining, get more valid shares. more stales
   -g INT                      Ramp up miner rather than start at full speed.
+  -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 10
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
@@ -134,6 +135,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "http_password": "", // HTTP API password. If this is empty, HTTP API is disabled.
     
+    "cooldown_period": 10, // allow the gpu to cooldown after a period of time. default is 10. Higher value means more time between cooldown periods.
+    
     "device_overrides": [ // list of individual device settings
         {
             "uid": "37:0", // pci bus id : pci device id. this uniquely identifies the device as long as it doesn't change pci slots
@@ -171,6 +174,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             "oc_core_clock": 0, // set the core clock speed offset in MHz. 0 = do not change, !0 = set clock speed offset
             
             "oc_memory_clock": 0 // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
+    
+            "cooldown_period": 10, // allow the gpu to cooldown after a period of time. default is 10. Higher value means more time between cooldown periods.
         },
         {
             "uid": "39:0",
@@ -208,6 +213,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             "oc_core_clock": 0,
             
             "oc_memory_clock": 0
+    
+            "cooldown_period": 10, // allow the gpu to cooldown after a period of time. default is 10. Higher value means more time between cooldown periods.
         }
     ]
 }
