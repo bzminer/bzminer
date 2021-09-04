@@ -4,16 +4,17 @@
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
 - HTTP API!
 - Remote management of all mining rigs on your network
-- Fastest Cuda v11 Ethereum/ethash miner (from limited testing)
+- Fastest Cuda v11 Ethereum/ethash miner
 - Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
+- DAG Validation for very high OC cards
 
 
 ## Current planned major features by version (not including minor releases)
 - v3.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
-- v4.0 KawPow (RVN/Ravencoin) support
+- v4.0 KawPow (RVN/Ravencoin) support (or ergo, undecided as of now)
 
 
 ## Discord Server
@@ -56,7 +57,7 @@ BzMiner comes with an optional, lighter weight, command line interface, `bzminer
 `bzminer.exe` also has optional parameters for overriding the pool url, wallet address, algorithm (ethash only supported right now) and rig name. These will be saved in the config for all device overrides
 
 ```
->bzminer -h
+>bzminer --help
 BZMiner is an enhanced CUDA Ethereum Ethash miner
 Usage: bzminer [OPTIONS]
 
@@ -74,7 +75,8 @@ Options:
   -t INT                      Thrashing. 0 = off (default), 1 = on. Turns stales to valid solutions at cost of high CPU usage. less stales
   -s INT                      Stales are ok. 1 = OK, 0 = Not ok. default 0. If OK, spend more time mining, get more valid shares. more stales
   -g INT                      Ramp up miner rather than start at full speed.
-  -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 10
+  -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
+  --nc INT                    Do not save to the config file (but still read from it).
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
@@ -83,7 +85,7 @@ Options:
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   ```
 
-![image](https://user-images.githubusercontent.com/83083846/128022584-de6f6a29-7060-4a05-8c1a-1f2b8402ff63.png)
+![image](https://user-images.githubusercontent.com/83083846/132102657-c729363e-7a94-46dc-b40f-2b5ba27ac845.png)
 
 
 ## The Configuration File (config.txt)
@@ -123,7 +125,7 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "stales_ok": false, // Some pools pay for stales. If this is true, BzMiner will not attempt to prevent stales, allowing more time to mine.
     
-    "ramp_up": true, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
+    "ramp_up": false, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
     
     "cpu_validate": false, // Whether or not solutions should be validated on the CPU before sending to the pool
     
@@ -135,7 +137,7 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "http_password": "", // HTTP API password. If this is empty, HTTP API is disabled.
     
-    "cooldown_period": 10, // allow the gpu to cooldown after a period of time. default is 10. Higher value means more time between cooldown periods.
+    "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.
     
     "device_overrides": [ // list of individual device settings
         {
@@ -157,13 +159,13 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "thrash": false, // Turn thrashing on or off. Thrashing utilizes more CPU in an attemp to turn stale solutions into valid solutions
             
-            "stales_ok": true, // Some pools pay for stales. If this is true, BzMiner will not attempt to prevent stales, allowing more time to mine.
+            "stales_ok": false, // Some pools pay for stales. If this is true, BzMiner will not attempt to prevent stales, allowing more time to mine.
             
             "test": false, // Run this device in test mode. This is useful for getting overclocks just the way you want.
             
             "test_diff": 1 // test mode difficulty,
             
-            "ramp_up": true, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
+            "ramp_up": false, // If true, GPUs will start mining slowly after DAG generation, then ramp up to full speed.
             
             "cpu_validate": false, // Whether the HTTP API should be enabled or not. Default is enabled
             
@@ -175,7 +177,7 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "oc_memory_clock": 0 // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
     
-            "cooldown_period": 10, // allow the gpu to cooldown after a period of time. default is 10. Higher value means more time between cooldown periods.
+            "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.
         },
         {
             "uid": "39:0",
@@ -212,9 +214,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "oc_core_clock": 0,
             
-            "oc_memory_clock": 0
+            "oc_memory_clock": 0,
     
-            "cooldown_period": 10, // allow the gpu to cooldown after a period of time. default is 10. Higher value means more time between cooldown periods.
+            "cooldown_period": 0
         }
     ]
 }
