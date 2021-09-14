@@ -1,4 +1,4 @@
-## Why use BzMiner (v2.0)?
+## Why use BzMiner (v3.0)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
@@ -10,10 +10,10 @@
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 - DAG Validation for very high OC cards
+- AMD windows support
 
 
 ## Current planned major features by version (not including minor releases)
-- v3.0 OpenCL/AMD Ethereum/Ethash mining (v1.0 Cuda/Nvidia only is supported)
 - v4.0 KawPow (RVN/Ravencoin) support (or ergo, undecided as of now)
 
 
