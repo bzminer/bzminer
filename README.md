@@ -1,4 +1,4 @@
-## Why use BzMiner (v3.0)?
+## Why use BzMiner (v3.1)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
@@ -10,7 +10,7 @@
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 - DAG Validation for very high OC cards
-- AMD windows support
+- AMD Ethash mining (experimental)
 
 
 ## Current planned major features by version (not including minor releases)
@@ -23,6 +23,7 @@ https://discord.gg/NRty3PCVdB
 
 ## Requirements
 - At least one Nvidia GPU and Nvidia drivers
+- Or at least one AMD GPU and AMD drivers
 
 ## Quick Start
 Launch `bzminer.exe` with the wallet and pool address as parameters:
@@ -57,14 +58,17 @@ BzMiner comes with an optional, lighter weight, command line interface, `bzminer
 `bzminer.exe` also has optional parameters for overriding the pool url, wallet address, algorithm (ethash only supported right now) and rig name. These will be saved in the config for all device overrides
 
 ```
->bzminer --help
-BZMiner is an enhanced CUDA Ethereum Ethash miner
-Usage: bzminer [OPTIONS]
+>bzminer.exe --help
+BZMiner is an enhanced CUDA and OpenCL Ethereum Ethash miner
+Usage: bzminer.exe [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
-  -a TEXT                     Mining algorithm. eg. 'ethash'
-  -r TEXT                     Rig (worker) name. eg. 'Rig'
+  -a TEXT                     Default Mining algorithm. eg. 'ethash'
+  -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
+  --pool_password TEXT        Default Pool password
+  --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
+  --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   -o TEXT                     If provided, output will be logged to this file
   -w TEXT                     Wallet Address
   -p TEXT                     Pool Address
@@ -101,9 +105,15 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "pool": "stratum+tcp://us1.ethermine.org:4444", // default pool address new devices will use
     
+    "pool_password": "", // password to use for pool. Leave blank if no password required
+    
     "farm": "farm", // name of the farm this rig belongs to
     
-    "rig": "rig", // name of this rig. A.K.A. worker name
+    "rig": "rig", // name of this rig. A.K.A. default worker/username
+    
+    "nvidia_only": false, // Mine only with Nvidia devices
+    
+    "amd_only": false, // Mine only with AMD devices
     
     "launch_cli_on_start": false, // whether cli.exe should start on reboot (windows only)
     
@@ -149,6 +159,10 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "pool": "stratum+tcp://us1.ethermine.org:4444", // pool address this device should use
             
+            "pool_username": "rig", // worker/username
+            
+            "pool_password": "", // password for pool if required
+            
             "temp_start": 80, // resume mining once device reaches this temp
             
             "temp_stop": 120,// dpause mining on device if over this temp
@@ -188,6 +202,10 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "pool": "stratum+tcp://us1.ethermine.org:4444",
             
+            "pool_username": "rig",
+            
+            "pool_password": "",
+            
             "temp_start": 80,
             
             "temp_stop": 120,
@@ -225,9 +243,11 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
 
 ## Pool URLs
 
-Urls should be in the form of `{protocol}+{tcp/ssl}:<{username}:{password}@>{url}:{port}` (username and password are optional)
+Urls should be in the form of `{protocol}+{tcp/ssl}:{url}:{port}` (username and password are optional)
 
 eg. `stratum+tcp://us1.ethermine.org:4444`
+
+If username and password are required, eg. `{protocol}+{tcp/ssl}:<{username}:{password}@>{url}:{port}`, they can be set per device in the config file, or through the command line. If device pool_username is blank, it will use the rig name from the config file. if pool_password is blank, it will use the default pool_password for the rig in the config file. Leave both pool_password blank if no password is required for the pool. Do not put the username and password in the url (If there are enough requests for this, this can be added in a future release)
 
 BzMiner supports 4 network protocols
 - Stratum - use `stratum`
