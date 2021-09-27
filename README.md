@@ -1,10 +1,10 @@
-## Why use BzMiner (v3.1)?
+## Why use BzMiner (v3.3)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
 - HTTP API!
 - Remote management of all mining rigs on your network
-- Fastest Cuda v11 Ethereum/ethash miner
+- Fastest Cuda v11 and OpenCL Ethereum/ethash miner
 - Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
@@ -14,7 +14,7 @@
 
 
 ## Current planned major features by version (not including minor releases)
-- v4.0 KawPow (RVN/Ravencoin) support (or ergo, undecided as of now)
+- v4.0 next algo: KawPow (RVN/Ravencoin), autolykos (ERG/Ergo), etchash (ETH Classic), undecided as of now
 
 
 ## Discord Server
