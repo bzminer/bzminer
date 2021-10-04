@@ -1,4 +1,4 @@
-## Why use BzMiner (v3.3)?
+## Why use BzMiner (v4.0)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
@@ -11,10 +11,13 @@
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 - DAG Validation for very high OC cards
 - AMD Ethash mining (experimental)
+- Supported Algos:
+    - Ethash (AMD, Nvidia)
+    - Etchash (AMD, Nvidia) 
 
 
 ## Current planned major features by version (not including minor releases)
-- v4.0 next algo: KawPow (RVN/Ravencoin), autolykos (ERG/Ergo), etchash (ETH Classic), undecided as of now
+- v5.0 next algo: KawPow (RVN/Ravencoin), autolykos (ERG/Ergo), undecided as of now
 
 
 ## Discord Server
@@ -87,6 +90,7 @@ Options:
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
+  --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
   ```
 
 ![image](https://user-images.githubusercontent.com/83083846/132102657-c729363e-7a94-46dc-b40f-2b5ba27ac845.png)
@@ -191,7 +195,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "oc_memory_clock": 0 // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
     
-            "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.
+            "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.   
+            
+            "force_opencl": 0 // force device to mine on OpenCL (if available, only affects nvidia)
         },
         {
             "uid": "39:0",
@@ -234,7 +240,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "oc_memory_clock": 0,
     
-            "cooldown_period": 0
+            "cooldown_period": 0,
+            
+            "force_opencl": 0 
         }
     ]
 }
