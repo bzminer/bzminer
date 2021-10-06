@@ -15,6 +15,8 @@
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
 
+## Latest Stable (v3.3)
+
 
 ## Current planned major features by version (not including minor releases)
 - v5.0 next algo: KawPow (RVN/Ravencoin), autolykos (ERG/Ergo), undecided as of now
