@@ -1,4 +1,4 @@
-## Why use BzMiner (v4.0)?
+## Why use BzMiner (v4.1)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
@@ -15,7 +15,7 @@
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
 
-## Latest Stable (v3.3)
+## Latest Stable (v4.1)
 
 
 ## Current planned major features by version (not including minor releases)
