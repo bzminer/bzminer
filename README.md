@@ -1,4 +1,4 @@
-## Why use BzMiner (v4.2)?
+## Why use BzMiner (v4.3)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
