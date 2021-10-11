@@ -1,21 +1,21 @@
 ## Why use BzMiner (v4.2)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
-- Awesome Easy to use Linux and Windows GUI miner (Command Line Interface is optional, `bzminer.exe`)
+- Awesome Easy to use Linux and Windows miner (GUI available through browser)
 - HTTP API!
 - Remote management of all mining rigs on your network
-- Fastest Cuda v11 and OpenCL Ethereum/ethash miner
+- Fastest Cuda v11 and OpenCL Ethereum/ethash and Ethereum classic miner
 - Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 - DAG Validation for very high OC cards
-- AMD Ethash mining (experimental)
+- AMD ethash and etchash mining (still experimental)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
 
-## Latest Stable (v4.2)
+## Latest Stable (v4.3)
 
 
 ## Current planned major features by version (not including minor releases)
@@ -31,41 +31,33 @@ https://discord.gg/NRty3PCVdB
 - Or at least one AMD GPU and AMD drivers
 
 ## Quick Start
-Launch `bzminer.exe` with the wallet and pool address as parameters:
+Launch `bzminer` with the wallet and pool address as parameters:
 
-`bzminer.exe -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444`
+`bzminer -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name`
 
-## Getting Started
-There are two ways to run BzMiner. Either through the command line interface (`bzminer.exe`), or through the graphical user interface (`bzminergui.exe`).
+You may provide more than one pool address to -p for fallback pools on network errors:
+`bzminer -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name`
 
-There is no need to run both `bzminer.exe` and `bzminergui.exe`, although if `bzminergui.exe` detects `bzminer.exe` is already running, it will not run the miner.
+Optionally you can edit `config.txt` and launch `bzminer`. You can specify the config file with the `-c` argument:
 
-Either launch `bzminergui.exe` and update your wallet and pool address there, or edit `config.txt` and launch `bzminer.exe`.
-
-Optionally you can launch `bzminer.exe` with the wallet, pool url, and rig (worker) name as arguments, such as:
-
-`bzminer.exe -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r rigname`
+`bzminer -c eth-config.txt`
 
 
 ## GUI (bzminergui.exe)
-The BzMiner graphical user interface allows you to remotely monitor and manage all instances of BzMiner on your network.
-
-When `bzminergui.exe` is launched, it first checks to see if there's a local instance of BzMiner running (`bzminer.exe` or another `bzminergui.exe`). If it doesn't detect a local instance already running, it will start the miner internally.
-
-![image](https://user-images.githubusercontent.com/83083846/128022812-6b8d4940-ea56-4493-b8b4-dd8ea0112249.png)
+The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
 
 
 ## CLI (bzminer.exe)
-BzMiner comes with an optional, lighter weight, command line interface, `bzminer.exe`. Simply update `config.txt` and launch `bzminer.exe`.
+BzMiner is a command line interface. Simply update `config.txt` and launch `bzminer`.
 
-`bzminer.exe` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer.exe -c custom_config.txt`.
+`bzminer` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer -c custom_config.txt`.
 
-`bzminer.exe` also has optional parameters for overriding the pool url, wallet address, algorithm (ethash only supported right now) and rig name. These will be saved in the config for all device overrides
+`bzminer` also has optional parameters for overriding the pool url, wallet address, algorithm and rig/worker name. These will be saved in the config for all device overrides
 
 ```
->bzminer.exe --help
-BZMiner is an enhanced CUDA and OpenCL Ethereum Ethash miner
-Usage: bzminer.exe [OPTIONS]
+>bzminer -h
+BZMiner is an enhanced CUDA Ethereum Ethash miner
+Usage: bzminer [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
@@ -76,7 +68,7 @@ Options:
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   -o TEXT                     If provided, output will be logged to this file
   -w TEXT                     Wallet Address
-  -p TEXT                     Pool Address
+  -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   -c TEXT                     Config file to load settings from. Default is config.txt
   -i INT                      Set mining intensity (1 - 32). Higher means more gpu spends more time hashing. Default is 8.
@@ -93,9 +85,11 @@ Options:
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
+  --auto_lhr INT              Auto tune for LHR. 0 = disabled, 1 = enabled, 2 = force re-run auto lhr tuning
   ```
+  
+![image](https://user-images.githubusercontent.com/83083846/136844016-0cb4c0d2-2c50-4df5-8c13-943209c49ff9.png)
 
-![image](https://user-images.githubusercontent.com/83083846/132102657-c729363e-7a94-46dc-b40f-2b5ba27ac845.png)
 
 
 ## The Configuration File (config.txt)
@@ -109,7 +103,10 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "wallet": "0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388", // default wallet/username new devices will use
     
-    "pool": "stratum+tcp://us1.ethermine.org:4444", // default pool address new devices will use
+    "pool": [  // default pool address new devices will use. This can be an array or a single string
+            "ethstratum+tcp://eth.geodns.flexpool.io:4444",
+            "stratum+tcp://us1.ethermine.org:4444"
+        ],
     
     "pool_password": "", // password to use for pool. Leave blank if no password required
     
@@ -163,7 +160,10 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "wallet": "0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388", // wallet/username this device should use
             
-            "pool": "stratum+tcp://us1.ethermine.org:4444", // pool address this device should use
+            "pool": [  // default pool address new devices will use. This can be an array or a single string
+                "ethstratum+tcp://eth.geodns.flexpool.io:4444",
+                "stratum+tcp://us1.ethermine.org:4444"
+            ],
             
             "pool_username": "rig", // worker/username
             
@@ -207,8 +207,11 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             "algorithm": "ethash",
             
             "wallet": "0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388",
-            
-            "pool": "stratum+tcp://us1.ethermine.org:4444",
+                        
+            "pool": [
+                "ethstratum+tcp://eth.geodns.flexpool.io:4444",
+                "stratum+tcp://us1.ethermine.org:4444"
+            ],
             
             "pool_username": "rig",
             
@@ -265,7 +268,7 @@ BzMiner supports 4 network protocols
 - Ethereum Stratum v1.0.0 - use `ethstratum`
 - Ethereum Stratum v2.0.0 - use `ethstratum2`
 
-BzMiner will attempt to auto select the protocol if the provided protocol does not succeed in establishing a connection with the pool.
+BzMiner will attempt to auto select a protocol the pool supports if the provided protocol does not succeed in establishing a connection with the pool.
 
 
 ## HTTP API
@@ -274,4 +277,4 @@ HTTP API can be enabled by launching bzminer with the --http_enabled flag, or by
 
 For more details, enable the http api, and go to `http://{http_address}:{http port}/help`. If you are on the same computer, you can use `localhost` or `127.0.0.1` as the http_address.
 
-A simple viewer can be found at `/index` when the HTTP API is enabled.
+A simple viewer can be found at `/index` when the HTTP API is enabled. `index.html` is provided for your convenience.
