@@ -25,6 +25,9 @@
 ## Discord Server
 https://discord.gg/NRty3PCVdB
 
+## Official Website
+http://www.bzminer.com
+
 
 ## Requirements
 - At least one Nvidia GPU and Nvidia drivers
