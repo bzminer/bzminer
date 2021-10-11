@@ -46,6 +46,8 @@ Optionally you can edit `config.txt` and launch `bzminer`. You can specify the c
 ## GUI (bzminergui.exe)
 The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
 
+![image](https://user-images.githubusercontent.com/83083846/136844596-db8331a0-ab7e-42ee-8315-49e7f2deea0a.png)
+
 
 ## CLI (bzminer.exe)
 BzMiner is a command line interface. Simply update `config.txt` and launch `bzminer`.
