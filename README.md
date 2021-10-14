@@ -11,7 +11,7 @@
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 - DAG Validation for very high OC cards
 - AMD ethash and etchash mining (still experimental)
-- Auto intensity
+- Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
