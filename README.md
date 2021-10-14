@@ -1,4 +1,4 @@
-## Why use BzMiner (v4.4)?
+## Why use BzMiner (v4.4.1)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
@@ -68,7 +68,7 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 `bzminer` also has optional parameters for overriding the pool url, wallet address, algorithm and rig/worker name. These will be saved in the config for all device overrides
 
 ```
->bzminer -h
+>bzminer --help
 BZMiner is an enhanced CUDA Ethereum Ethash miner
 Usage: bzminer [OPTIONS]
 
@@ -98,6 +98,7 @@ Options:
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
+  --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
   ```
   
 ![image](https://user-images.githubusercontent.com/83083846/136844016-0cb4c0d2-2c50-4df5-8c13-943209c49ff9.png)
@@ -164,6 +165,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.
     
+    "reset_oc_dag_gen": false, // Resets overclocks before DAG is generated. Sets overclocks back after DAG has completely been generated. Useful for high oc when getting a lot of invalid shares due to invalid DAG generation
+    
     "device_overrides": [ // list of individual device settings
         {
             "uid": "37:0", // pci bus id : pci device id. this uniquely identifies the device as long as it doesn't change pci slots
@@ -211,7 +214,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
             "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.   
             
-            "force_opencl": 0 // force device to mine on OpenCL (if available, only affects nvidia)
+            "force_opencl": 0, // force device to mine on OpenCL (if available, only affects nvidia)
+            
+            "reset_oc_dag_gen": false // Resets overclocks before DAG is generated. Sets overclocks back after DAG has completely been generated. Useful for high oc when getting a lot of invalid shares due to invalid DAG generation
         },
         {
             "uid": "39:0",
@@ -259,7 +264,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
             "cooldown_period": 0,
             
-            "force_opencl": 0 
+            "force_opencl": 0 ,
+            
+            "reset_oc_dag_gen": false
         }
     ]
 }
