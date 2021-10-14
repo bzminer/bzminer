@@ -1,4 +1,4 @@
-## Why use BzMiner (v4.3)?
+## Why use BzMiner (v4.4)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
@@ -11,11 +11,10 @@
 - Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
 - DAG Validation for very high OC cards
 - AMD ethash and etchash mining (still experimental)
+- Auto intensity
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
-
-## Latest Stable (v4.3)
 
 
 ## Current planned major features by version (not including minor releases)
@@ -90,7 +89,6 @@ Options:
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
-  --auto_lhr INT              Auto tune for LHR. 0 = disabled, 1 = enabled, 2 = force re-run auto lhr tuning
   ```
   
 ![image](https://user-images.githubusercontent.com/83083846/136844016-0cb4c0d2-2c50-4df5-8c13-943209c49ff9.png)
