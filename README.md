@@ -16,6 +16,10 @@
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
 
+# NOTICE! #
+### Double check pool and wallet addresses before mining (flight sheet in HiveOS)!
+BzMiner will mine to dev pool if unable to parse configuration. New warnings have been added when mining to dev pool, which include 0 reported hashrate in APIs to make it more noticeable that the miner is mining to the dev pool.
+
 
 ## Current planned major features by version (not including minor releases)
 - v5.0 next algo: KawPow (RVN/Ravencoin), autolykos (ERG/Ergo), undecided as of now
