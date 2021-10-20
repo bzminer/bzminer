@@ -1,4 +1,4 @@
-## Why use BzMiner (v4.4.1)?
+## Why use BzMiner (v4.5)?
 - Low dev fee of 0.5%
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
@@ -16,10 +16,6 @@
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
 
-# NOTICE! #
-### Double check pool and wallet addresses before mining (flight sheet in HiveOS)!
-BzMiner will mine to dev pool if unable to parse configuration. New warnings have been added when mining to dev pool, which include 0 reported hashrate in APIs to make it more noticeable that the miner is mining to the dev pool.
-Keep your eye on your pool dashboard to be sure that BzMiner is mining to your wallet after you switch to BzMiner
 
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
@@ -44,10 +40,10 @@ http://www.bzminer.com
 ## Quick Start
 Launch `bzminer` with the wallet and pool address as parameters:
 
-`bzminer -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name`
+`bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name`
 
 You may provide more than one pool address to -p for fallback pools on network errors:
-`bzminer -w 0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name`
+`bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name`
 
 Optionally you can edit `config.txt` and launch `bzminer`. You can specify the config file with the `-c` argument:
 
@@ -65,10 +61,10 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 
 `bzminer` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer -c custom_config.txt`.
 
-`bzminer` also has optional parameters for overriding the pool url, wallet address, algorithm and rig/worker name. These will be saved in the config for all device overrides
+`bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
 
 ```
->bzminer --help
+>bzminer -h
 BZMiner is an enhanced CUDA Ethereum Ethash miner
 Usage: bzminer [OPTIONS]
 
@@ -99,33 +95,58 @@ Options:
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
   --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
+  --devices                   Only log devices. Does not start miner
   ```
   
-![image](https://user-images.githubusercontent.com/83083846/136844016-0cb4c0d2-2c50-4df5-8c13-943209c49ff9.png)
-
+  ![image](https://user-images.githubusercontent.com/83083846/138006452-86178fc4-e3d5-40b2-a9ad-3c54e1705643.png)
 
 
 ## The Configuration File (config.txt)
 The configuration file is in the json file format, and can be manually updated, or updated through `bzminer.exe`'s remote commands.
 
-BzMiner reads and saves to the configuration file. Upon first running BzMiner, the configuration file will be updated with a new property called `device_overrides`, which contain a list of all the mining devices found on the pc. This is where individual device settings can be found.
+BzMiner reads and saves to the configuration file. Upon first running BzMiner, the configuration file will be updated with a new property called `device_overrides`, which contain a list of all the mining devices found on the pc. This is where individual device settings can be set.
+
+```
+{
+    "algorithm": "ethash", // default algorithm new devices will use
+    "wallet": "0x0000000000000000000000000000000000000000", // default wallet/username new devices will use
+    "pool": [  // default pool address new devices will use. This can be an array or a single string
+        "stratum+tcp://yourpool:4444",
+        "stratum+tcp://yourpool:4444"
+    ],
+    "rig": "rig", // name of this rig. A.K.A. worker/username
+    "pool_password": "", // password to use for pool. Leave blank if no password required
+    "nvidia_only": false, // Mine only with Nvidia devices
+    "amd_only": false, // Mine only with AMD devices
+    "log_file": "", // file to output logs to. leave blank to disable logging to a file
+    "advanced_config": false, // set this to true to show additional options in the config file
+    "device_overrides": [ // list of individual device settings
+        {
+            "uid": "1:0",
+            "name": "EVGA RTX 3090 FTW3 Ultra"
+        }
+    ]
+}
+```
 
 ```
 {
     "algorithm": "ethash", // default algorithm new devices will use
     
-    "wallet": "0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388", // default wallet/username new devices will use
+    "wallet": "0x0000000000000000000000000000000000000000", // default wallet/username new devices will use
     
     "pool": [  // default pool address new devices will use. This can be an array or a single string
-            "ethstratum+tcp://eth.geodns.flexpool.io:4444",
-            "stratum+tcp://us1.ethermine.org:4444"
-        ],
+        "stratum+tcp://yourpool:4444",
+        "stratum+tcp://yourpool:4444"
+    ],
     
     "pool_password": "", // password to use for pool. Leave blank if no password required
     
     "farm": "farm", // name of the farm this rig belongs to
     
     "rig": "rig", // name of this rig. A.K.A. default worker/username
+    
+    "advanced_config": false, // set this to true to show additional options in the config file
     
     "nvidia_only": false, // Mine only with Nvidia devices
     
@@ -173,11 +194,11 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "algorithm": "ethash", // algorithm this device should mine using
             
-            "wallet": "0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388", // wallet/username this device should use
+            "wallet": "0x0000000000000000000000000000000000000000", // wallet/username this device should use
             
             "pool": [  // default pool address new devices will use. This can be an array or a single string
-                "ethstratum+tcp://eth.geodns.flexpool.io:4444",
-                "stratum+tcp://us1.ethermine.org:4444"
+                "stratum+tcp://yourpool:4444",
+                "stratum+tcp://yourpool:4444"
             ],
             
             "pool_username": "rig", // worker/username
@@ -223,11 +244,11 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             
             "algorithm": "ethash",
             
-            "wallet": "0xBd86b99A0e5eB05cfADB02F82D8a1BFe75d82388",
-                        
-            "pool": [
-                "ethstratum+tcp://eth.geodns.flexpool.io:4444",
-                "stratum+tcp://us1.ethermine.org:4444"
+            "wallet": "0x0000000000000000000000000000000000000000",
+
+            "pool": [  // default pool address new devices will use. This can be an array or a single string
+                "stratum+tcp://yourpool:4444",
+                "stratum+tcp://yourpool:4444"
             ],
             
             "pool_username": "rig",
