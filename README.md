@@ -98,8 +98,7 @@ Options:
   --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
   --devices                   Only log devices. Does not start miner
   ```
-  
-  ![image](https://user-images.githubusercontent.com/83083846/138006452-86178fc4-e3d5-40b2-a9ad-3c54e1705643.png)
+  ![image](https://user-images.githubusercontent.com/83083846/138520340-10443ec7-f1a1-439c-90ef-31712e8881a3.png)
 
 
 ## The Configuration File (config.txt)
