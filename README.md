@@ -339,6 +339,7 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `fan` - Fan speed
 - `pwr` - Power Usage
 - `temp` - Temperature. In the format of `core temp/memory temp`
+- `status` - Device status.
 
 ### Supported Pool table columns (In addition to all device table supported columns)
 - `uptime` - The time the device has been mining without stopping or resetting
