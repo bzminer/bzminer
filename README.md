@@ -1,5 +1,6 @@
-## Why use BzMiner (v4.5)?
+## Why use BzMiner (v4.6)?
 - Low dev fee of 0.5%
+- Customizable display
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
 - HTTP API!
@@ -120,14 +121,18 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     "amd_only": false, // Mine only with AMD devices
     "log_file": "", // file to output logs to. leave blank to disable logging to a file
     "advanced_config": false, // set this to true to show additional options in the config file
+    "advanced_display_config": false, // shows options for configuring display
     "device_overrides": [ // list of individual device settings
         {
-            "uid": "1:0",
-            "name": "EVGA RTX 3090 FTW3 Ultra"
+            "uid": "1:0", // device id (pci_bus_id:pci_device_id)
+            "name": "EVGA RTX 3090 FTW3 Ultra", // device display name
+            "start_mining": true // set to false to disable this device from mining
         }
     ]
 }
 ```
+
+With both "advanced_config" and "advanced_display_config" turned out, the full config file is as follows:
 
 ```
 {
@@ -140,25 +145,25 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
         "stratum+tcp://yourpool:4444"
     ],
     
-    "pool_password": "", // password to use for pool. Leave blank if no password required
-    
-    "farm": "farm", // name of the farm this rig belongs to
-    
     "rig": "rig", // name of this rig. A.K.A. default worker/username
     
-    "advanced_config": false, // set this to true to show additional options in the config file
+    "pool_password": "", // password to use for pool. Leave blank if no password required
     
     "nvidia_only": false, // Mine only with Nvidia devices
     
     "amd_only": false, // Mine only with AMD devices
     
+    "log_file": "", // file to output logs to. leave blank to disable logging to a file
+    
     "launch_cli_on_start": false, // whether cli.exe should start on reboot (windows only)
     
     "launch_gui_on_start": false, // whether bzminer.exe should start on reboot. If both are true, only bzminer.exe will start (windows only)
     
-    "log_file": "", // file to output logs to. leave blank to disable logging to a file
+    "farm": "farm", // name of the farm this rig belongs to
     
     "verbosity": 2, // log verbosity. 0 = Error, 1 = Warn, 2 = Info (default), 3 = debug, 4 = network
+    
+    "log_date": false, // whether to log the date on each line
     
     "temp_start": 80, // default resume mining once device reaches this temp
     
@@ -187,6 +192,25 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     "cooldown_period": 0, // allow the gpu to cooldown after a period of time. default is 0. Higher value means more time between cooldown periods.
     
     "reset_oc_dag_gen": false, // Resets overclocks before DAG is generated. Sets overclocks back after DAG has completely been generated. Useful for high oc when getting a lot of invalid shares due to invalid DAG generation
+    
+    "advanced_config": true, // set this to true to show additional options in the config file
+    
+    "advanced_display_config": true, // set to false to disable this device from mining
+    
+    "display_settings": { // advanced display configuration settings
+        "table_width": 100, // number of characters wide the tables are
+        "wrap": true, // whether the table should allow columns to wrap (set to false to disable cells from wrapping their contents to the next line)
+        "title_align": 1, // table title horrizontal alignment. 0 = left, 1 = center, 2 = right. default is 1 = center
+        "date_align": 0, // table date alignment. 0 = left, 1 = center, 2 = right. default is 0 = left
+        "show_devices": true, // show the devices table
+        "devices_title_color": 7, // set the color of the devices table title
+        "devices_border_color": 8, // set the color of the devices table border
+        "devices_columns": "#,name:nw,cfg,free,total,core,mem,fan,pwr,temp", // which columns to show for devices table. supported list below
+        "show_pool": true, // whether to show the pool tables
+        "pool_title_color": 7, // pool table title color
+        "pool_border_color": 8, // pool table border color
+        "pool_columns": "#,uptime,a/r/i,avg,eff,pool mh,miner mh,status:nw" // which columns to show in the pool tables
+    },
     
     "device_overrides": [ // list of individual device settings
         {
@@ -293,6 +317,44 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
 }
 ```
 
+## Display configuration
+
+BzMiner allows you to customize the output displays. This includes the table width, title color, border color, and which columns in each table to show.
+
+There are two tables that are logged by default, the devices table, and the pool tables. On each display update, the devices table is logged, which contain information about all the devices on the system. This table is not in the context of a pool, so does not support some of the column options the pool tables support, including hashrate.
+
+The Pool table is logged for each pool that devices are mining to. If there are two devices on the system, and each device is mining to a different pool (or different algorithm), then there will be two pool tables in the output, one for each pool. This table supports all the columns in the device table, as well as columns specific to the pool context.
+
+default device column configuration: `"#,name:nw,cfg,free,total,core,mem,fan,pwr,temp"`
+
+default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,status:nw"`
+
+### Supported Device table columns
+- `#` - The device id in the format of `pci_bus_id:pci_device_id`
+- `name` - The display name of the device
+- `cfg` - The device configuration. eg. i6 = intensity 6
+- `free` - Free device memory
+- `total` - Total device memory
+- `core` - Current core clock speed
+- `mem` - Current memory clock speed
+- `fan` - Fan speed
+- `pwr` - Power Usage
+- `temp` - Temperature. In the format of `core temp/memory temp`
+
+### Supported Pool table columns (In addition to all device table supported columns)
+- `uptime` - The time the device has been mining without stopping or resetting
+- `a/r/i` - Accepted/Rejected/Invalid shares
+- `avg` - Average time between each share
+- `eff` - Efficiency, in the units of hashes per watt
+- `pool mh` - Estimated effective hashrate based on pool difficulty and shares found (effective/current hashrate on some pools)
+- `miner mh` - Current miner speed (reported hashrate on some pools)
+- `status` - Device/Pool status.
+
+The pool table has an additional row at the bottom which is the summary of all devices mining to that pool. The status column for the pool includes the epoch number, difficulty, and average latency to pool.
+
+### Customizing the display
+- Colors are integers and correspond to normal terminal color codes. Default BzMiner logging color is 7.
+- Columns are a comma separated string. do not include spaces unless the column name includes spaces (eg. "pool mh"). Columns can have options (currently just one), which is specified by adding a colon (:) after the column name, and specifying the option, eg `name:nw`. Currently the only option supported is `nw`, which prevents that particular column from wrapping to the next line if the column cannot get wide enough to support the entire value on one line.
 
 ## Pool URLs
 
