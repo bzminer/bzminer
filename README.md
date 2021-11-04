@@ -355,7 +355,7 @@ The pool table has an additional row at the bottom which is the summary of all d
 
 ### Customizing the display
 - Colors are integers and correspond to normal terminal color codes. Default BzMiner logging color is 7.
-- Columns are a comma separated string. do not include spaces unless the column name includes spaces (eg. "pool mh"). Columns can have options (currently just one), which is specified by adding a colon (:) after the column name, and specifying the option, eg `name:nw`. Currently the only option supported is `nw`, which prevents that particular column from wrapping to the next line if the column cannot get wide enough to support the entire value on one line.
+- Columns are a comma separated string. do not include spaces unless the column name includes spaces (eg. "pool mh"). Columns can have options (currently just one), which is specified by adding a colon (:) after the column name, and specifying the option, eg `name:nw`. Two supported options; `nw`, which prevents that particular column from wrapping to the next line if the column cannot get wide enough to support the entire value on one line, and `nc`, which disables coloring of the column values
 
 ## Pool URLs
 
