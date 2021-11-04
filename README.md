@@ -1,4 +1,4 @@
-## Why use BzMiner (v4.6)?
+## Why use BzMiner (v4.7)?
 - Low dev fee of 0.5%
 - Customizable display
 - Now monitoring memory junction temperature (windows only)
@@ -201,6 +201,7 @@ With both "advanced_config" and "advanced_display_config" turned out, the full c
         "wrap": true, // whether the table should allow columns to wrap (set to false to disable cells from wrapping their contents to the next line)
         "title_align": 1, // table title horrizontal alignment. 0 = left, 1 = center, 2 = right. default is 1 = center
         "date_align": 0, // table date alignment. 0 = left, 1 = center, 2 = right. default is 0 = left
+        "hide_unused_devices": false // if true, will hide any devices that are not mining (with start_mining: false setting)
         "show_devices": true, // show the devices table
         "devices_title_color": 7, // set the color of the devices table title
         "devices_border_color": 8, // set the color of the devices table border
