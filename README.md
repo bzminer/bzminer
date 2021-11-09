@@ -5,7 +5,7 @@
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
 - HTTP API!
 - Remote management of all mining rigs on your network
-- Fastest Cuda v11 and OpenCL Ethereum/ethash and Ethereum classic miner
+- Fast Cuda v11 and OpenCL Ethereum/ethash and Ethereum classic miner
 - Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
