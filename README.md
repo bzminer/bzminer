@@ -4,7 +4,7 @@
     - Etchash (AMD, Nvidia) 
     - Kawpow (AMD, Nvidia)
 - Low dev fee of 0.5%
-- LHR Strategy dual/multi coin mining (ethash/kawpow)
+- (experimental) LHR Strategy dual/multi coin mining (ethash/kawpow)
 - Customizable display
 - Now monitoring memory junction temperature (windows only)
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
