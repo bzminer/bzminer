@@ -327,7 +327,7 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
 }
 ```
 
-### LHR Strategy
+### (experimental) LHR Strategy
 The current strategy BzMiner has to deal with LHR cards, is dual/multi coin mining, currently using ethash and kawpow
 
 To employ this strategy:
