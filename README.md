@@ -1,20 +1,22 @@
-## Why use BzMiner (v5.0)?
+## Why use BzMiner (v5.1)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
     - Kawpow (AMD, Nvidia)
 - Low dev fee of 0.5%
 - (experimental) LHR Strategy dual/multi coin mining (ethash/kawpow)
-- Customizable display
-- Now monitoring memory junction temperature (windows only)
+- Control algorithm/pool/wallet mining PER device, as well as Multi-coin mining on a single GPU
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
+- Hung GPU detection
+- Watchdog service which automatically restarts BzMiner if anything goes wrong (such as a hung gpu)
+- Customizable display
+- Memory junction temperature monitoring (windows only)
 - HTTP API!
 - Remote management of all mining rigs on your network
 - Fast Cuda v11 and OpenCL Ethereum/ethash and Ethereum classic miner
-- Control algorithm/pool/wallet mining PER device!
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
-- Advanced mining features, including cooldown periods, thrashing, stales_ok and ramp up 
+- Advanced mining features, including cooldown and ramp up 
 - DAG Validation for very high OC cards
 - AMD ethash and etchash mining (still experimental)
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
@@ -26,7 +28,8 @@
 
 
 ## Current planned major features by version (not including minor releases)
-- v6.0 next algo: autolykos (ERG/Ergo)
+- v6.0 next algo: overline (OL)
+- v7.0 next algo: autolykos (ERG/Ergo)
 
 
 ## Discord Server
@@ -56,7 +59,9 @@ Optionally you can edit `config.txt` and launch `bzminer`. You can specify the c
 ## GUI (bzminergui.exe)
 The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
 
-![image](https://user-images.githubusercontent.com/83083846/136844596-db8331a0-ab7e-42ee-8315-49e7f2deea0a.png)
+The GUI will display (and allow you to navigate to) other rigs running BzMiner. This is done through a UDP broadcast message which can be disabled on instances of BzMiner by setting "disable_udp" to true in the config file. 
+
+![image](https://user-images.githubusercontent.com/83083846/147267304-8357dd99-1638-4d83-a41a-0ebabd01cd4b.png)
 
 
 ## CLI (bzminer.exe)
@@ -98,10 +103,11 @@ Options:
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
   --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
+  --no_watchdog               Do not start watchdog service
   --devices                   Only log devices. Does not start miner
   ```
   
-  ![image](https://user-images.githubusercontent.com/83083846/140414856-bb9752cd-6281-4a6c-b38f-54eb57d5e343.png)
+  ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
 
 
 ## The Configuration File (config.txt)
@@ -236,6 +242,12 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "launch_on_boot": false, // if true, will automatically launch bzminer when pc turns on (windows only)
     
+    "hung_gpu_time": 120, // After GPU is unresponsive for this number of seconds, it is considered "hung"
+    
+    "crash_script": "", // When a hung gpu is detected, call this script
+    
+    "hung_gpu_reboot": false, // If true, will reboot rig when a hung gpu is detected
+    
     "no_color": false, // disable all color output
     
     "verbosity": 2, // log level (0 = errors only, 1 = warnings, 2 = info (default), 3 = debug, 4 = network, 5 = trace (not available in release)
@@ -253,6 +265,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "http_address": "0.0.0.0", // address to listen on for http api
     
     "http_enabled": true, // set to false to disable http api
+    
+    "disable_udp": false, // If true, the UDP service is disabled and this device will not show up in other instances of the BzMiner GUI
     
     "display_settings": { // advanced display settings
     
@@ -401,3 +415,22 @@ HTTP API can be enabled by launching bzminer with the --http_enabled flag, or by
 For more details, enable the http api, and go to `http://{http_address}:{http port}/help`. If you are on the same computer, you can use `localhost` or `127.0.0.1` as the http_address.
 
 A simple viewer can be found at `/index` when the HTTP API is enabled. `index.html` is provided for your convenience.
+
+## Watchdog service
+
+By default, the wathdog service is running. The watdog service watches for:
+
+- Hung GPU (GPU not responding after a period of time)
+- Unresponsive network activity
+- Unresponsive main loop
+- BzMiner crashing
+
+If a hung GPU is detected, the watchdog service will optionally call a script specified in the config file, then optionally reboot the rig if specified in the config file.
+
+The last log (and output) from BzMiner before the optional script is called is in the format of:
+
+`<Error> Hung GPU detected! (bus_id:device_id)`
+
+Which could be read from the called script if needed.
+
+The watchdog also restarts BzMiner if BzMiner crashes for whatever reason. This shouldn't normally happen, but the occasional bug can cause BzMiner to crash, and with the wathdog service, it'll start back up again. The watchdog service also restarts BzMiner in instances of unresponsive network activity and an unresponsive main loop.
