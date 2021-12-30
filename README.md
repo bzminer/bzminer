@@ -88,7 +88,7 @@ bzminer -a kawpow -w 0x0000000000000000000000000000000000000000 -p stratum+ssl:/
 bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name
 ```
 
-## GUI (bzminergui.exe)
+## GUI
 The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
 
 The GUI will display (and allow you to navigate to) other rigs running BzMiner. This is done through a UDP broadcast message which can be disabled on instances of BzMiner by setting "disable_udp" to true in the config file. 
@@ -96,7 +96,7 @@ The GUI will display (and allow you to navigate to) other rigs running BzMiner. 
 ![image](https://user-images.githubusercontent.com/83083846/147267304-8357dd99-1638-4d83-a41a-0ebabd01cd4b.png)
 
 
-## CLI (bzminer.exe)
+## CLI
 BzMiner is a command line interface. Simply update `config.txt` and launch `bzminer`.
 
 `bzminer` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer -c custom_config.txt`.
