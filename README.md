@@ -49,14 +49,20 @@ http://www.bzminer.com
 ## Quick Start
 Launch `bzminer` with the wallet and pool address as parameters:
 
-`bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name`
+```
+bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name
+``
 
 You may provide more than one pool address to -p for fallback pools on network errors:
-`bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name`
+```
+bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name
+```
 
 Optionally you can edit `config.txt` and launch `bzminer`. You can specify the config file with the `-c` argument:
 
-`bzminer -c eth-config.txt`
+```
+bzminer -c eth-config.txt
+```
 
 ### Ethereum
 
