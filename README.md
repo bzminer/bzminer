@@ -3,6 +3,7 @@
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
     - Kawpow (AMD, Nvidia)
+    - Olhash (AMD, Nvidia, 1% dev fee)
 - Low dev fee of 0.5%
 - (experimental) LHR Strategy dual/multi coin mining (ethash/kawpow)
 - Control algorithm/pool/wallet mining PER device, as well as Multi-coin mining on a single GPU
@@ -55,6 +56,21 @@ Optionally you can edit `config.txt` and launch `bzminer`. You can specify the c
 
 `bzminer -c eth-config.txt`
 
+### Ethereum
+
+`bzminer -a etchash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://us1-etc.ethermine.org:4444 stratum+tcp://eu1-etc.ethermine.org:4444 -r worker_name`
+
+### Ethereum Classic
+
+`bzminer -a ethash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://usw-eth.hiveon.net:4444 stratum+tcp://us1.ethermine.org:4444 -r worker_name`
+
+### Ravencoin
+
+`bzminer -a kawpow -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-ravencoin.flypool.org:3443 -r worker_name`
+
+### Overline
+
+`bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name`
 
 ## GUI (bzminergui.exe)
 The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
@@ -242,11 +258,13 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "launch_on_boot": false, // if true, will automatically launch bzminer when pc turns on (windows only)
     
-    "hung_gpu_time": 120, // After GPU is unresponsive for this number of seconds, it is considered "hung"
+    "hung_gpu_ms": 30000, // After GPU is unresponsive for this number of milliseconds, it is considered "hung"
     
     "crash_script": "", // When a hung gpu is detected, call this script
     
     "hung_gpu_reboot": false, // If true, will reboot rig when a hung gpu is detected
+    
+    "hung_gpu_restart_bzminer": true, // If true, and watchdog is running, will restart bzminer when a hung gpu is detected
     
     "no_color": false, // disable all color output
     
