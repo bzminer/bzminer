@@ -51,7 +51,7 @@ Launch `bzminer` with the wallet and pool address as parameters:
 
 ```
 bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name
-``
+```
 
 You may provide more than one pool address to -p for fallback pools on network errors:
 ```
