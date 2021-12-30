@@ -22,6 +22,8 @@
 - AMD ethash and etchash mining (still experimental)
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
 
+## NOTE: Requires latest NVIDIA Drivers
+
 
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
