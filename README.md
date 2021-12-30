@@ -31,8 +31,8 @@
 
 
 ## Current planned major features by version (not including minor releases)
-- v6.0 next algo: overline (OL)
 - v7.0 next algo: autolykos (ERG/Ergo)
+- v8.0 next algo: firopow (FIRO)
 
 
 ## Discord Server
