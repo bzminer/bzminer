@@ -1,9 +1,10 @@
-## Why use BzMiner (v5.1)?
+## Why use BzMiner (v7.0)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
     - Kawpow (AMD, Nvidia)
     - Olhash (AMD, Nvidia, 1% dev fee)
+    - Alephium (AMD, Nvidia, 1% dev fee)
 - Low dev fee of 0.5%
 - (experimental) LHR Strategy dual/multi coin mining (ethash/kawpow)
 - Control algorithm/pool/wallet mining PER device, as well as Multi-coin mining on a single GPU
@@ -86,6 +87,16 @@ bzminer -a kawpow -w 0x0000000000000000000000000000000000000000 -p stratum+ssl:/
 
 ```
 bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name
+```
+
+### Alephium
+
+Alephium mining may require 4 wallet addresses (solo mining)
+
+For solo mining change "stratum" to "alphstratum"
+
+```
+bzminer -a alph -w 000000 000000 000000 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159
 ```
 
 ## GUI
@@ -413,7 +424,7 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `uptime` - The time the device has been mining without stopping or resetting
 - `cfg` - The device configuration. eg. i6 = intensity 6
 - `a/r/i` - Accepted/Rejected/Invalid shares
-- `avg` - Average time between each share
+- `tbs` - Average time between shares
 - `eff` - Efficiency, in the units of hashes per watt
 - `pool mh` - Estimated effective hashrate based on pool difficulty and shares found (effective/current hashrate on some pools)
 - `miner mh` - Current miner speed (reported hashrate on some pools)
@@ -438,6 +449,7 @@ BzMiner supports 4 network protocols
 - Eth Proxy - use `ethproxy`
 - Ethereum Stratum v1.0.0 - use `ethstratum`
 - Ethereum Stratum v2.0.0 - use `ethstratum2`
+- Alephium Binary Stratum - use `alphstratum`
 
 BzMiner will attempt to auto select a protocol the pool supports if the provided protocol does not succeed in establishing a connection with the pool.
 
