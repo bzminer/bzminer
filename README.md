@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.0.1)?
+## Why use BzMiner (v7.1)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -208,6 +208,10 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "log_solutions": true, // whether to log each solution found in the output
     
+    "x_display": ":0", // which x display to use (for nvidia, linux only)
+    
+    "start_x": false, // attempt to start an x display (for nvidia, linux only)
+    
     "device_overrides": [ // list of devices and their specific settings
         {
             "uid": "1:0", // device id (pci_bus_id:pci_device_id)
@@ -312,6 +316,10 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "http_enabled": true, // set to false to disable http api
     
     "disable_udp": false, // If true, the UDP service is disabled and this device will not show up in other instances of the BzMiner GUI
+    
+    "x_display": ":0", // which x display to use (for nvidia, linux only)
+    
+    "start_x": false, // attempt to start an x display (for nvidia, linux only)
     
     "display_settings": { // advanced display settings
     
