@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.1)?
+## Why use BzMiner (v7.1.2)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -23,7 +23,7 @@
 - AMD ethash and etchash mining (still experimental)
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
 
-## NOTE: Requires latest NVIDIA Drivers
+## NOTE: Requires latest NVIDIA Drivers (or use the cuda_tk download)
 
 
 ## Mining OS's that include BzMiner
@@ -32,8 +32,8 @@
 
 
 ## Current planned major features by version (not including minor releases)
-- v7.0 next algo: autolykos (ERG/Ergo)
-- v8.0 next algo: firopow (FIRO)
+- v8.0 next algo: autolykos (ERG/Ergo)
+- v9.0 next algo: firopow (FIRO)
 
 
 ## Discord Server
@@ -147,6 +147,7 @@ Options:
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
   --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
   --no_watchdog               Do not start watchdog service
+  --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
   --devices                   Only log devices. Does not start miner
   ```
   
@@ -393,6 +394,22 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
         }]
 }
 ```
+
+### How to disable specific GPUs
+
+GPU's can be disabled either through the command line or through `config.txt`
+
+The command line argument is `--disable` and expects a space separated list of gpu unique ids, or indexes
+
+eg.
+
+`bzminer --disable 1:0 3:0`
+
+or 
+
+`bzminer --disable 0 3 5`
+
+Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
 
 ### (experimental) LHR Strategy
 The current strategy BzMiner has to deal with LHR cards, is dual/multi coin mining, currently using ethash and kawpow
