@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.1.2)?
+## Why use BzMiner (v7.1.3)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
