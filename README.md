@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.1.3)?
+## Why use BzMiner (v7.1.4)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -195,6 +195,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "log_file": "", // if not empty, the file logs should be written to
     
+    "clear_log_file": false, // by default, the log file will not be cleared when bzminer starts. set this to true to clear the log file when bzminer starts
+    
     "nvidia_only": false, // only mine using nvidia cards
     
     "amd_only": false, // only mine using amd cards
@@ -275,6 +277,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "rig_name": "rig", // default name of rig, if pool does not specify, will use this as the username/worker name
     
     "log_file": "", // if not empty, the file logs should be written to
+    
+    "clear_log_file": false, // by default, the log file will not be cleared when bzminer starts. set this to true to clear the log file when bzminer starts
     
     "nvidia_only": false, // only mine using nvidia cards
     
