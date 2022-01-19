@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.1.5)?
+## Why use BzMiner (v7.1.6)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -240,7 +240,9 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "username": "rig", // username/worker name to use
             
-            "lhr_only": false // if true only lhr cards will mine to this pool
+            "lhr_only": false, // if true only lhr cards will mine to this pool
+            
+            "delay_before_connection_retry": 3000 // milliseconds between each reconnection retry (minimum is 1 second)
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -252,6 +254,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             "username": "rig", // username/worker name to use
             
             "lhr_only": false // if true only lhr cards will mine to this pool
+            
+            "delay_before_connection_retry": 3000 // milliseconds between each reconnection retry (minimum is 1 second)
         }],
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
@@ -294,9 +298,11 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "launch_on_boot": false, // if true, will automatically launch bzminer when pc turns on (windows only)
     
+    "start_script": "start.bat", // Optional script to run when bzminer starts up
+    
     "hung_gpu_ms": 30000, // After GPU is unresponsive for this number of milliseconds, it is considered "hung"
     
-    "crash_script": "", // When a hung gpu is detected, call this script
+    "crash_script": "crash.bat", // Optional script to call when a hung gpu is detected
     
     "hung_gpu_reboot": false, // If true, will reboot rig when a hung gpu is detected
     
