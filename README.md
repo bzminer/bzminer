@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.1.6)?
+## Why use BzMiner (v7.2.0)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -195,7 +195,7 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "log_file": "", // if not empty, the file logs should be written to
     
-    "clear_log_file": false, // by default, the log file will not be cleared when bzminer starts. set this to true to clear the log file when bzminer starts
+    "clear_log_file": false, // by default, the log file will rotate (new file each time bzminer starts). set this to true to clear the log file when bzminer starts
     
     "nvidia_only": false, // only mine using nvidia cards
     
@@ -242,7 +242,13 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "lhr_only": false, // if true only lhr cards will mine to this pool
             
-            "delay_before_connection_retry": 3000 // milliseconds between each reconnection retry (minimum is 1 second)
+            "delay_before_connection_retry": 3000, // milliseconds between each reconnection retry (minimum is 1 second)
+            
+            "no_work_timeout": 30000, // ms after connection begins before no work timeout is triggered and reconnection happens
+            
+            "test": false, // run this algo in test mode (will not connect to a pool)
+            
+            "test_iteration_ms": 15000 //  seconds between new work in test mode
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -253,9 +259,15 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "username": "rig", // username/worker name to use
             
-            "lhr_only": false // if true only lhr cards will mine to this pool
+            "lhr_only": false, // if true only lhr cards will mine to this pool
             
-            "delay_before_connection_retry": 3000 // milliseconds between each reconnection retry (minimum is 1 second)
+            "delay_before_connection_retry": 3000, // milliseconds between each reconnection retry (minimum is 1 second)
+            
+            "no_work_timeout": 30000, // ms after connection begins before no work timeout is triggered and reconnection happens
+            
+            "test": false, // run this algo in test mode (will not connect to a pool)
+            
+            "test_iteration_ms": 15000 //  seconds between new work in test mode
         }],
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
