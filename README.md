@@ -96,7 +96,7 @@ Alephium mining may require 4 wallet addresses (solo mining)
 For solo mining change "stratum" to "alphstratum"
 
 ```
-bzminer -a alph -w 000000 000000 000000 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159
+bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159
 ```
 
 ## GUI
