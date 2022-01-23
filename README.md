@@ -24,7 +24,8 @@
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
 
 ## NOTE: Requires latest NVIDIA Drivers (or use the cuda_tk download)
-
+- BzMiner requires Nvidia drivers supporting Cuda 11.5 or greater (Nvidia driver >= 495.29.05)
+- BzMiner cuda_tk requires Nvidia drivers supporting Cuda 11.2 or greater (Nvidia driver >= 460.27.03)
 
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
