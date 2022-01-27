@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.2.2)?
+## Why use BzMiner (v7.2.3)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -116,7 +116,7 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 `bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
 
 ```
->bzminer -h
+>bzminer --help
 BZMiner is an enhanced CUDA Ethereum Ethash miner
 Usage: bzminer [OPTIONS]
 
@@ -128,14 +128,12 @@ Options:
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   -o TEXT                     If provided, output will be logged to this file
-  -w TEXT                     Wallet Address
+  -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
   -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   -c TEXT                     Config file to load settings from. Default is config.txt
   -i INT                      Set mining intensity (1 - 32). Higher means more gpu spends more time hashing. Default is 8.
   -u INT                      Update frequency in milliseconds. Default is 10000.
-  -t INT                      Thrashing. 0 = off (default), 1 = on. Turns stales to valid solutions at cost of high CPU usage. less stales
-  -s INT                      Stales are ok. 1 = OK, 0 = Not ok. default 0. If OK, spend more time mining, get more valid shares. more stales
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --nc INT                    Do not save to the config file (but still read from it).
@@ -147,9 +145,32 @@ Options:
   --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
   --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
   --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
-  --no_watchdog               Do not start watchdog service
-  --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
   --devices                   Only log devices. Does not start miner
+  --no_watchdog               Do not start watchdog service.
+  --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
+  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
+  --auto_detect_lhr INT       If 1 (default 1), BzMiner will attempt to detect whether a GPU has LHR.
+  --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
+  --start_script TEXT         If specified, this script will run when BzMiner starts.
+  --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
+  --crash_script TEXT         When hung GPU is detected, this script will run.
+  --hung_gpu_reboot INT       If 1 (default 0), BzMiner will reboot the rig when a hung GPU is detected.
+  --hung_gpu_restart_bzminer INT
+                              If 1 (default 1), and watchdog is enabled, watchdog will restart BzMiner process when hung GPU is detected.
+  --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
+  --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
+  --no_color INT              If 1 (default 0), output in console will not have color.
+  --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
+  --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
+  --oc_fan_speed INT ...      Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+  --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
+  --oc_core_clock INT ...     Set the target core clock offset (in khz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
+  --oc_memory_clock INT ...   Set the target memory clock offset (in khz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_memory_clock is not 0.
+  --oc_lock_core_clock INT ...
+                              Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
+  --oc_lock_memory_clock INT ...
+                              Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
+  --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
@@ -321,6 +342,10 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "hung_gpu_restart_bzminer": true, // If true, and watchdog is running, will restart bzminer when a hung gpu is detected
     
+    "restart_miner_minutes": 0, // restart bzminer after this amount of time (minutes), IF watchdog is enabled
+    
+    "reboot_minutes": 0, // reboot pc after this amount of time (minutes)
+    
     "no_color": false, // disable all color output
     
     "verbosity": 2, // log level (0 = errors only, 1 = warnings, 2 = info (default), 3 = debug, 4 = network, 5 = trace (not available in release)
@@ -413,7 +438,11 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "oc_core_clock": 0, // set the core clock speed offset in MHz. 0 = do not change, !0 = set clock speed offset
             
-            "oc_memory_clock": 0 // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
+            "oc_memory_clock": 0, // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
+            
+            "oc_lock_core_clock": 0, // Lock the core clock to a specific mhz, if device allows it
+            
+            "oc_lock_memory_clock": 0 // Lock the memory clock to a specific mhz, if device allows it
         }]
 }
 ```
