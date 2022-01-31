@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.2.3)?
+## Why use BzMiner (v7.2.4)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -6,7 +6,8 @@
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia, 1% dev fee)
 - Low dev fee of 0.5%
-- (experimental) LHR Strategy dual/multi coin mining (ethash/kawpow)
+- Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
+- Set Overclocks PER dual mine algo!
 - Control algorithm/pool/wallet mining PER device, as well as Multi-coin mining on a single GPU
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
 - Hung GPU detection
@@ -94,6 +95,13 @@ For solo mining change "stratum" to "alphstratum"
 bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159
 ```
 
+### Dual Mining (eth + alph)
+
+```
+bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 alph --w2 000000 --p2 stratum+tcp://eu.metapool.tech:20032
+```
+
+
 ## GUI
 The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
 
@@ -117,16 +125,22 @@ Usage: bzminer [OPTIONS]
 Options:
   -h,--help                   Print this help message and exit
   -a TEXT                     Default Mining algorithm. eg. 'ethash'
+  --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
   -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
+  --r2 TEXT                   Default Pool username for second algo (dual mine)
   --pool_password TEXT        Default Pool password
+  --pool_password2 TEXT       Default Pool password for second algo (dual mine)
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   -o TEXT                     If provided, output will be logged to this file
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
+  --w2 TEXT ...               Wallet Address for second algo (dual mine). If algorithm requires more than one address, list them same as -p
   -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   -c TEXT                     Config file to load settings from. Default is config.txt
-  -i INT                      Set mining intensity (1 - 32). Higher means more gpu spends more time hashing. Default is 8.
+  -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   -u INT                      Update frequency in milliseconds. Default is 10000.
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
@@ -156,10 +170,14 @@ Options:
   --no_color INT              If 1 (default 0), output in console will not have color.
   --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
   --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
+  --lhr_mine_ms INT ...       Time (ms) to mine each algo when dual mining.
+  --oc_delay_ms INT           Time (ms) to delay algo switch before/after oc changed for algo.
   --oc_fan_speed INT ...      Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
-  --oc_core_clock INT ...     Set the target core clock offset (in khz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
-  --oc_memory_clock INT ...   Set the target memory clock offset (in khz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_memory_clock is not 0.
+  --oc_core_clock_offset INT ...
+                              Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
+  --oc_memory_clock_offset INT ...
+                              Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_memory_clock is not 0.
   --oc_lock_core_clock INT ...
                               Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
   --oc_lock_memory_clock INT ...
@@ -302,6 +320,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "reset_oc_dag_gen": [false], // If true, will reset overclocks before dag is generated. after dag is generated, will set overclocks back to what they currently are. Useful for very high OC
     
+    "lhr_mine_ms": [5000, 15000], // how long each algo should mine when dual mining
+    
     "temp_start": 80, // temperature (C) that device should start mining at after it has stopped due to temp_stop
     
     "temp_stop": 120, // temperature (C) that device should stop mining at
@@ -345,6 +365,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "verbosity": 2, // log level (0 = errors only, 1 = warnings, 2 = info (default), 3 = debug, 4 = network, 5 = trace (not available in release)
     
     "update_frequency": 15000, // how often to log info (in milliseconds)
+    
+    "avg_hr_ms": 30000, // time to average hashrate (ms). Higher time means more stable hashrate, lower time means more realtime
     
     "log_solutions": true,  // whether to log each solution found in the output
     
@@ -392,6 +414,15 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
         
         "pool_columns": "#,uptime,a/r/i,avg,eff,pool mh,miner mh,status" // which columns to show in the pool tables
     },
+    
+    "oc_delay_ms": 50, // for dual mining only, time before/after oc is applied when switching to next algo
+    "oc_fan_speed": [], // List (optionally of lists for dual mining oc's) of fan speeds (%)
+    "oc_power_limit": [], // List (optionally of lists for dual mining oc's) of power limits (watts)
+    "oc_core_clock_offset": [], // List (optionally of lists for dual mining oc's) of core offsets (mhz)
+    "oc_memory_clock_offset": [], // List (optionally of lists for dual mining oc's) of memory offsets (mhz)
+    "oc_lock_core_clock": [], // List (optionally of lists for dual mining oc's) of locked core clocks (mhz, overrides core offset when not 0)
+    "oc_lock_memory_clock": [], // List (optionally of lists for dual mining oc's) of locked memory clocks (mhz, overrides memory offset when not 0)
+    
     "device_overrides": [{
             // device info/settings
             "uid": "1:0", // pci bus id : pci device id. this uniquely identifies the device as long as it doesn't change pci slots
@@ -426,17 +457,17 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             "dag_dev_ref": [""], // Instead of this device generating the dag, it can copy the dag from another device. Nvidia only currently. useful for high oc's
  
             // overclocking
-            "oc_fan_speed": -1, // set the devices fan speed. -1 = do not change, 0 = auto, >0 = lock at percentage
+            "oc_fan_speed": [-1], // set the devices fan speed. -1 = do not change, 0 = auto, >0 = lock at percentage. Optionally a list for dual mining
             
-            "oc_power_limit": 0, // set the max power consumption (watts) the device will use. 0 = do not change, >0 = max watts
+            "oc_power_limit": [0], // set the max power consumption (watts) the device will use. 0 = do not change, >0 = max watts. Optionally a list for dual mining
             
-            "oc_core_clock": 0, // set the core clock speed offset in MHz. 0 = do not change, !0 = set clock speed offset
+            "oc_core_clock_offset": [0], // set the core clock speed offset in MHz. 0 = do not change, !0 = set clock speed offset. Optionally a list for dual mining
             
-            "oc_memory_clock": 0, // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset
+            "oc_memory_clock_offset": [0], // set the memory clock speed offset in MHz. 0 = do not change, !0 = set memory speed offset. Optionally a list for dual mining
             
-            "oc_lock_core_clock": 0, // Lock the core clock to a specific mhz, if device allows it
+            "oc_lock_core_clock": [0], // Lock the core clock to a specific mhz, if device allows it. Optionally a list for dual mining
             
-            "oc_lock_memory_clock": 0 // Lock the memory clock to a specific mhz, if device allows it
+            "oc_lock_memory_clock": [0] // Lock the memory clock to a specific mhz, if device allows it. Optionally a list for dual mining
         }]
 }
 ```
@@ -457,15 +488,61 @@ or
 
 Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
 
-### (experimental) LHR Strategy
+### LHR Strategy (Dual Mining)
 The current strategy BzMiner has to deal with LHR cards, is dual/multi coin mining, currently using ethash and kawpow
 
 To employ this strategy:
-- Add both an ethash pool and a kawpow pool to the config file
+- Add both an ethash pool and a kawpow (or other non memory hard algo) pool to the config file
 - Optionally set the kawpow pool setting "lhr_only" to true
 - Set either the global "pool" setting, or device override "pool" setting to use both the ethash and kawpow pool. eg. "pool": [0, 1]
 - Optionally set the device override "lhr" setting to true, otherwise bzminer will attempt to determine whether the card is lhr or not. eg. "lhr": true
 - Run bzminer using that config. eg. `bzminer -c config.txt`
+
+## Overclock per Dual Mine Algo
+BzMiner allows you to set an overclock for each algo you are dual mining. Be aware that extreme oc's can much easier cause a GPU to hang (crash) in this scenario, and for that reason the config option `oc_delay_ms` is used, to give the oc time to kick in before switching to next algo.
+
+Here's a sample dual mine config with oc's per algo:
+
+```
+{
+    "pool_configs": [{
+            "algorithm": "ethash",
+            "wallet": "0000",
+            "url": ["stratum+tcp://us2.ethermine.org:4444"],
+            "lhr_only": false
+        }, {
+            "algorithm": "alph",
+            "wallet": "0000",
+            "url": ["stratum+tcp://eu.metapool.tech:20032", "stratum+tcp://pool.woolypooly.com:3106"],
+            "username": "alph_rig",
+            "lhr_only": false
+        }],
+    "pool": [0, 1],
+    "intensity": [0],
+    "lhr_mine_ms": [5000, 15000],
+    "rig_name": "ethash_rig",
+    "log_file": "",
+    "clear_log_file": false,
+    "nvidia_only": false,
+    "amd_only": false,
+    "auto_detect_lhr": true,
+    "lock_config": false,
+    "advanced_config": false,
+    "oc_delay_ms": 100,
+    "device_overrides": [{
+            "uid": "1:0",
+            "name": "EVGA RTX 3090 FTW3 Ultra",
+            "start_mining": true,
+            "lhr_mine_ms": [5000, 15000],
+            "oc_fan_speed": [-1],
+            "oc_power_limit": [0],
+            "oc_core_clock_offset": [-200, 50],
+            "oc_memory_clock_offset": [1100, 0],
+            "oc_lock_core_clock": [0],
+            "oc_lock_memory_clock": [0, 810]
+        }]
+}
+```
 
 ## Display configuration
 
