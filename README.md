@@ -15,12 +15,11 @@
 - Memory junction temperature monitoring (windows only)
 - HTTP API!
 - Remote management of all mining rigs on your network
-- Fast Cuda v11 and OpenCL Ethereum/ethash and Ethereum classic miner
+- Fast Cuda v11 and OpenCL miner
 - Constantly being improved based on feedback from you!
 - Ability to OC in miner (OC's are removed during DAG generation to prevent invalid DAG generation)
-- Advanced mining features, including cooldown and ramp up 
+- Advanced mining features, including cooldown, ramp up, dual/multi coin mining
 - DAG Validation for very high OC cards
-- AMD ethash and etchash mining (still experimental)
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
 
 ## NOTE: Requires latest NVIDIA Drivers (or use the cuda_tk download)
@@ -30,11 +29,6 @@
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
 - HiveOS - https://hiveos.farm/
-
-
-## Current planned major features by version (not including minor releases)
-- v8.0 next algo: autolykos (ERG/Ergo)
-- v9.0 next algo: firopow (FIRO)
 
 
 ## Discord Server
