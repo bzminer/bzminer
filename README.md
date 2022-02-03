@@ -1,4 +1,4 @@
-## Why use BzMiner (v7.2.4)?
+## Why use BzMiner (v7.2.5)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -488,7 +488,7 @@ or
 
 Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
 
-### LHR Strategy (Dual Mining)
+### LHR Strategy (Dual Mining) EXPERIMENTAL!
 The current strategy BzMiner has to deal with LHR cards, is dual/multi coin mining, currently using ethash and kawpow
 
 To employ this strategy:
