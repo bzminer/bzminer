@@ -1,13 +1,16 @@
-## Why use BzMiner (v7.2.5)?
+## Why use BzMiner (v8.0.0)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
     - Kawpow (AMD, Nvidia)
     - Olhash (AMD, Nvidia, 1% dev fee)
-    - Alephium (AMD, Nvidia, 1% dev fee)
+    - Alephium (AMD, Nvidia)
+    - Kaspa (AMD, Nvidia, 1% dev fee)
 - Low dev fee of 0.5%
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
-- Set Overclocks PER dual mine algo!
+- Multi coin mining supports three different strategies; Parallel mining, Alternate mining, DAG gen only mining
+- Can overclock per algorithm when alternating multi coin mining
+- Set Overclocks PER multi mine algo!
 - Control algorithm/pool/wallet mining PER device, as well as Multi-coin mining on a single GPU
 - Awesome Easy to use Linux and Windows miner (GUI available through browser)
 - Hung GPU detection
@@ -95,6 +98,16 @@ For solo mining change "stratum" to "alphstratum"
 bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159
 ```
 
+### Kaspa
+
+Kaspa mining currently requires a node running (experimental pool implementation provided in BzMiner)
+
+For experimental pool mining change "node" to "stratum"
+
+```
+bzminer -a kaspa -w 000000 -p node+tcp://127.0.0.1:16110
+```
+
 ### Dual Mining (eth + alph)
 
 ```
@@ -119,11 +132,12 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 
 ```
 >bzminer --help
-BZMiner is an enhanced CUDA Ethereum Ethash miner
+BzMiner - Advanced Crypto Miner
 Usage: bzminer [OPTIONS]
 
 Options:
   -h,--help                   Print this help message and exit
+  --version                   Get the version of this binary
   -a TEXT                     Default Mining algorithm. eg. 'ethash'
   --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
   -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
@@ -140,11 +154,13 @@ Options:
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   -c TEXT                     Config file to load settings from. Default is config.txt
   -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  -u INT                      Update frequency in milliseconds. Default is 10000.
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --nc INT                    Do not save to the config file (but still read from it).
+  --update_frequency INT      Output frequency in milliseconds. Default is 15000.
+  --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
@@ -170,7 +186,7 @@ Options:
   --no_color INT              If 1 (default 0), output in console will not have color.
   --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
   --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
-  --lhr_mine_ms INT ...       Time (ms) to mine each algo when dual mining.
+  --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
   --oc_delay_ms INT           Time (ms) to delay algo switch before/after oc changed for algo.
   --oc_fan_speed INT ...      Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
@@ -320,7 +336,9 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "reset_oc_dag_gen": [false], // If true, will reset overclocks before dag is generated. after dag is generated, will set overclocks back to what they currently are. Useful for very high OC
     
-    "lhr_mine_ms": [5000, 15000], // how long each algo should mine when dual mining
+    "multi_mine_ms": [5000, 15000], // how long each algo should mine when dual mining
+    
+    "multi_mine_type": 1, // 0 = parallel mine, 1 = alternate mine (can oc per algo), 2 = DAG gen only mining
     
     "temp_start": 80, // temperature (C) that device should start mining at after it has stopped due to temp_stop
     
@@ -519,7 +537,7 @@ Here's a sample dual mine config with oc's per algo:
         }],
     "pool": [0, 1],
     "intensity": [0],
-    "lhr_mine_ms": [5000, 15000],
+    "multi_mine_ms": [5000, 15000],
     "rig_name": "ethash_rig",
     "log_file": "",
     "clear_log_file": false,
@@ -593,6 +611,7 @@ eg. `stratum+tcp://us1.ethermine.org:4444`
 If username and password are required, eg. `{protocol}+{tcp/ssl}:<{username}:{password}@>{url}:{port}`, they can be set per device in the config file, or through the command line. If device pool_username is blank, it will use the rig name from the config file. if pool_password is blank, it will use the default pool_password for the rig in the config file. Leave both pool_password blank if no password is required for the pool. Do not put the username and password in the url (If there are enough requests for this, this can be added in a future release)
 
 BzMiner supports 4 network protocols
+- Node - use `node`
 - Stratum - use `stratum`
 - Eth Proxy - use `ethproxy`
 - Ethereum Stratum v1.0.0 - use `ethstratum`
