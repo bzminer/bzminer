@@ -1,11 +1,11 @@
-## Why use BzMiner (v8.0.0)?
+## Why use BzMiner (v8.0.1)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
     - Kawpow (AMD, Nvidia)
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia)
-    - Kaspa (AMD, Nvidia, 1% dev fee)
+    - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
 - Low dev fee of 0.5%
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
 - Multi coin mining supports three different strategies; Parallel mining, Alternate mining, DAG gen only mining
@@ -25,10 +25,19 @@
 - Advanced mining features, including cooldown, ramp up, dual/multi coin mining
 - DAG Validation for very high OC cards
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
+- Ubuntu 16.04 support
 
-## NOTE: Requires latest NVIDIA Drivers (or use the cuda_tk download)
-- BzMiner requires Nvidia drivers supporting Cuda 11.5 or greater (Nvidia driver >= 495.29.05)
-- BzMiner cuda_tk requires Nvidia drivers supporting Cuda 11.2 or greater (Nvidia driver >= 460.27.03)
+## Prerequisites
+- Windows:
+  - Requires Nvidia drivers supporting Cuda 11.2 or greater (Nvidia driver >= 460.27.03)
+- Linux:
+  - Ubuntu 16.04 or higher
+  - Cuda 11.2
+  - Nvidia driver >= 460.27.03
+- Linux (cuda_tk version):
+  - Ubuntu 18.04 or higher
+  - Nvidia driver >= 495.29.05
+- Note: The cuda_tk version is not any better, it just removes the requirement of installing Cuda 11.2
 
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
@@ -102,10 +111,16 @@ bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tc
 
 Kaspa mining currently requires a node running (experimental pool implementation provided in BzMiner)
 
-For experimental pool mining change "node" to "stratum"
+For solo mining, use node+tcp
 
 ```
 bzminer -a kaspa -w 000000 -p node+tcp://127.0.0.1:16110
+```
+
+For pool mining change "node" to "stratum"
+
+```
+bzminer -a kaspa -w 000000 -p stratum+tcp://acc-pool.pw:16061
 ```
 
 ### Dual Mining (eth + alph)
@@ -113,6 +128,8 @@ bzminer -a kaspa -w 000000 -p node+tcp://127.0.0.1:16110
 ```
 bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 alph --w2 000000 --p2 stratum+tcp://eu.metapool.tech:20032
 ```
+
+You can change the multi mining type using the `multi_mine_type` option in the command line. By default its set to 0 for parallel mining, but can be set to 1 for alternate mining or 2 for mine only during DAG generation
 
 
 ## GUI
@@ -187,6 +204,7 @@ Options:
   --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
   --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
   --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
+  --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
   --oc_delay_ms INT           Time (ms) to delay algo switch before/after oc changed for algo.
   --oc_fan_speed INT ...      Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
