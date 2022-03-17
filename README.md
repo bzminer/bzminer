@@ -7,7 +7,7 @@
     - Alephium (AMD, Nvidia)
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
 - Low dev fee of 0.5%
-- Nvidia GPU memory temperature monitoring
+- Nvidia GPU memory temperature monitoring on Linux and Windows
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
 - Multi coin mining supports three different strategies; Parallel mining, Alternate mining, DAG gen only mining
 - Can overclock per algorithm when alternating multi coin mining
