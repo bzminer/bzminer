@@ -1,4 +1,4 @@
-## Why use BzMiner (v8.1.0)?
+## Why use BzMiner (v8.1.1)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -190,8 +190,7 @@ Options:
   --devices                   Only log devices. Does not start miner
   --no_watchdog               Do not start watchdog service.
   --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
-  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
-  --auto_detect_lhr INT       If 1 (default 1), BzMiner will attempt to detect whether a GPU has LHR.
+  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start
   --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
   --start_script TEXT         If specified, this script will run when BzMiner starts.
   --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
@@ -269,8 +268,6 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     "nvidia_only": false, // only mine using nvidia cards
     
     "amd_only": false, // only mine using amd cards
-    
-    "auto_detect_lhr": true, // auto detect if a card has lhr (otherwise it can be manually specified in the device_override)
     
     "lock_config": false, // if true, bzminer will never write to this file
     
@@ -373,8 +370,6 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "amd_only": false, // only mine using amd cards
     
-    "auto_detect_lhr": true, // auto detect if a card has lhr (otherwise it can be manually specified in the device_override)
-    
     "lock_config": false, // if true, bzminer will never write to this file
     
     "advanced_config": true, // show advanced config options (after setting true, must run bzminer once so it can update this file)
@@ -468,7 +463,7 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "start_mining": true, // if false, device will not mine
             
-            "lhr": false, // whether this device is an lhr card or not. if false, bzminer will attempt to auto detect
+            "lhr": false, // whether this device is an lhr card or not ( set automatically )
             
             "temp_start": 80, // temperature (C) that device should start mining at after it has stopped due to temp_stop
             
@@ -562,7 +557,6 @@ Here's a sample dual mine config with oc's per algo:
     "clear_log_file": false,
     "nvidia_only": false,
     "amd_only": false,
-    "auto_detect_lhr": true,
     "lock_config": false,
     "advanced_config": false,
     "oc_delay_ms": 100,
