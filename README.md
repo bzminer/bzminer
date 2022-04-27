@@ -1,4 +1,4 @@
-## Why use BzMiner (v8.1.4)?
+## Why use BzMiner (v9.0.04)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -6,6 +6,7 @@
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia)
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
+    - Ixian (AMD, Nvidia, 1% dev fee)
 - Low dev fee of 0.5%
 - Nvidia GPU memory temperature monitoring on Linux and Windows
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
@@ -32,13 +33,11 @@
 - Windows:
   - Requires Nvidia drivers supporting Cuda 11.2 or greater (Nvidia driver >= 460.27.03)
 - Linux:
+  - Nvidia driver >= 460.27.03
+- Linux (Ubuntu 16.04):
   - Ubuntu 16.04 or higher
   - Cuda 11.2
-  - Nvidia driver >= 460.27.03
-- Linux (cuda_tk version):
-  - Ubuntu 18.04 or higher
   - Nvidia driver >= 495.29.05
-- Note: The cuda_tk version is not any better, it just removes the requirement of installing Cuda 11.2
 
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
@@ -122,6 +121,14 @@ For pool mining change "node" to "stratum"
 
 ```
 bzminer -a kaspa -w 000000 -p stratum+tcp://acc-pool.pw:16061
+```
+
+### Ixian
+
+Solo and pool both use the GetWork http/https protocol
+
+```
+bzminer -a ixi -w 000000 -p http://ixian.changeling.biz:8081
 ```
 
 ### Dual Mining (eth + alph)
@@ -244,6 +251,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             "username": "rig", // username/worker name to use
             
             "lhr_only": false // if true only lhr cards will mine to this pool
+            
+            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -255,6 +264,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
             "username": "rig", // username/worker name to use
             
             "lhr_only": false // if true only lhr cards will mine to this pool
+            
+            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
         }],
         
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
@@ -270,6 +281,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     "amd_only": false, // only mine using amd cards
     
     "lock_config": false, // if true, bzminer will never write to this file
+    
+    "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
     
     "advanced_config": false, // show advanced config options (after setting true, must run bzminer once so it can update this file)
     
@@ -315,6 +328,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             "test": false, // run this algo in test mode (will not connect to a pool)
             
             "test_iteration_ms": 15000 //  seconds between new work in test mode
+            
+            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -334,6 +349,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             "test": false, // run this algo in test mode (will not connect to a pool)
             
             "test_iteration_ms": 15000 //  seconds between new work in test mode
+            
+            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
         }],
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
@@ -371,6 +388,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "amd_only": false, // only mine using amd cards
     
     "lock_config": false, // if true, bzminer will never write to this file
+    
+    "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
     
     "advanced_config": true, // show advanced config options (after setting true, must run bzminer once so it can update this file)
     
@@ -624,12 +643,13 @@ eg. `stratum+tcp://us1.ethermine.org:4444`
 If username and password are required, eg. `{protocol}+{tcp/ssl}:<{username}:{password}@>{url}:{port}`, they can be set per device in the config file, or through the command line. If device pool_username is blank, it will use the rig name from the config file. if pool_password is blank, it will use the default pool_password for the rig in the config file. Leave both pool_password blank if no password is required for the pool. Do not put the username and password in the url (If there are enough requests for this, this can be added in a future release)
 
 BzMiner supports 4 network protocols
-- Node - use `node`
+- Node - use `node` or `solo`
 - Stratum - use `stratum`
 - Eth Proxy - use `ethproxy`
 - Ethereum Stratum v1.0.0 - use `ethstratum`
 - Ethereum Stratum v2.0.0 - use `ethstratum2`
 - Alephium Binary Stratum - use `alphstratum`
+- HTTP or HTTPS GetWork - use `http` or `https`
 
 BzMiner will attempt to auto select a protocol the pool supports if the provided protocol does not succeed in establishing a connection with the pool.
 
