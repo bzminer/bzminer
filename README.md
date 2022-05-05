@@ -1,4 +1,4 @@
-## Why use BzMiner (v9.0.0)?
+## Why use BzMiner (v9.0.2)?
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -6,7 +6,7 @@
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia)
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
-    - Ixian (AMD, Nvidia, 1% dev fee)
+    - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
 - Low dev fee of 0.5%
 - Nvidia GPU memory temperature monitoring on Linux and Windows
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
@@ -28,6 +28,8 @@
 - DAG Validation for very high OC cards
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
 - Ubuntu 16.04 support
+- GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
+- TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
 
 ## Prerequisites
 - Windows:
@@ -197,7 +199,7 @@ Options:
   --devices                   Only log devices. Does not start miner
   --no_watchdog               Do not start watchdog service.
   --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
-  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start
+  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
   --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
   --start_script TEXT         If specified, this script will run when BzMiner starts.
   --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
@@ -223,6 +225,7 @@ Options:
                               Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
   --oc_lock_memory_clock INT ...
                               Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
+  --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   ```
   
@@ -329,7 +332,9 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "test_iteration_ms": 15000 //  seconds between new work in test mode
             
-            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
+            "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
+            
+            "tbs_watchdog": 1000 // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -350,7 +355,9 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
             
             "test_iteration_ms": 15000 //  seconds between new work in test mode
             
-            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
+            "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
+            
+            "tbs_watchdog": 1000 // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
         }],
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
@@ -473,6 +480,7 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "oc_memory_clock_offset": [], // List (optionally of lists for dual mining oc's) of memory offsets (mhz)
     "oc_lock_core_clock": [], // List (optionally of lists for dual mining oc's) of locked core clocks (mhz, overrides core offset when not 0)
     "oc_lock_memory_clock": [], // List (optionally of lists for dual mining oc's) of locked memory clocks (mhz, overrides memory offset when not 0)
+    "oc_mem_tweak": 0, // Gddr5x memory timings tweak, levels 1-3. Higher tweak may require lower OC
     
     "device_overrides": [{
             // device info/settings
