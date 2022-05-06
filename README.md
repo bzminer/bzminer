@@ -44,7 +44,7 @@
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
 - HiveOS - https://hiveos.farm/
-
+- Minerstat - https://minerstat.com/
 
 ## Discord Server
 https://discord.gg/NRty3PCVdB
