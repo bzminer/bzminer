@@ -1,4 +1,5 @@
-## Why use BzMiner (v9.0.2)?
+## Why use BzMiner (v9.1.0)?
+- 100% LHR Unlock v1! (Unstable, see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -30,6 +31,13 @@
 - Ubuntu 16.04 support
 - GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
 - TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
+
+## 100% LHR Unlock v1 (Unstable, experimental)
+BzMiner v9.1.0 introduces a 100% LHR unlocker, with a bit of a catch. While this technique CAN fully unlock LHR cards, it can be quite unstable (hence, v1).
+
+To improve stability, lower overclocks a LOT. Also, play with the new `--lhr_stability` which has an impact on both hashrate and stability of the LHR unlock. Keep your cards cool (overheating appears to have an impact on stability). This is still experimental so keep your eyes on your LHR rigs using this feature.
+
+To disable the LHR unlocker, set `--lhr_stability` to 0. Default is 100.
 
 ## Prerequisites
 - Windows:
@@ -186,6 +194,7 @@ Options:
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --nc INT                    Do not save to the config file (but still read from it).
+  --lhr_stability INT         Set LHR Unlock stability. Default is 100. 0 is disable lhr unlock. Play with it
   --update_frequency INT      Output frequency in milliseconds. Default is 15000.
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
@@ -282,6 +291,8 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     "nvidia_only": false, // only mine using nvidia cards
     
     "amd_only": false, // only mine using amd cards
+    
+    "lhr_stability": 100, // adjustment for lhr unlock. Effects are still fairly unknown, play with it
     
     "lock_config": false, // if true, bzminer will never write to this file
     
@@ -393,6 +404,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     "nvidia_only": false, // only mine using nvidia cards
     
     "amd_only": false, // only mine using amd cards
+    
+    "lhr_stability": 100, // adjustment for lhr unlock. Effects are still fairly unknown, play with it
     
     "lock_config": false, // if true, bzminer will never write to this file
     
@@ -547,8 +560,7 @@ or
 
 Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
 
-### LHR Strategy (Dual Mining) EXPERIMENTAL!
-The current strategy BzMiner has to deal with LHR cards, is dual/multi coin mining, currently using ethash and kawpow
+### Dual Mining (experimental)!
 
 To employ this strategy:
 - Add both an ethash pool and a kawpow (or other non memory hard algo) pool to the config file
