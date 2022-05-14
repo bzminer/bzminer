@@ -1,5 +1,5 @@
 ## Why use BzMiner (v9.1.0)?
-- 100% LHR Unlock v1! (Unstable, see below)
+- Stable 100% LHR Unlock v1! (see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -32,12 +32,16 @@
 - GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
 - TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
 
-## 100% LHR Unlock v1 (Unstable, experimental)
-BzMiner v9.1.0 introduces a 100% LHR unlocker, with a bit of a catch. While this technique CAN fully unlock LHR cards, it can be quite unstable (hence, v1).
+## 100% LHR Unlock v1
+BzMiner v9.1.0 introduced a 100% LHR unlocker, which was only semi-stable. v9.1.3 has much higher stability and hashrate.
 
-To improve stability, lower overclocks a LOT. Also, play with the new `--lhr_stability` which has an impact on both hashrate and stability of the LHR unlock. Keep your cards cool (overheating appears to have an impact on stability). This is still experimental so keep your eyes on your LHR rigs using this feature.
+If a card becomes unstable (eg. lhr exception), lower overclocks, and lower `--lhr_stability`.
+
+`--lhr_stability` has an impact on both hashrate and stability of the LHR unlock. Lower values can cause LHR to still trigger once in a while, lower hashrate, however increasing stability. Higher values will cause LHR to trigger less frequently (or not at all), giving you higher overall hashrate, but lowering longer term stability. Default value is 100.
 
 To disable the LHR unlocker, set `--lhr_stability` to 0. Default is 100.
+
+The LHR unlock can sometimes trigger an "LHR Exception". If this happens, lower the `--lhr_stability` option. This "exception" will allow the device to continue mining, but at a much slower speed. It requires a hard device reset to recover, which means restarting the pc. BzMiner provides the `--lhr_exception` option, which if set to true and a card experiences the LHR exception, will reboot the pc.
 
 ## Prerequisites
 - Windows:
@@ -191,13 +195,15 @@ Options:
   -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
+  --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --nc INT                    Do not save to the config file (but still read from it).
-  --lhr_stability INT         Set LHR Unlock stability. Default is 100. 0 is disable lhr unlock. Play with it
   --update_frequency INT      Output frequency in milliseconds. Default is 15000.
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
+  --hide_disabled_devices     Do not log devices that are disabled.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
@@ -224,7 +230,10 @@ Options:
   --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
   --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
   --oc_delay_ms INT           Time (ms) to delay algo switch before/after oc changed for algo.
-  --oc_fan_speed INT ...      Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+  --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
+                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
+                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
   --oc_core_clock_offset INT ...
                               Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
@@ -236,6 +245,7 @@ Options:
                               Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
   --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
+
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
@@ -292,7 +302,9 @@ BzMiner reads and saves to the configuration file. Upon first running BzMiner, t
     
     "amd_only": false, // only mine using amd cards
     
-    "lhr_stability": 100, // adjustment for lhr unlock. Effects are still fairly unknown, play with it
+    "lhr_stability": [100], // adjustment for lhr unlock for each card. Lower values = higher stability, higher values = lower stability
+    
+    "lhr_exception_reboot": false, // if set to true, will reboot the pc if the LHR exception is triggered (which requires a hard device reset)
     
     "lock_config": false, // if true, bzminer will never write to this file
     
@@ -405,7 +417,9 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "amd_only": false, // only mine using amd cards
     
-    "lhr_stability": 100, // adjustment for lhr unlock. Effects are still fairly unknown, play with it
+    "lhr_stability": [100], // adjustment for lhr unlock for each card. Lower values = higher stability, higher values = lower stability
+    
+    "lhr_exception_reboot": false, // if set to true, will reboot the pc if the LHR exception is triggered (which requires a hard device reset)
     
     "lock_config": false, // if true, bzminer will never write to this file
     
