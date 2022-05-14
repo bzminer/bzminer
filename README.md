@@ -1,4 +1,4 @@
-## Why use BzMiner (v9.1.0)?
+## Why use BzMiner (v9.1.3)?
 - Stable 100% LHR Unlock v1! (see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
