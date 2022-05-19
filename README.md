@@ -1,5 +1,5 @@
 ## Why use BzMiner (v9.1.3)?
-- Stable 100% LHR Unlock v1! (see below)
+- Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
@@ -9,6 +9,7 @@
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
 - Low dev fee of 0.5%
+- Core Temp, Memory Temp, and Power Limit throttling (slowdown) notifications
 - Nvidia GPU memory temperature monitoring on Linux and Windows
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
 - Multi coin mining supports three different strategies; Parallel mining, Alternate mining, DAG gen only mining
@@ -37,7 +38,7 @@ BzMiner v9.1.0 introduced a 100% LHR unlocker, which was only semi-stable. v9.1.
 
 If a card becomes unstable (eg. lhr exception), lower overclocks, and lower `--lhr_stability`.
 
-`--lhr_stability` has an impact on both hashrate and stability of the LHR unlock. Lower values can cause LHR to still trigger once in a while, lower hashrate, however increasing stability. Higher values will cause LHR to trigger less frequently (or not at all), giving you higher overall hashrate, but lowering longer term stability. Default value is 100.
+`--lhr_stability` has an impact on both hashrate and stability of the LHR unlock. Higher values will increase hashrate, but may cause GPUs to crash. Lower values are more stable, but may cause LHR to trigger momentarily, lowering hashrate a little. Play with it.
 
 To disable the LHR unlocker, set `--lhr_stability` to 0. Default is 100.
 
@@ -170,7 +171,7 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 `bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
 
 ```
->bzminer --help
+>bzminer -h
 BzMiner - Advanced Crypto Miner
 Usage: bzminer [OPTIONS]
 
@@ -200,9 +201,12 @@ Options:
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --nc INT                    Do not save to the config file (but still read from it).
-  --update_frequency INT      Output frequency in milliseconds. Default is 15000.
+  --update_frequency_ms INT   Output frequency in milliseconds. 0 = disabled. Default is 15000.
+  --update_frequency_shares INT
+                              Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
+  --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
   --hide_disabled_devices     Do not log devices that are disabled.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
@@ -425,6 +429,8 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
     
+    "cache_dag": 0, // when running eth + zil, if set to 1 eth dag will be cached while mining zil, so dag does not need to be recalculated after zil session
+    
     "advanced_config": true, // show advanced config options (after setting true, must run bzminer once so it can update this file)
     
     "advanced_display_config": true, // show advanced display options (after setting true, must run bzminer once so it can update this file)
@@ -449,7 +455,9 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "verbosity": 2, // log level (0 = errors only, 1 = warnings, 2 = info (default), 3 = debug, 4 = network, 5 = trace (not available in release)
     
-    "update_frequency": 15000, // how often to log info (in milliseconds)
+    "update_frequency_ms": 15000, // how often to log info (in milliseconds). set to 0 to disable
+    
+    "update_frequency_shares": 0, // how often to log info (in after x amount of shares). set to 0 to disable
     
     "avg_hr_ms": 30000, // time to average hashrate (ms). Higher time means more stable hashrate, lower time means more realtime
     
@@ -573,6 +581,14 @@ or
 `bzminer --disable 0 3 5`
 
 Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
+
+### GPU Throttle Notifications
+
+BzMiner will color code certain elements based on whether they are causing the GPU to throttle (slowdown). Current Core and Memory temperatures, as well as Power limit are supported.
+
+Core/Memory - Green if not throttling. Red if GPU is throttling due to high temps. Yellow if GPU is close to throttling due to high temps
+
+Power Limit - Power usage will be white when not causing GPU to throttle. Power usage will turn yellow when GPU is throttling do to power limit being reached.
 
 ### Dual Mining (experimental)!
 
