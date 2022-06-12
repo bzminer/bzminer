@@ -8,6 +8,11 @@
     - Alephium (AMD, Nvidia)
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
+- Optimized dual mining for specific coins:
+    - Eth + Kaspa (Nvidia only, experimental) 
+    - Etc + Kaspa (Nvidia only, experimental) 
+    - Eth + Alph (Nvidia only, experimental) 
+    - Etc + Alph (Nvidia only, experimental) 
 - Low dev fee of 0.5%
 - Core Temp, Memory Temp, and Power Limit throttling (slowdown) notifications
 - Nvidia GPU memory temperature monitoring on Linux and Windows
@@ -205,9 +210,11 @@ Options:
   --update_frequency_shares INT
                               Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
+  --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
   --hide_disabled_devices     Do not log devices that are disabled.
+  --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
@@ -226,6 +233,8 @@ Options:
   --hung_gpu_reboot INT       If 1 (default 0), BzMiner will reboot the rig when a hung GPU is detected.
   --hung_gpu_restart_bzminer INT
                               If 1 (default 1), and watchdog is enabled, watchdog will restart BzMiner process when hung GPU is detected.
+  --reboot_after_watchdog_restarts INT
+                              Reboot PC after watchdog restarts x number of times
   --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
   --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
   --no_color INT              If 1 (default 0), output in console will not have color.
@@ -249,7 +258,7 @@ Options:
                               Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
   --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
-
+  --oc_reset_all              Completely reset oc on all devices. Requires admin/root
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
@@ -265,78 +274,7 @@ There are three main sections:
 
 BzMiner reads and saves to the configuration file. Upon first running BzMiner, the configuration file will be updated with a new property called `device_overrides`, which contain a list of all the mining devices found on the pc. This is where individual device settings can be set.
 
-```
-{
-    "pool_configs": [{
-            "algorithm": "ethash", // pool algorithm
-            
-            "wallet": "0x0000000000000000000000000000000000000000", // wallet to mine to
-            
-            "url": ["stratum+tcp://yourpool:4444", "stratum+tcp://yourpool:4444"], // list of urls to connect to. will rotate through urls if they fail
-            
-            "username": "rig", // username/worker name to use
-            
-            "lhr_only": false // if true only lhr cards will mine to this pool
-            
-            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
-        },
-        {
-            "algorithm": "kawpow", // pool algorithm
-            
-            "wallet": "0x0000000000000000000000000000000000000000", // wallet to mine to
-            
-            "url": ["stratum+tcp://yourpool:4444", "stratum+tcp://yourpool:4444"], // list of urls to connect to. will rotate through urls if they fail
-            
-            "username": "rig", // username/worker name to use
-            
-            "lhr_only": false // if true only lhr cards will mine to this pool
-            
-            "blockchain_fee": true // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
-        }],
-        
-    "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
-    
-    "rig_name": "rig", // default name of rig, if pool does not specify, will use this as the username/worker name
-    
-    "log_file": "", // if not empty, the file logs should be written to
-    
-    "clear_log_file": false, // by default, the log file will rotate (new file each time bzminer starts). set this to true to clear the log file when bzminer starts
-    
-    "nvidia_only": false, // only mine using nvidia cards
-    
-    "amd_only": false, // only mine using amd cards
-    
-    "lhr_stability": [100], // adjustment for lhr unlock for each card. Lower values = higher stability, higher values = lower stability
-    
-    "lhr_exception_reboot": false, // if set to true, will reboot the pc if the LHR exception is triggered (which requires a hard device reset)
-    
-    "lock_config": false, // if true, bzminer will never write to this file
-    
-    "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
-    
-    "advanced_config": false, // show advanced config options (after setting true, must run bzminer once so it can update this file)
-    
-    "advanced_display_config": false, // show advanced display options (after setting true, must run bzminer once so it can update this file)
-    
-    "log_solutions": true, // whether to log each solution found in the output
-    
-    "x_display": ":0", // which x display to use (for nvidia, linux only)
-    
-    "start_x": false, // attempt to start an x display (for nvidia, linux only)
-    
-    "device_overrides": [ // list of devices and their specific settings
-        {
-            "uid": "1:0", // device id (pci_bus_id:pci_device_id)
-            
-            "name": "EVGA RTX 3090 FTW3 Ultra", // device display name
-            
-            "start_mining": true // set to false to disable this device from mining
-        }
-    ]
-}
-```
-
-With both "advanced_config" and "advanced_display_config" turned on, the full config file is as follows:
+With "advanced_config" turned on (default), the full config file is as follows:
 
 ```
 {
@@ -433,13 +371,15 @@ With both "advanced_config" and "advanced_display_config" turned on, the full co
     
     "advanced_config": true, // show advanced config options (after setting true, must run bzminer once so it can update this file)
     
-    "advanced_display_config": true, // show advanced display options (after setting true, must run bzminer once so it can update this file)
+    "advanced_display_config": true, // show advanced display options (after changing, must run bzminer once so it can update this file)
     
     "launch_on_boot": false, // if true, will automatically launch bzminer when pc turns on (windows only)
     
     "start_script": "start.bat", // Optional script to run when bzminer starts up
     
     "hung_gpu_ms": 30000, // After GPU is unresponsive for this number of milliseconds, it is considered "hung"
+    
+    "reboot_after_wathdog_restarts": 0, // reboot pc after watchdog restarts bzminer x number of times. default 0
     
     "crash_script": "crash.bat", // Optional script to call when a hung gpu is detected
     
@@ -593,11 +533,22 @@ Power Limit - Power usage will be white when not causing GPU to throttle. Power 
 ### Dual Mining (experimental)!
 
 To employ this strategy:
-- Add both an ethash pool and a kawpow (or other non memory hard algo) pool to the config file
-- Optionally set the kawpow pool setting "lhr_only" to true
-- Set either the global "pool" setting, or device override "pool" setting to use both the ethash and kawpow pool. eg. "pool": [0, 1]
-- Optionally set the device override "lhr" setting to true, otherwise bzminer will attempt to determine whether the card is lhr or not. eg. "lhr": true
+- Add the two coins to the pool_config section you wish to mine to, or use the command line
+- Set either the global "pool" setting, or device override "pool" setting to use both pool_configs. eg. "pool": [0, 1]
 - Run bzminer using that config. eg. `bzminer -c config.txt`
+- Or optionally run with the command line similar to this:
+`bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 kaspa --w2 kaspa:000000 --p2 stratum+tcp://acc-pool.pw:16061`
+- `-a` is the first algo, `-w` is first algo wallet, `-p` is first algo pool
+- `--a2` is second algo, `--w2` is second algo wallet, `--p2` is second algo pool
+- Intensity can be set for first algo with `-i` and for second algo with `--i2`
+
+v9.2.1 introduced optimized dual mining for specific algorithms. these combinations are supported:
+- Eth + Kaspa (Nvidia only, experimental)
+- Etc + Kaspa (Nvidia only, experimental)
+- Eth + Alph (Nvidia only, experimental)
+- Etc + Alph (Nvidia only, experimental)
+
+BzMiner allows alternate/split mining by using the `multi_mine_type` option. Default is 0, parallel. By setting it to 1, the algorithms will take turns mining on the gpu. The duration they mine can be specified in the `multi_mine_ms` option, which takes an array [firstalgoms, secondalgoms]
 
 ## Overclock per Dual Mine Algo
 BzMiner allows you to set an overclock for each algo you are dual mining. Be aware that extreme oc's can much easier cause a GPU to hang (crash) in this scenario, and for that reason the config option `oc_delay_ms` is used, to give the oc time to kick in before switching to next algo.
