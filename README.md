@@ -1,4 +1,4 @@
-## Why use BzMiner (v9.1.4)?
+## Why use BzMiner (v9.2.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
