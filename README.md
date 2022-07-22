@@ -1,4 +1,4 @@
-## Why use BzMiner (v9.2.1)?
+## Why use BzMiner (v10.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
@@ -8,6 +8,7 @@
     - Alephium (AMD, Nvidia)
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
+    - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
 - Optimized dual mining for specific coins:
     - Eth + Kaspa (Nvidia only, experimental) 
     - Etc + Kaspa (Nvidia only, experimental) 
@@ -151,6 +152,14 @@ Solo and pool both use the GetWork http/https protocol
 bzminer -a ixi -w 000000 -p http://ixian.changeling.biz:8081
 ```
 
+### Woodcoin
+
+dragonpool.vip:
+
+```
+bzminer -a woodcoin -w 0000 -p stratum+tcp://dragonpool.vip:5233 --pool_password c=LOG,d=1,ID=rig_name
+```
+
 ### Dual Mining (eth + alph)
 
 ```
@@ -176,7 +185,7 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 `bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
 
 ```
->bzminer -h
+>bzminer --help
 BzMiner - Advanced Crypto Miner
 Usage: bzminer [OPTIONS]
 
@@ -214,7 +223,9 @@ Options:
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
   --hide_disabled_devices     Do not log devices that are disabled.
+  --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
+  --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
@@ -299,7 +310,9 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
             
-            "tbs_watchdog": 1000 // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
+            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
+            
+            "algo_opt": 0 // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -322,7 +335,9 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
             
-            "tbs_watchdog": 1000 // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
+            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
+            
+            "algo_opt": 0 // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
         }],
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
