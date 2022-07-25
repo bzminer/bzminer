@@ -1,4 +1,4 @@
-## Why use BzMiner (v10.0.0)?
+## Why use BzMiner (v10.0.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
@@ -226,6 +226,7 @@ Options:
   --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
   --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
+  --max_log_history INT ...   For http api. max retained log history. default is 1024. Higher values increase memory usage.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
@@ -443,6 +444,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
         "title_align": 1, // table title horrizontal alignment. 0 = left, 1 = center, 2 = right. default is 1 = center
         
         "date_align": 0, // table date alignment. 0 = left, 1 = center, 2 = right. default is 0 = left
+        
+        "max_log_history": 1024, // For http api. max retained log history. default is 1024. Higher values increase memory usage.
         
         "hide_unused_devices": false // if true, will hide any devices that are not mining (with start_mining: false setting)
         
