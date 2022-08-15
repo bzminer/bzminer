@@ -388,6 +388,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "amd_only": false, // only mine using amd cards
     
+    "disable_opencl ": false, // do not load OpenCL. Useful for some rigs that are having AMD driver issues
+    
     "lhr_stability": [100], // adjustment for lhr unlock for each card. Lower values = higher stability, higher values = lower stability
     
     "lhr_exception_reboot": false, // if set to true, will reboot the pc if the LHR exception is triggered (which requires a hard device reset)
