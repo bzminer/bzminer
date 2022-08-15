@@ -1,4 +1,4 @@
-## Why use BzMiner (v10.0.2)?
+## Why use BzMiner (v10.0.3)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethash (AMD, Nvidia)
@@ -10,8 +10,8 @@
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
 - Optimized dual mining for specific coins:
-    - Eth + Kaspa (Nvidia only, experimental) 
-    - Etc + Kaspa (Nvidia only, experimental) 
+    - Eth + Kaspa (Nvidia only) 
+    - Etc + Kaspa (Nvidia only) 
     - Eth + Alph (Nvidia only, experimental) 
     - Etc + Alph (Nvidia only, experimental) 
 - Low dev fee of 0.5%
@@ -185,7 +185,7 @@ BzMiner is a command line interface. Simply update `config.txt` and launch `bzmi
 `bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
 
 ```
->bzminer --help
+>bzminer -h
 BzMiner - Advanced Crypto Miner
 Usage: bzminer [OPTIONS]
 
@@ -200,12 +200,19 @@ Options:
   --pool_password2 TEXT       Default Pool password for second algo (dual mine)
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
-  -o TEXT                     If provided, output will be logged to this file
+  --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
   --w2 TEXT ...               Wallet Address for second algo (dual mine). If algorithm requires more than one address, list them same as -p
   -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
   --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
+  --hide_disabled_devices     Do not log devices that are disabled.
+  --max_log_history INT       For http api. max retained log history. default is 1024. Higher values increase memory usage.
+  --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
+  --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
+  -o TEXT                     If provided, output will be logged to this file
+  --log_file_verbosity INT    Set log file verbosity. Default 2.
+  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
   -c TEXT                     Config file to load settings from. Default is config.txt
   -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
@@ -221,12 +228,15 @@ Options:
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
   --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
+  --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
+  --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
+  --max_dual_autotune_drop FLOAT
+                              Max hashrate drop of first algo in dual mining when autotuning. 0.0 - 1.0. default 0.92.
   --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
-  --hide_disabled_devices     Do not log devices that are disabled.
+  --zil_only                  Only mine zil for the first algo (for zil + non-eth algo). Will set for first pool_config. Will only generate a dag for epoch 0 (zil). use in combination with --multi_mine_type 1, --multi_mine_ms 0 10000 and cache_dag 1
   --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
   --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
-  --max_log_history INT ...   For http api. max retained log history. default is 1024. Higher values increase memory usage.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
@@ -237,7 +247,6 @@ Options:
   --devices                   Only log devices. Does not start miner
   --no_watchdog               Do not start watchdog service.
   --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
-  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
   --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
   --start_script TEXT         If specified, this script will run when BzMiner starts.
   --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
@@ -250,10 +259,6 @@ Options:
   --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
   --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
   --no_color INT              If 1 (default 0), output in console will not have color.
-  --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
-  --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
-  --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
-  --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
   --oc_delay_ms INT           Time (ms) to delay algo switch before/after oc changed for algo.
   --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
                               Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
@@ -313,7 +318,11 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
             
-            "algo_opt": 0 // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
+            "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
+            
+            "zil_only": false, // If the algo is Eth + zil, will only allocate dag for zil, and ignore eth mining. for dual mining zil + another algo
+            
+            "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
         },
         {
             "algorithm": "kawpow", // pool algorithm
@@ -338,7 +347,11 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
             
-            "algo_opt": 0 // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
+            "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
+            
+            "zil_only": false // If the algo is Eth + zil, will only allocate dag for zil, and ignore eth mining. for dual mining zil + another algo
+            
+            "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
         }],
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
@@ -410,6 +423,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "no_color": false, // disable all color output
     
     "verbosity": 2, // log level (0 = errors only, 1 = warnings, 2 = info (default), 3 = debug, 4 = network, 5 = trace (not available in release)
+    
+    "log_file_verbosity": 2, // same as "verbosity" but for the log file
     
     "update_frequency_ms": 15000, // how often to log info (in milliseconds). set to 0 to disable
     
@@ -548,7 +563,7 @@ Core/Memory - Green if not throttling. Red if GPU is throttling due to high temp
 
 Power Limit - Power usage will be white when not causing GPU to throttle. Power usage will turn yellow when GPU is throttling do to power limit being reached.
 
-### Dual Mining (experimental)!
+### Dual Mining
 
 To employ this strategy:
 - Add the two coins to the pool_config section you wish to mine to, or use the command line
@@ -566,6 +581,8 @@ v9.2.1 introduced optimized dual mining for specific algorithms. these combinati
 - Eth + Alph (Nvidia only, experimental)
 - Etc + Alph (Nvidia only, experimental)
 
+Use the `max_dual_autotune_drop` option to change behavior of dual autotune. by default this is 0.92, which means autotune will attempt to get maximum hashrate for both algos, but keep first algo (eth) at 92% hashrate or higher
+
 BzMiner allows alternate/split mining by using the `multi_mine_type` option. Default is 0, parallel. By setting it to 1, the algorithms will take turns mining on the gpu. The duration they mine can be specified in the `multi_mine_ms` option, which takes an array [firstalgoms, secondalgoms]
 
 ## Overclock per Dual Mine Algo
@@ -579,13 +596,15 @@ Here's a sample dual mine config with oc's per algo:
             "algorithm": "ethash",
             "wallet": "0000",
             "url": ["stratum+tcp://us2.ethermine.org:4444"],
-            "lhr_only": false
+            "lhr_only": false,
+            "max_dual_autotune_drop": 0.92
         }, {
             "algorithm": "alph",
             "wallet": "0000",
             "url": ["stratum+tcp://eu.metapool.tech:20032", "stratum+tcp://pool.woolypooly.com:3106"],
             "username": "alph_rig",
-            "lhr_only": false
+            "lhr_only": false,
+            "max_dual_autotune_drop": 0.92
         }],
     "pool": [0, 1],
     "intensity": [0],
