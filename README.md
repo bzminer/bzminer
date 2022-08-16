@@ -141,7 +141,7 @@ bzminer -a kaspa -w 000000 -p node+tcp://127.0.0.1:16110
 For pool mining change "node" to "stratum"
 
 ```
-bzminer -a kaspa -w 000000 -p stratum+tcp://acc-pool.pw:16061
+bzminer -a kaspa -w 000000 -p stratum+tcp://pool.us.woolypooly.com:3112
 ```
 
 ### Ixian
@@ -572,7 +572,7 @@ To employ this strategy:
 - Set either the global "pool" setting, or device override "pool" setting to use both pool_configs. eg. "pool": [0, 1]
 - Run bzminer using that config. eg. `bzminer -c config.txt`
 - Or optionally run with the command line similar to this:
-`bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 kaspa --w2 kaspa:000000 --p2 stratum+tcp://acc-pool.pw:16061`
+`bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 kaspa --w2 kaspa:000000 --p2 stratum+tcp://pool.us.woolypooly.com:3112`
 - `-a` is the first algo, `-w` is first algo wallet, `-p` is first algo pool
 - `--a2` is second algo, `--w2` is second algo wallet, `--p2` is second algo pool
 - Intensity can be set for first algo with `-i` and for second algo with `--i2`
