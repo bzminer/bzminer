@@ -115,7 +115,7 @@ bzminer -a kawpow -w 0x0000000000000000000000000000000000000000 -p stratum+ssl:/
 ### Overline
 
 ```
-bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name
+bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+tcp://stratum.extremehash.net:3142 -r worker_name
 ```
 
 ### Alephium
