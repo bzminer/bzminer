@@ -1,9 +1,11 @@
-## Why use BzMiner (v10.0.4)?
+## Why use BzMiner (v11.0.2)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
-- Supported Algos:
+- Supported Algos (default 0.5% dev fee):
     - Ethash (AMD, Nvidia)
     - Etchash (AMD, Nvidia) 
-    - Kawpow (AMD, Nvidia)
+    - Ergo (AMD, Nvidia) 
+    - Rvn (AMD, Nvidia)
+    - Neoxa (AMD, Nvidia)
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia)
     - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
@@ -14,7 +16,9 @@
     - Etc + Kaspa (Nvidia only) 
     - Eth + Alph (Nvidia only, experimental) 
     - Etc + Alph (Nvidia only, experimental) 
+    - Ergo + Kaspa (Nvidia only, experimental) 
 - Low dev fee of 0.5%
+- Realtime console inputs!
 - Core Temp, Memory Temp, and Power Limit throttling (slowdown) notifications
 - Nvidia GPU memory temperature monitoring on Linux and Windows
 - Improved LHR Strategy dual/multi coin mining (ethash+kawpow, ethash+ol, ethash+alph)
@@ -64,6 +68,7 @@ The LHR unlock can sometimes trigger an "LHR Exception". If this happens, lower 
 - MMPOS - https://app.mmpos.eu/
 - HiveOS - https://hiveos.farm/
 - Minerstat - https://minerstat.com/
+- RaveOS - https://raveos.com/
 
 ## Discord Server
 https://discord.gg/NRty3PCVdB
@@ -106,10 +111,22 @@ bzminer -a ethash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp:/
 bzminer -a etchash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://us1-etc.ethermine.org:4444 stratum+tcp://eu1-etc.ethermine.org:4444 -r worker_name
 ```
 
+### Ergo
+
+```
+bzminer -a ergo -w 0x0000000000000000000000000000000000000000 -p stratum-ergo.flypool.org:3333 -r worker_name
+```
+
 ### Ravencoin
 
 ```
-bzminer -a kawpow -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-ravencoin.flypool.org:3443 -r worker_name
+bzminer -a rvn -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-ravencoin.flypool.org:3443 -r worker_name
+```
+
+### Neoxa
+
+```
+bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpool.org:10059 -r worker_name
 ```
 
 ### Overline
@@ -168,6 +185,18 @@ bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 alph --
 
 You can change the multi mining type using the `multi_mine_type` option in the command line. By default its set to 0 for parallel mining, but can be set to 1 for alternate mining or 2 for mine only during DAG generation
 
+BzMiner has a couple "optimized" combinations. These are below:
+    - Eth + Kaspa (Nvidia only) 
+    - Etc + Kaspa (Nvidia only) 
+    - Eth + Alph (Nvidia only, experimental) 
+    - Etc + Alph (Nvidia only, experimental) 
+    - Ergo + Kaspa (Nvidia only, experimental) 
+
+## Console Input
+BzMiner supports a couple console input actions:
+- `Esc` - Shuts down BzMiner
+- `Space` - Refresh console output
+- `Arrow Keys` - Adjust intensity, up/down first algo, left/right second algo
 
 ## GUI
 The GUI desktop app has been discontinued as of v4.3 in favor of the browser gui, which can be accessed by opening `index.html`, or by navigating to `http://your-rigs-ip:port/` in your favorite browser.
@@ -194,17 +223,22 @@ Options:
   --version                   Get the version of this binary
   -a TEXT                     Default Mining algorithm. eg. 'ethash'
   --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
+  --a3 TEXT                   Default third Mining algorithm (tri mine, also zil + dual). eg. 'zil'
   -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
   --r2 TEXT                   Default Pool username for second algo (dual mine)
+  --r3 TEXT                   Default Pool username for third algo (tri mine, also zil + dual)
   --pool_password TEXT        Default Pool password
   --pool_password2 TEXT       Default Pool password for second algo (dual mine)
+  --pool_password3 TEXT       Default Pool password for second algo (dual mine)
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
   --w2 TEXT ...               Wallet Address for second algo (dual mine). If algorithm requires more than one address, list them same as -p
+  --w3 TEXT ...               Wallet Address for third algo (tri mine, also zil + dual). If algorithm requires more than one address, list them same as -p
   -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
   --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p3 TEXT ...               Array of Pool Addresses for third algo (tri mine, also zil + dual). eg. zmp+tcp://zil.flexpool:4444 ethproxy+tcp://us-east.ezil.me:5555
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   --hide_disabled_devices     Do not log devices that are disabled.
   --max_log_history INT       For http api. max retained log history. default is 1024. Higher values increase memory usage.
@@ -217,6 +251,7 @@ Options:
   -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i3 INT                    Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   -g INT                      Ramp up miner rather than start at full speed.
@@ -235,6 +270,7 @@ Options:
   --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
   --zil_only                  Only mine zil for the first algo (for zil + non-eth algo). Will set for first pool_config. Will only generate a dag for epoch 0 (zil). use in combination with --multi_mine_type 1, --multi_mine_ms 0 10000 and cache_dag 1
   --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
+  --opencl_workgroup_size INT Force an opencl algorithm to use a specific workgroup size.
   --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
   --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
   --test INT                  Test mine. Useful for setting up overclocks.
