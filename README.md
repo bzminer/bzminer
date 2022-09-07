@@ -352,7 +352,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
             
-            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
+            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
             
             "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
             
@@ -381,7 +381,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
             
-            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers
+            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
             
             "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
             
