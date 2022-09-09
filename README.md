@@ -312,6 +312,11 @@ Options:
   --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
+  --oc_reset_on_exit          Reset overclocks on bzminer exit.
+
+
+
+G:\Dev\BzMinerSrc\Releases\temp>
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
@@ -483,6 +488,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "http_enabled": true, // set to false to disable http api
     
     "disable_udp": false, // If true, the UDP service is disabled and this device will not show up in other instances of the BzMiner GUI
+    
+    "oc_reset_on_exit": false,
     
     "x_display": ":0", // which x display to use (for nvidia, linux only)
     
