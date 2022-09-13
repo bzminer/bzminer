@@ -8,7 +8,7 @@
     - Neoxa (AMD, Nvidia)
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia)
-    - Kaspa (AMD, Nvidia, 1% dev fee + 2% Kaspa dev team fee)
+    - Kaspa (AMD, Nvidia, 1% dev fee)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
 - Optimized dual mining for specific coins:
