@@ -1,4 +1,4 @@
-## Why use BzMiner (v11.0.3)?
+## Why use BzMiner (v11.1.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethash (AMD, Nvidia)
@@ -11,6 +11,7 @@
     - Kaspa (AMD, Nvidia, 1% dev fee)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
+    - Zil (AMD, Nvidia, 0% dev fee)
 - Optimized dual mining for specific coins:
     - Eth + Kaspa (Nvidia only) 
     - Etc + Kaspa (Nvidia only) 
@@ -18,6 +19,7 @@
     - Etc + Alph (Nvidia only, experimental) 
     - Ergo + Kaspa (Nvidia only, experimental) 
 - Low dev fee of 0.5%
+- Supports Chinese Language (use `--lang cn` option)
 - Realtime console inputs!
 - Core Temp, Memory Temp, and Power Limit throttling (slowdown) notifications
 - Nvidia GPU memory temperature monitoring on Linux and Windows
@@ -183,6 +185,30 @@ bzminer -a woodcoin -w 0000 -p stratum+tcp://dragonpool.vip:5233 --pool_password
 bzminer -a ethash -w 000000 -p stratum+tcp://us1.ethermine.org:4444 --a2 alph --w2 000000 --p2 stratum+tcp://eu.metapool.tech:20032
 ```
 
+### Zil
+
+Zil is only able to be mined during certain times of the day, so it's usually an algo you want to dual or triple mine with
+
+```
+bzminer -a zil -w 0000 -p zmp://zil.flexpool.io
+```
+
+### Zil dual mining
+
+Zil can be mined with any other algo. Example below shows Erg + Zil
+
+```
+bzminer -a ergo -w 0000 -p stratum-ergo.flypool.org:3333 --a2 zil --w2 1111 --p2 zmp://zil.flexpool.io
+```
+
+### Zil triple mining
+
+Zil can be mined with any other dual combo. Example below shows Erg + Kaspa + Zil
+
+```
+bzminer -a ergo -w 0000 -p stratum-ergo.flypool.org:3333 --a2 kaspa --w2 1111 --p2 stratum+tcp://pool.woolypooly.com:3112 --a3 zil --w3 2222 --p3 zmp://zil.flexpool.io
+```
+
 You can change the multi mining type using the `multi_mine_type` option in the command line. By default its set to 0 for parallel mining, but can be set to 1 for alternate mining or 2 for mine only during DAG generation
 
 BzMiner has a couple "optimized" combinations. These are below:
@@ -221,6 +247,7 @@ Usage: bzminer [OPTIONS]
 Options:
   -h,--help                   Print this help message and exit
   --version                   Get the version of this binary
+  --lang TEXT                 Set the language (en, cn). Default en
   -a TEXT                     Default Mining algorithm. eg. 'ethash'
   --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
   --a3 TEXT                   Default third Mining algorithm (tri mine, also zil + dual). eg. 'zil'
@@ -256,6 +283,7 @@ Options:
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
+  --repair_dag INT            Validate and repair DAG. Default is 1
   --nc INT                    Do not save to the config file (but still read from it).
   --update_frequency_ms INT   Output frequency in milliseconds. 0 = disabled. Default is 15000.
   --update_frequency_shares INT
@@ -270,6 +298,7 @@ Options:
   --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
   --zil_only                  Only mine zil for the first algo (for zil + non-eth algo). Will set for first pool_config. Will only generate a dag for epoch 0 (zil). use in combination with --multi_mine_type 1, --multi_mine_ms 0 10000 and cache_dag 1
   --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
+  --force_algo2 TEXT          Force an algorithm to run as the second algo in dual. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --opencl_workgroup_size INT Force an opencl algorithm to use a specific workgroup size.
   --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
   --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
@@ -313,10 +342,6 @@ Options:
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
   --oc_reset_on_exit          Reset overclocks on bzminer exit.
-
-
-
-G:\Dev\BzMinerSrc\Releases\temp>
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
@@ -394,6 +419,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
         }],
+        
+    "lang": "en", // set the language. Default is en. Supported languages are en and cn
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
 
@@ -420,6 +447,10 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "temp_stop": 120, // temperature (C) that device should stop mining at
     
     "rig_name": "rig", // default name of rig, if pool does not specify, will use this as the username/worker name
+    
+    "force_algo": "", // Some OS's may not have updated scripts to allow mining new coins in BzMiner. Use this option to force the first algo
+    
+    "force_algo2": "", // Some OS's may not have updated scripts to allow mining new coins in BzMiner. Use this option to force the second algo
     
     "log_file": "", // if not empty, the file logs should be written to
     
