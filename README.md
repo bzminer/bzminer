@@ -740,8 +740,8 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `tbs` - Average time between shares
 - `tsls` - Time since last share
 - `eff` - Efficiency, in the units of hashes per watt
-- `pool hr` - Estimated effective hashrate based on pool difficulty and shares found (effective/current hashrate on some pools)
-- `miner hr` - Current miner speed (reported hashrate on some pools)
+- `pool_hr` - Estimated effective hashrate based on pool difficulty and shares found (effective/current hashrate on some pools)
+- `miner_hr` - Current miner speed (reported hashrate on some pools)
 - `status` - Device/Pool status.
 
 The pool table has an additional row at the bottom which is the summary of all devices mining to that pool. The status column for the pool includes the epoch number, difficulty, and average latency to pool.
