@@ -733,6 +733,7 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `status` - Device status for all pools
 
 ### Supported Pool table columns (In addition to all device table supported columns)
+- `%` - Percentage of Accepted shares (relative to all shares including rejected, invalid and stale)
 - `uptime` - The time the device has been mining without stopping or resetting
 - `cfg` - The device configuration. eg. i6 = intensity 6
 - `a/r/i` - Accepted/Rejected/Invalid shares
