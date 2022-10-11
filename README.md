@@ -106,10 +106,10 @@ Optionally you can edit `config.txt` and launch `bzminer`. You can specify the c
 bzminer -c eth-config.txt
 ```
 
-### Ethereum
+### Ethw (EthPOW)
 
 ```
-bzminer -a ethash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://usw-eth.hiveon.net:4444 stratum+tcp://us1.ethermine.org:4444 -r worker_name
+bzminer -a ethw -w 0x0000000000000000000000000000000000000000 -p ethproxy+tcp://pool.woolypooly.com:3096 -r worker_name
 ```
 
 ### Ethereum Classic
@@ -134,6 +134,18 @@ bzminer -a rvn -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://st
 
 ```
 bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpool.org:10059 -r worker_name
+```
+
+### Meowcoin
+
+```
+bzminer -a meowcoin -w 0x0000000000000000000000000000000000000000 -p stratum-eu.rplant.xyz:17078 -r worker_name
+```
+
+### Radiant
+
+```
+bzminer -a radiant -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://stratum-na.rplant.xyz:7086 -r worker_name
 ```
 
 ### Overline
@@ -214,14 +226,37 @@ Zil can be mined with any other dual combo. Example below shows Erg + Kaspa + Zi
 bzminer -a ergo -w 0000 -p stratum-ergo.flypool.org:3333 --a2 kaspa --w2 1111 --p2 stratum+tcp://pool.woolypooly.com:3112 --a3 zil --w3 2222 --p3 zmp://zil.flexpool.io
 ```
 
+### OC Change on Algo Switch (eg. +zil)
+Bzminer supports changing the overclocks for gpus between algo changes. A common example of this is doing a core algo like kaspa and a memory hard algo like zil, where each algo wants a different oc for best performance. This can be done from the command line or from config.txt.
+
+From the command line, you will set the `oc_` options for the first algo (kaspa), and `oc_...2` options for the second algo. When the second algo starts, it will apply it's oc to the card. when it ends, it will apply the first algos oc. Example:
+
+```
+bzminer -a kaspa -w 0000 -p stratum+tcp://pool.woolypooly.com:3112 --a2 zil --w2 1111 --p2 zmp://zil.flexpool.io --oc_fan_speed 100 --oc_core_clock_offset 100 --oc_lock_memory_clock 810 -- oc_power_limit 200 --oc_fan_speed2 100 --oc_core_clock_offset2 -100 --oc_lock_memory_clock2 0 --oc_memory_clock_offset 1000 --oc_power_limit2 200 --oc_delay_ms 50
+```
+
+Current BzMiner supports overclocking for Nvidia only, but provides an option called `oc_script` which allows you to call a script to use a third party software to set the oc, which is useful for AMD cards.
+
+### oc_script option
+The oc_script option will be called wheneve the oc is set for a particular GPU. If this option is specified, all other oc_ options are ignored.
+
+The script is called with parameters `--gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}`. for example:
+```
+ocscript.bat --gpu_index 0 --gpu_id 1:0 --algo zil
+```
+This is also useful when you have many rigs with different gpu's. you can create a profile in your mining os's interface for all your rigs, and give each rig its own script to set oc's for
+
 You can change the multi mining type using the `multi_mine_type` option in the command line. By default its set to 0 for parallel mining, but can be set to 1 for alternate mining or 2 for mine only during DAG generation
 
 BzMiner has a couple "optimized" combinations. These are below:
-    - Eth + Kaspa (Nvidia only) 
-    - Etc + Kaspa (Nvidia only) 
-    - Eth + Alph (Nvidia only, experimental) 
-    - Etc + Alph (Nvidia only, experimental) 
-    - Ergo + Kaspa (Nvidia only, experimental) 
+    - Ethw + Alph (Nvidia only, experimental)
+    - Ethw + Kaspa (Nvidia only, experimental)
+    - Ethw + Radiant (Nvidia only, experimental)
+    - Etc + Alph (Nvidia only, experimental)
+    - Etc + Kaspa (Nvidia only, experimental)
+    - Etc + Radiant (Nvidia only, experimental)
+    - Ergo + Kaspa (Nvidia only, experimental)
+    - Ergo + Radiant (Nvidia only, experimental)
 
 ## Console Input
 BzMiner supports a couple console input actions:
@@ -788,6 +823,7 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `mem` - Current memory clock speed
 - `fan` - Fan speed
 - `pwr` - Power Usage
+- `pstate` - Current GPU Performance State
 - `temp` - Temperature. In the format of `core temp/memory temp`
 - `status` - Device status for all pools
 
