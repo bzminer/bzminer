@@ -78,7 +78,7 @@ The LHR unlock can sometimes trigger an "LHR Exception". If this happens, lower 
 - RaveOS - https://raveos.com/
 
 ## Discord Server
-https://discord.gg/NRty3PCVdB
+https://discord.gg/wm2BpAHTpS
 
 ## Official Website
 http://www.bzminer.com
