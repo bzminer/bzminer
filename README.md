@@ -301,6 +301,7 @@ Options:
   --pool_password3 TEXT       Default Pool password for second algo (dual mine)
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
+  --intel INT                 Only mine with Intel devices (0 = false, 1 = true)
   --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   --nvidia_opencl             Enable Nvidia opencl device enumeration
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
@@ -333,6 +334,7 @@ Options:
   --update_frequency_shares INT
                               Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
+  --disable_index_html        Disable creating index.html file
   --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
   --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
@@ -368,16 +370,28 @@ Options:
   --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
   --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
   --no_color INT              If 1 (default 0), output in console will not have color.
+  --webhook_discord_url TEXT  Discord webhook api url
+  --webhook_discord_solutions_only INT
+                              If true, only solutions will be sent to this webhook
+  --webhook_discord_interval_ms INT
+                              How often to send the logs to discord
+  --webhook_discord_verbosity INT
+                              verbosity of discord web hook. default is 2
   --oc_delay_ms INT ...       Time (ms) to delay algo switch before/after oc changed for algo. default 50.
+  --oc_enable INT ...         Whether oc should be set for the first algo or not (per device). Default is 1.
   --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
                               Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
                               where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
                               eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
   --oc_core_clock_offset INT ...
-                              Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
+                              Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
   --oc_memory_clock_offset INT ...
-                              Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_memory_clock is not 0.
+                              Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_core_volt_offset INT ...
+                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_memory_volt_offset INT ...
+                              Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
   --oc_lock_core_clock INT ...
                               Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
   --oc_lock_memory_clock INT ...
@@ -388,15 +402,20 @@ Options:
                                eg.
                                'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
                                BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
+  --oc_enable2 INT ...        Whether oc should be set for the second algo or not (per device). Default is 1.
   --oc_fan_speed2 TEXT ...    (second algo) Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
                               Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
                               where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
                               eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
   --oc_power_limit2 INT ...   (second algo) Set the power limite for devices (in watts), separated by a space. 0 = ignore.
   --oc_core_clock_offset2 INT ...
-                              (second algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
+                              (second algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
   --oc_memory_clock_offset2 INT ...
-                              (second algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_memory_clock is not 0.
+                              (second algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_core_volt_offset2 INT ...
+                              (second algo) Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_memory_volt_offset2 INT ...
+                              (second algo) Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
   --oc_lock_core_clock2 INT ...
                               (second algo) Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
   --oc_lock_memory_clock2 INT ...
@@ -407,15 +426,20 @@ Options:
                                eg.
                                'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
                                BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
+  --oc_enable3 INT ...        Whether oc should be set for the third algo or not (per device). Default is 1.
   --oc_fan_speed3 TEXT ...    (third algo) Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
                               Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
                               where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
                               eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
   --oc_power_limit3 INT ...   (third algo) Set the power limite for devices (in watts), separated by a space. 0 = ignore.
   --oc_core_clock_offset3 INT ...
-                              (third algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_core_clock is not 0.
+                              (third algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
   --oc_memory_clock_offset3 INT ...
-                              (third algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore. Will be ignored if oc_lock_memory_clock is not 0.
+                              (third algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_core_volt_offset3 INT ...
+                              (third algo) Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_memory_volt_offset3 INT ...
+                              (third algo) Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
   --oc_lock_core_clock3 INT ...
                               (third algo) Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
   --oc_lock_memory_clock3 INT ...
@@ -586,6 +610,14 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "reboot_minutes": 0, // reboot pc after this amount of time (minutes)
     
+    "webhook_discord_url": "", // url to discord webhook (create a channel, go to channel options, add a webhook and paste url here
+    
+    "webhook_discord_solutions_only": false, // useful for solo mining. get discord ping when you find a block. this overrides logs to the discord api
+    
+    "webhook_discord_interval_ms": 0, // how often to send logs up. 0 is asap (100ms or so)
+    
+    "webhook_discord_verbosity": 2, // same as verbosity but which logs to send up to the discord webhook
+    
     "no_color": false, // disable all color output
     
     "verbosity": 2, // log level (0 = errors only, 1 = warnings, 2 = info (default), 3 = debug, 4 = network, 5 = trace (not available in release)
@@ -704,7 +736,11 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "oc_lock_core_clock": [0], // Lock the core clock to a specific mhz, if device allows it. Optionally a list for dual mining
             
-            "oc_lock_memory_clock": [0] // Lock the memory clock to a specific mhz, if device allows it. Optionally a list for dual mining
+            "oc_lock_memory_clock": [0], // Lock the memory clock to a specific mhz, if device allows it. Optionally a list for dual mining
+                        
+            "oc_core_volt_offset": [0], // Set the core voltage offset in mv (currently intel gpus only)
+                        
+            "oc_memory_volt_offset": [0] // Set the memory voltage offset in mv (currently intel gpus only)
         }]
 }
 ```
