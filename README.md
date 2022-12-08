@@ -1,4 +1,4 @@
-## Why use BzMiner (v12.1.1)?
+## Why use BzMiner (v12.2.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -145,7 +145,7 @@ bzminer -a meowcoin -w 0x0000000000000000000000000000000000000000 -p stratum-eu.
 ### Radiant
 
 ```
-bzminer -a radiant -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://stratum-na.rplant.xyz:7086 -r worker_name
+bzminer -a radiant -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://rxd.vipor.net:5066 -r worker_name
 ```
 
 ### Overline
