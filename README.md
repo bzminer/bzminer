@@ -346,7 +346,7 @@ Options:
   --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --force_algo2 TEXT          Force an algorithm to run as the second algo in dual. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --opencl_workgroup_size INT Force an opencl algorithm to use a specific workgroup size.
-  --blockchain_fee BOOLEAN    Enable/Disable 2% kaspa dev fund. 0 = disable, 1 = enable. Default = 0
+  --community_fund INT        Enable/Disable community fund (currently kaspa and radiant only). Value is a multiple of normal dev fee, so value of 1 = 1% donation, 2 = 2% donation, etc. Default is 1, 0 is disabled
   --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
   --test INT                  Test mine. Useful for setting up overclocks.
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
@@ -492,7 +492,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "test_iteration_ms": 15000 //  seconds between new work in test mode
             
-            "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
+            "community_fund": 1, // Multiple of dev fee to donate to blockchain dev team (kaspa only right now). if 1, will be 1%, 2 = 2%
             
             "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
             
@@ -521,7 +521,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
             
             "test_iteration_ms": 15000 //  seconds between new work in test mode
             
-            "blockchain_fee": true, // whether to enable the blockchain dev team fee (enabled by default, currently only available for kaspa)
+            "community_fund": 1, // Multiple of dev fee to donate to blockchain dev team (kaspa only right now). if 1, will be 1%, 2 = 2%
             
             "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
             
@@ -551,6 +551,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "cpu_validate": [false], // Whether solutions from this device should be validated on the CPU before sent to pool
     
     "reset_oc_dag_gen": [false], // If true, will reset overclocks before dag is generated. after dag is generated, will set overclocks back to what they currently are. Useful for very high OC
+    
+    "disable_community_fund": false, // If true, will disable the community fund
     
     "multi_mine_ms": [5000, 15000], // how long each algo should mine when dual mining
     
@@ -780,14 +782,20 @@ To employ this strategy:
 - `-a` is the first algo, `-w` is first algo wallet, `-p` is first algo pool
 - `--a2` is second algo, `--w2` is second algo wallet, `--p2` is second algo pool
 - Intensity can be set for first algo with `-i` and for second algo with `--i2`
+- The first intensity value controls the overal GPU workload for both algorithms when in parallel mining mode (default, multi_mine_type = 1)
+- The second intensity value controls the "ratio" between the two algos. A higher second intensity, the more hashrate the second algo gets. It's a multiple of the first algo's hashrate. So a value of 10 would mean the second algo gets the same hashrate as the first algo. A value of 20 would mean the second algo gets double the hashrate as the first algo. When in parallel mining mode (dual mining), the second algo intensity has no maximum value.
 
 v9.2.1 introduced optimized dual mining for specific algorithms. these combinations are supported:
-- Eth + Kaspa (Nvidia only, experimental)
+- Ethw + Kaspa (Nvidia only, experimental)
 - Etc + Kaspa (Nvidia only, experimental)
+- Erg + Kaspa (Nvidia only, experimental)
+- Ethw + Radiant (Nvidia only, experimental)
+- Etc + Radiant (Nvidia only, experimental)
+- Erg + Radiant (Nvidia only, experimental)
 - Eth + Alph (Nvidia only, experimental)
 - Etc + Alph (Nvidia only, experimental)
 
-Use the `max_dual_autotune_drop` option to change behavior of dual autotune. by default this is 0.92, which means autotune will attempt to get maximum hashrate for both algos, but keep first algo (eth) at 92% hashrate or higher
+Use the `max_dual_autotune_drop` option to change behavior of dual autotune. by default this is 0.92, which means autotune will attempt to get maximum hashrate for both algos, but keep first algo (etc) at 92% hashrate or higher
 
 BzMiner allows alternate/split mining by using the `multi_mine_type` option. Default is 0, parallel. By setting it to 1, the algorithms will take turns mining on the gpu. The duration they mine can be specified in the `multi_mine_ms` option, which takes an array [firstalgoms, secondalgoms]
 
