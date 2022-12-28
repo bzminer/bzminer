@@ -22,7 +22,8 @@
     - Etc + Kaspa (Nvidia only, experimental)
     - Etc + Radiant (Nvidia only, experimental)
     - Ergo + Kaspa (Nvidia only, experimental)
-    - Ergo + Radiant (Nvidia only, experimental)
+    - Ergo + Radiant (Nvidia only, experimental
+    - Any Algo + Zil (AMD, Nvidia)
 - Low dev fee of 0.5%
 - Supports Chinese Language (use `--lang cn` option)
 - Realtime console inputs!
