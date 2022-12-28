@@ -12,7 +12,7 @@
     - Radiant (AMD, Nvidia, 1% dev fee)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
-    - Zil (AMD, Nvidia, 0% dev fee)
+    - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
     - Meowcoin (AMD, Nvidia)
 - Optimized dual mining for specific coins:
     - Ethw + Alph (Nvidia only, experimental)
