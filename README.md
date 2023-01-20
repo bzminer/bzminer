@@ -654,6 +654,16 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "start_x": false, // attempt to start an x display (for nvidia, linux only)
     
+    "zil_test": false, // whether to test zil or not
+    
+    "zil_test_diff": 1, // zil difficulty (1-5)
+    
+    "zil_test_frequency": 300, // seconds between zil iterations (zil windows last 30 seconds)
+    
+    "zil_pool": "", // zil pool to mine to
+    
+    "zil_wallet": "", // zil wallet to mine to
+    
     "display_settings": { // advanced display settings
     
         "table_width": 100, // number of characters wide the tables are. 0 = auto
