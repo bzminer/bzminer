@@ -14,7 +14,7 @@
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
     - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
     - Meowcoin (AMD, Nvidia)
-    - Nexa (Nvidia, 3% dev fee)
+    - Nexa (Nvidia, 2% dev fee)
 - Optimized dual mining for specific coins:
     - Ethw + Alph (Nvidia only, experimental)
     - Ethw + Kaspa (Nvidia only, experimental)
@@ -94,12 +94,12 @@ http://www.bzminer.com
 Launch `bzminer` with the wallet and pool address as parameters:
 
 ```
-bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name
+bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 -r worker_name --nc 1
 ```
 
 You may provide more than one pool address to -p for fallback pools on network errors:
 ```
-bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name
+bzminer -w 0x0000000000000000000000000000000000000000 -p ethstratum+tcp://eth.geodns.flexpool.io:4444 stratum+tcp://usw-eth.hiveon.net:4444 -r worker_name --nc 1
 ```
 
 Optionally you can edit `config.txt` and launch `bzminer`. You can specify the config file with the `-c` argument:
@@ -111,49 +111,55 @@ bzminer -c eth-config.txt
 ### Ethw (EthPOW)
 
 ```
-bzminer -a ethw -w 0x0000000000000000000000000000000000000000 -p ethproxy+tcp://pool.woolypooly.com:3096 -r worker_name
+bzminer -a ethw -w 0x0000000000000000000000000000000000000000 -p ethproxy+tcp://pool.woolypooly.com:3096 -r worker_name --nc 1
 ```
 
 ### Ethereum Classic
 
 ```
-bzminer -a etchash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://us1-etc.ethermine.org:4444 stratum+tcp://eu1-etc.ethermine.org:4444 -r worker_name
+bzminer -a etchash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://us1-etc.ethermine.org:4444 stratum+tcp://eu1-etc.ethermine.org:4444 -r worker_name --nc 1
 ```
 
 ### Ergo
 
 ```
-bzminer -a ergo -w 0x0000000000000000000000000000000000000000 -p stratum-ergo.flypool.org:3333 -r worker_name
+bzminer -a ergo -w 0x0000000000000000000000000000000000000000 -p stratum-ergo.flypool.org:3333 -r worker_name --nc 1
 ```
 
 ### Ravencoin
 
 ```
-bzminer -a rvn -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-ravencoin.flypool.org:3443 -r worker_name
+bzminer -a rvn -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-ravencoin.flypool.org:3443 -r worker_name --nc 1
 ```
 
 ### Neoxa
 
 ```
-bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpool.org:10059 -r worker_name
+bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpool.org:10059 -r worker_name --nc 1
+```
+
+### Nexa
+
+```
+bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://pool.ca.woolypooly.com:3124 -r worker_name --nc 1
 ```
 
 ### Meowcoin
 
 ```
-bzminer -a meowcoin -w 0x0000000000000000000000000000000000000000 -p stratum-eu.rplant.xyz:17078 -r worker_name
+bzminer -a meowcoin -w 0x0000000000000000000000000000000000000000 -p stratum-eu.rplant.xyz:17078 -r worker_name --nc 1
 ```
 
 ### Radiant
 
 ```
-bzminer -a radiant -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://rxd.vipor.net:5066 -r worker_name
+bzminer -a radiant -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://rxd.vipor.net:5066 -r worker_name --nc 1
 ```
 
 ### Overline
 
 ```
-bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name
+bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name --nc 1
 ```
 
 ### Alephium
@@ -163,7 +169,7 @@ Alephium mining may require 4 wallet addresses (solo mining)
 For solo mining change "stratum" to "alphstratum"
 
 ```
-bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159
+bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159 --nc 1
 ```
 
 ### Kaspa
