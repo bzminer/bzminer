@@ -144,6 +144,11 @@ bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpo
 bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://pool.ca.woolypooly.com:3124 -r worker_name --nc 1
 ```
 
+Nexa solo:
+```
+bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p solo+tcp://127.0.0.1:7227 -r worker_name --nc 1
+```
+
 ### Meowcoin
 
 ```
