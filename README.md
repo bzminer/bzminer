@@ -1,4 +1,4 @@
-## Why use BzMiner (v13.0.3)?
+## Why use BzMiner (v13.1.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -14,7 +14,7 @@
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
     - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
     - Meowcoin (AMD, Nvidia)
-    - Nexa (Nvidia, 2% dev fee)
+    - Nexa (Nvidia, 2% dev fee, +1% community fund (optional, can be disabled with disable_community_fund option)
 - Optimized dual mining for specific coins:
     - Ethw + Alph (Nvidia only, experimental)
     - Ethw + Kaspa (Nvidia only, experimental)
@@ -312,6 +312,7 @@ Options:
   --pool_password TEXT        Default Pool password
   --pool_password2 TEXT       Default Pool password for second algo (dual mine)
   --pool_password3 TEXT       Default Pool password for second algo (dual mine)
+  --igpu                      Enable mining on IGPUs. disabled by default (0 = false, 1 = true)
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   --intel INT                 Only mine with Intel devices (0 = false, 1 = true)
@@ -584,6 +585,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "log_file": "", // if not empty, the file logs should be written to
     
     "clear_log_file": false, // by default, the log file will not be cleared when bzminer starts. set this to true to clear the log file when bzminer starts
+    
+    "enable_igpu": false, // enable mining on igpus
     
     "nvidia_only": false, // only mine using nvidia cards
     
