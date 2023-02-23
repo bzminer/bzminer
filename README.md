@@ -147,7 +147,7 @@ bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://p
 
 pool137
 ```
-bzminer -a nexa -w 0000 -p stratum+ssl://us.vipor.net:5185 stratum+tcp://eu.nexa.pool137.io:3333 --nc 1
+bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://eu.nexa.pool137.io:3333 --nc 1
 ```
 
 Nexa solo:
