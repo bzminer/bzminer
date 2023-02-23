@@ -140,8 +140,14 @@ bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpo
 
 ### Nexa
 
+woolypooly
 ```
 bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://pool.ca.woolypooly.com:3124 -r worker_name --nc 1
+```
+
+pool137
+```
+bzminer -a nexa -w 0000 -p stratum+ssl://us.vipor.net:5185 stratum+tcp://eu.nexa.pool137.io:3333 --nc 1
 ```
 
 Nexa solo:
