@@ -1,4 +1,4 @@
-## Why use BzMiner (v13.1.1)?
+## Why use BzMiner (v13.2.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -14,7 +14,7 @@
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
     - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
     - Meowcoin (AMD, Nvidia)
-    - Nexa (Nvidia, 2% dev fee, +1% community fund (optional, can be disabled with disable_community_fund option)
+    - Nexa (Nvidia, 2% dev fee, +1% (optional) community fund (can be ENABLED with disable_community_fund option, disabled by DEFAULT)
 - Optimized dual mining for specific coins:
     - Ethw + Alph (Nvidia only, experimental)
     - Ethw + Kaspa (Nvidia only, experimental)
