@@ -17,7 +17,7 @@
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, 1% dev fee)
 - Optimized dual mining for specific coins:
-    - *Note*: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
+    - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
     - Ethw + Alph (Nvidia only, experimental)
     - Ethw + Kaspa (Nvidia only, experimental)
     - Ethw + Radiant (Nvidia only, experimental)
