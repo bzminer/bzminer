@@ -1,4 +1,4 @@
-## Why use BzMiner (v13.4.0)?
+## Why use BzMiner (v14.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -15,13 +15,16 @@
     - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
     - Meowcoin (AMD, Nvidia)
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
+    - Ironfish (AMD, Nvidia, 1% dev fee)
 - Optimized dual mining for specific coins:
     - Ethw + Alph (Nvidia only, experimental)
     - Ethw + Kaspa (Nvidia only, experimental)
     - Ethw + Radiant (Nvidia only, experimental)
+    - Ethw + Ironfish (Nvidia only, experimental)
     - Etc + Alph (Nvidia only, experimental)
     - Etc + Kaspa (Nvidia only, experimental)
     - Etc + Radiant (Nvidia only, experimental)
+    - Etc + Ironfish (Nvidia only, experimental)
     - Ergo + Kaspa (Nvidia only, experimental)
     - Ergo + Radiant (Nvidia only, experimental
     - Any Algo + Zil (AMD, Nvidia)
@@ -205,6 +208,11 @@ Solo and pool both use the GetWork http/https protocol
 
 ```
 bzminer -a ixi -w 000000 -p http://ixian.changeling.biz:8081
+```
+
+Ironfish:
+```
+bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p solo+tcp://127.0.0.1:7227 -r worker_name --nc 1
 ```
 
 ### Woodcoin
