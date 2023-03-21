@@ -1,4 +1,4 @@
-## Why use BzMiner (v14.0.0)?
+## Why use BzMiner (v14.0.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
