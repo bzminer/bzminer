@@ -1,4 +1,4 @@
-## Why use BzMiner (v14.1.1)?
+## Why use BzMiner (v14.2.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -16,8 +16,13 @@
     - Meowcoin (AMD, Nvidia)
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, 1% dev fee)
+    - Octa (AMD, Nvidia, 0.5% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
+    - Octa + Alph (Nvidia only, experimental)
+    - Octa + Kaspa (Nvidia only, experimental)
+    - Octa + Radiant (Nvidia only, experimental)
+    - Octa + Ironfish (Nvidia only, experimental)
     - Ethw + Alph (Nvidia only, experimental)
     - Ethw + Kaspa (Nvidia only, experimental)
     - Ethw + Radiant (Nvidia only, experimental)
@@ -222,6 +227,33 @@ dragonpool.vip:
 
 ```
 bzminer -a woodcoin -w 0000 -p stratum+tcp://dragonpool.vip:5233 --pool_password c=LOG,d=1,ID=rig_name
+```
+
+### Octa
+
+vipor.net:
+
+```
+bzminer -a octa -w 0000 -p ethproxy+ssl://us.vipor.net:5104  --nc 1
+```
+
+### Ironfish
+
+Flexpool:
+
+```
+bzminer -a ironfish -w 0000 -p stratum+tcp://iron.fpmp.net:8888 --nc 1
+```
+
+How to solo mine Ironfish:
+
+- follow guide at https://ironfish.network/docs/onboarding/iron-fish-tutorial to install ironfish
+- run the ironfish node using the command `ironfish start`
+- run the ironfish pool using the command `ironfish miners:pools:start`
+- if your node is on a separate pc from bz, replace 127.0.0.1 with the ip address of the pc the node is running on (eg. 192.168.1.2)
+
+```
+bzminer -a ironfish -w 0000 -p 127.0.0.1:9034 --nc 1
 ```
 
 ### Dual Mining (eth + alph)
