@@ -1,4 +1,4 @@
-## Why use BzMiner (v14.2.0)?
+## Why use BzMiner (v14.2.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -359,7 +359,7 @@ Options:
   --pool_password TEXT        Default Pool password
   --pool_password2 TEXT       Default Pool password for second algo (dual mine)
   --pool_password3 TEXT       Default Pool password for second algo (dual mine)
-  --igpu                      Enable mining on IGPUs. disabled by default (0 = false, 1 = true)
+  --igpu BOOLEAN              Enable IGPU support (0 = false, 1 = true)
   --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
   --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
   --intel INT                 Only mine with Intel devices (0 = false, 1 = true)
@@ -376,6 +376,8 @@ Options:
   --max_log_history INT       For http api. max retained log history. default is 1024. Higher values increase memory usage.
   --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
   --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
+  --immediate_log             If specified, logger will immediately output logs. This can have a small impact on performance.
+  --log_frequency_ms INT      Log frequency in milliseconds. Default is 500.
   -o TEXT                     If provided, output will be logged to this file
   --log_file_verbosity INT    Set log file verbosity. Default 2.
   --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
@@ -387,10 +389,12 @@ Options:
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   --throttle INT ...          Throttle mining (array of devices, or just one value to set all to same). default is 0.
+  --mem_on_demand INT ...     An array of devices that should allocate memory (luts, dags) only when they are needed, then releasing that memory after they are no longer needed. Useful for cards that cannot hold two algos memory allocations at the same time such as nexa + zil on 8gb cards. Default is 0
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --repair_dag INT            Validate and repair DAG. Default is 1
   --nc INT                    Do not save to the config file (but still read from it).
+  --show_pending              Do not start watchdog service.
   --update_frequency_ms INT   Output frequency in milliseconds. 0 = disabled. Default is 15000.
   --update_frequency_shares INT
                               Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
@@ -410,6 +414,9 @@ Options:
   --community_fund INT        Enable/Disable community fund (currently kaspa and radiant only). Value is a multiple of normal dev fee, so value of 1 = 1% donation, 2 = 2% donation, etc. Default is 1, 0 is disabled
   --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
   --test INT                  Test mine. Useful for setting up overclocks.
+  --testdiff INT              Test difficulty. 1 - lowest difficulty, no limit to max difficulty
+  --pool_reconnect_timeout_ms INT
+                              Pool reconnect timeout override in ms. default is 30000
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
@@ -419,6 +426,7 @@ Options:
   --devices                   Only log devices. Does not start miner
   --no_watchdog               Do not start watchdog service.
   --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
+  --enable TEXT ...           Enable specific GPUs from mining, separate by a space. This overrides --disable. Use device id in the format of pci_bus:pci_device (eg. --enable 1:0 3:0). use --devices to find device id.
   --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
   --start_script TEXT         If specified, this script will run when BzMiner starts.
   --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
@@ -514,7 +522,13 @@ Options:
   --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
-  --oc_reset_on_exit          Reset overclocks on bzminer exit.
+  --oc_reset_on_exit INT      Reset overclocks on bzminer exit. default 1 (enable), 0 = disable
+  --cukernel TEXT             Used for debugging only.
+  --cukernel2 TEXT            Used for debugging only.
+  --cukernel3 TEXT            Used for debugging only.
+  --clkernel TEXT             Used for debugging only.
+  --clkernel2 TEXT            Used for debugging only.
+  --clkernel3 TEXT            Used for debugging only.
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
@@ -696,6 +710,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "avg_hr_ms": 30000, // time to average hashrate (ms). Higher time means more stable hashrate, lower time means more realtime
     
     "log_solutions": true,  // whether to log each solution found in the output
+    
+    "show_pending": false, // whether to show pending shares which pool has not responded to
     
     "log_date": false, // whether to log the date on each log line
     
