@@ -216,11 +216,6 @@ Solo and pool both use the GetWork http/https protocol
 bzminer -a ixi -w 000000 -p http://ixian.changeling.biz:8081
 ```
 
-### Ironfish:
-```
-bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p solo+tcp://127.0.0.1:7227 -r worker_name --nc 1
-```
-
 ### Woodcoin
 
 dragonpool.vip:
