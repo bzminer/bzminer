@@ -1,4 +1,4 @@
-## Why use BzMiner (v14.2.2)?
+## Why use BzMiner (v14.3.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -446,7 +446,9 @@ Options:
   --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
                               Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
                               where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
-                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
+                              fMin and fMax are optional
+                              eg. --oc_fan_speed t:75[25-75] tm:85[50-100]
+                              eg. --oc_fan_speed m:65
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
   --oc_core_clock_offset INT ...
                               Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
@@ -543,68 +545,11 @@ With "advanced_config" turned on (default), the full config file is as follows:
 
 ```
 {
-    "pool_configs": [{
-            "algorithm": "ethash", // pool algorithm
-            
-            "wallet": "0x0000000000000000000000000000000000000000", // wallet to mine to
-            
-            "url": ["stratum+tcp://yourpool:4444", "stratum+tcp://yourpool:4444"], // list of urls to connect to. will rotate through urls if they fail
-            
-            "username": "rig", // username/worker name to use
-            
-            "lhr_only": false, // if true only lhr cards will mine to this pool
-            
-            "delay_before_connection_retry": 3000, // milliseconds between each reconnection retry (minimum is 1 second)
-            
-            "no_work_timeout": 30000, // ms after connection begins before no work timeout is triggered and reconnection happens
-            
-            "test": false, // run this algo in test mode (will not connect to a pool)
-            
-            "test_iteration_ms": 15000 //  seconds between new work in test mode
-            
-            "community_fund": 1, // Multiple of dev fee to donate to blockchain dev team (kaspa only right now). if 1, will be 1%, 2 = 2%
-            
-            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
-            
-            "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
-            
-            "zil_only": false, // If the algo is Eth + zil, will only allocate dag for zil, and ignore eth mining. for dual mining zil + another algo
-            
-            "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
-        },
-        {
-            "algorithm": "kawpow", // pool algorithm
-            
-            "wallet": "0x0000000000000000000000000000000000000000", // wallet to mine to
-            
-            "url": ["stratum+tcp://yourpool:4444", "stratum+tcp://yourpool:4444"], // list of urls to connect to. will rotate through urls if they fail
-            
-            "username": "rig", // username/worker name to use
-            
-            "lhr_only": false, // if true only lhr cards will mine to this pool
-            
-            "delay_before_connection_retry": 3000, // milliseconds between each reconnection retry (minimum is 1 second)
-            
-            "no_work_timeout": 30000, // ms after connection begins before no work timeout is triggered and reconnection happens
-            
-            "test": false, // run this algo in test mode (will not connect to a pool)
-            
-            "test_iteration_ms": 15000 //  seconds between new work in test mode
-            
-            "community_fund": 1, // Multiple of dev fee to donate to blockchain dev team (kaspa only right now). if 1, will be 1%, 2 = 2%
-            
-            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
-            
-            "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
-            
-            "zil_only": false // If the algo is Eth + zil, will only allocate dag for zil, and ignore eth mining. for dual mining zil + another algo
-            
-            "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
-        }],
-        
-    "lang": "en", // set the language. Default is en. Supported languages are en and cn
+    "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
+        
+    "lang": "en", // set the language. Default is en. Supported languages are en and cn
 
     "intensity": [0], // set mining intensity for device. 0-64, 0 = auto
 
@@ -657,8 +602,6 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "lhr_exception_reboot": false, // if set to true, will reboot the pc if the LHR exception is triggered (which requires a hard device reset)
     
     "lock_config": false, // if true, bzminer will never write to this file
-    
-    "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
     
     "cache_dag": 0, // when running eth + zil, if set to 1 eth dag will be cached while mining zil, so dag does not need to be recalculated after zil session
     
@@ -736,37 +679,93 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "zil_wallet": "", // zil wallet to mine to
     
-    "display_settings": { // advanced display settings
+    "table_width": 100, // number of characters wide the tables are. 0 = auto
+
+    "wrap": true, // whether the table should allow columns to wrap (set to false to disable cells from wrapping their contents to the next line)
+
+    "title_align": 1, // table title horrizontal alignment. 0 = left, 1 = center, 2 = right. default is 1 = center
+
+    "date_align": 0, // table date alignment. 0 = left, 1 = center, 2 = right. default is 0 = left
+
+    "max_log_history": 1024, // For http api. max retained log history. default is 1024. Higher values increase memory usage.
+
+    "hide_unused_devices": false // if true, will hide any devices that are not mining (with start_mining: false setting)
+
+    "show_devices": true, // show the devices table
+
+    "devices_title_color": 7, // set the color of the devices table title
+
+    "devices_border_color": 8, // set the color of the devices table border
+
+    "devices_columns": "#,name:nw,free,total,core,mem,fan,pwr,temp", // which columns to show for devices table. supported list below
+
+    "show_pool": true, // whether to show the pool tables
+
+    "pool_title_color": 7, // pool table title color
+
+    "pool_border_color": 8, // pool table border color
+
+    "pool_columns": "#,uptime,a/r/i,avg,eff,pool mh,miner mh,status" // which columns to show in the pool tables
     
-        "table_width": 100, // number of characters wide the tables are. 0 = auto
+    "pool_configs": [{
+            "algorithm": "ethash", // pool algorithm
+            
+            "wallet": "0x0000000000000000000000000000000000000000", // wallet to mine to
+            
+            "url": ["stratum+tcp://yourpool:4444", "stratum+tcp://yourpool:4444"], // list of urls to connect to. will rotate through urls if they fail
+            
+            "username": "rig", // username/worker name to use
+            
+            "lhr_only": false, // if true only lhr cards will mine to this pool
+            
+            "delay_before_connection_retry": 3000, // milliseconds between each reconnection retry (minimum is 1 second)
+            
+            "no_work_timeout": 30000, // ms after connection begins before no work timeout is triggered and reconnection happens
+            
+            "test": false, // run this algo in test mode (will not connect to a pool)
+            
+            "test_iteration_ms": 15000 //  seconds between new work in test mode
+            
+            "community_fund": 1, // Multiple of dev fee to donate to blockchain dev team (kaspa only right now). if 1, will be 1%, 2 = 2%
+            
+            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
+            
+            "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
+            
+            "zil_only": false, // If the algo is Eth + zil, will only allocate dag for zil, and ignore eth mining. for dual mining zil + another algo
+            
+            "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
+        },
+        {
+            "algorithm": "kawpow", // pool algorithm
+            
+            "wallet": "0x0000000000000000000000000000000000000000", // wallet to mine to
+            
+            "url": ["stratum+tcp://yourpool:4444", "stratum+tcp://yourpool:4444"], // list of urls to connect to. will rotate through urls if they fail
+            
+            "username": "rig", // username/worker name to use
+            
+            "lhr_only": false, // if true only lhr cards will mine to this pool
+            
+            "delay_before_connection_retry": 3000, // milliseconds between each reconnection retry (minimum is 1 second)
+            
+            "no_work_timeout": 30000, // ms after connection begins before no work timeout is triggered and reconnection happens
+            
+            "test": false, // run this algo in test mode (will not connect to a pool)
+            
+            "test_iteration_ms": 15000 //  seconds between new work in test mode
+            
+            "community_fund": 1, // Multiple of dev fee to donate to blockchain dev team (kaspa only right now). if 1, will be 1%, 2 = 2%
+            
+            "tbs_watchdog": 1000, // If time since last share is over this percentage of estimated tbs, tbs watchdog triggers. append "s, m, h, d" to base on time
+            
+            "algo_opt": 0, // If algorithm supports it (woodcoin), can set algo_opt to values that change how algorithm runs
+            
+            "zil_only": false // If the algo is Eth + zil, will only allocate dag for zil, and ignore eth mining. for dual mining zil + another algo
+            
+            "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
+        }],
         
-        "wrap": true, // whether the table should allow columns to wrap (set to false to disable cells from wrapping their contents to the next line)
-        
-        "title_align": 1, // table title horrizontal alignment. 0 = left, 1 = center, 2 = right. default is 1 = center
-        
-        "date_align": 0, // table date alignment. 0 = left, 1 = center, 2 = right. default is 0 = left
-        
-        "max_log_history": 1024, // For http api. max retained log history. default is 1024. Higher values increase memory usage.
-        
-        "hide_unused_devices": false // if true, will hide any devices that are not mining (with start_mining: false setting)
-        
-        "show_devices": true, // show the devices table
-        
-        "devices_title_color": 7, // set the color of the devices table title
-        
-        "devices_border_color": 8, // set the color of the devices table border
-        
-        "devices_columns": "#,name:nw,free,total,core,mem,fan,pwr,temp", // which columns to show for devices table. supported list below
-        
-        "show_pool": true, // whether to show the pool tables
-        
-        "pool_title_color": 7, // pool table title color
-        
-        "pool_border_color": 8, // pool table border color
-        
-        "pool_columns": "#,uptime,a/r/i,avg,eff,pool mh,miner mh,status" // which columns to show in the pool tables
-    },
-    
     "throttle": [], // throttle mining on a gpu. 0 means disable throttle. higher means more throttling
     "oc_delay_ms": 50, // for dual mining only, time before/after oc is applied when switching to next algo
     "oc_fan_speed": [], // List (optionally of lists for dual mining oc's) of fan speeds (%)
@@ -847,6 +846,20 @@ or
 
 Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
 
+### Auto fan
+Bz has an autofan ability to keep gpu at a target temperature.
+Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
+where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
+fMin and fMax are optional
+eg. --oc_fan_speed t:75[25-75] tm:85[50-100]
+eg. --oc_fan_speed m:65
+
+config.txt example:
+`"oc_fan_speed": ["t:75", "t:72"]`
+
+where gpu 0 will target the core temp 75c and gpu 1 will target the memory temp 72c
+
 ### GPU Throttle Notifications
 
 BzMiner will color code certain elements based on whether they are causing the GPU to throttle (slowdown). Current Core and Memory temperatures, as well as Power limit are supported.
@@ -890,6 +903,15 @@ Here's a sample dual mine config with oc's per algo:
 
 ```
 {
+    "pool": [0, 1],
+    "intensity": [0],
+    "multi_mine_ms": [5000, 15000],
+    "rig_name": "ethash_rig",
+    "log_file": "",
+    "clear_log_file": false,
+    "nvidia_only": false,
+    "amd_only": false,
+    "lock_config": false,
     "pool_configs": [{
             "algorithm": "ethash",
             "wallet": "0000",
@@ -904,16 +926,6 @@ Here's a sample dual mine config with oc's per algo:
             "lhr_only": false,
             "max_dual_autotune_drop": 0.92
         }],
-    "pool": [0, 1],
-    "intensity": [0],
-    "multi_mine_ms": [5000, 15000],
-    "rig_name": "ethash_rig",
-    "log_file": "",
-    "clear_log_file": false,
-    "nvidia_only": false,
-    "amd_only": false,
-    "lock_config": false,
-    "advanced_config": false,
     "oc_delay_ms": 100,
     "device_overrides": [{
             "uid": "1:0",
@@ -962,6 +974,7 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `a/r/i` - Accepted/Rejected/Invalid shares
 - `tbs` - Average time between shares
 - `tsls` - Time since last share
+- `best` - Show the highest difficulty share found
 - `eff` - Efficiency, in the units of hashes per watt
 - `pool_hr` - Estimated effective hashrate based on pool difficulty and shares found (effective/current hashrate on some pools)
 - `miner_hr` - Current miner speed (reported hashrate on some pools)
