@@ -1,4 +1,4 @@
-## Why use BzMiner (v14.3.1)?
+## Why use BzMiner (v14.3.2)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -16,6 +16,7 @@
     - Meowcoin (AMD, Nvidia)
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, 1% dev fee)
+    - Kylacoin (AMD, Nvidia, 1% dev fee)
     - Octa (AMD, Nvidia, 0.5% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
@@ -32,7 +33,7 @@
     - Etc + Radiant (Nvidia only, experimental)
     - Etc + Ironfish (Nvidia only, experimental)
     - Ergo + Kaspa (Nvidia only, experimental)
-    - Ergo + Radiant (Nvidia only, experimental
+    - Ergo + Radiant (Nvidia only, experimental)
     - Any Algo + Zil (AMD, Nvidia)
 - Low dev fee of 0.5%
 - Supports Chinese Language (use `--lang cn` option)
@@ -232,6 +233,14 @@ vipor.net:
 bzminer -a octa -w 0000 -p ethproxy+ssl://us.vipor.net:5104  --nc 1
 ```
 
+### Kylacoin
+
+Vipor:
+
+```
+bzminer -a kylacoin -w 0000 -p stratum+tcp://pool.vipor.io:15020 --nc 1
+```
+
 ### Ironfish
 
 Flexpool:
@@ -384,6 +393,7 @@ Options:
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   --throttle INT ...          Throttle mining (array of devices, or just one value to set all to same). default is 0.
+  --allow_stales INT          If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
   --mem_on_demand INT ...     An array of devices that should allocate memory (luts, dags) only when they are needed, then releasing that memory after they are no longer needed. Useful for cards that cannot hold two algos memory allocations at the same time such as nexa + zil on 8gb cards. Default is 0
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
@@ -664,6 +674,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "disable_udp": false, // If true, the UDP service is disabled and this device will not show up in other instances of the BzMiner GUI
     
     "oc_reset_on_exit": false,
+    
+    "allow_stales": true, // If false, bz will attempt to detect stales and not send them to the pool
     
     "x_display": ":0", // which x display to use (for nvidia, linux only)
     
