@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v14.3.2)?
+## Why use BzMiner (v15.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -22,6 +22,7 @@ https://www.bzminer.com/config-generator
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, 1% dev fee)
     - Kylacoin (AMD, Nvidia, 1% dev fee)
+    - Novo (AMD, Nvidia, 1% dev fee)
     - Octa (AMD, Nvidia, 0.5% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
@@ -244,6 +245,14 @@ Vipor:
 
 ```
 bzminer -a kylacoin -w 0000 -p stratum+tcp://pool.vipor.io:15020 --nc 1
+```
+
+### Novo
+
+Vipor:
+
+```
+bzminer -a kylacoin -w 0000 -p pool.vipor.io:15075 --nc 1
 ```
 
 ### Ironfish
