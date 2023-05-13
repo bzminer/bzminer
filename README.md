@@ -377,10 +377,10 @@ Options:
   --pool_password TEXT        Default Pool password
   --pool_password2 TEXT       Default Pool password for second algo (dual mine)
   --pool_password3 TEXT       Default Pool password for second algo (dual mine)
-  --igpu BOOLEAN              Enable IGPU support (0 = false, 1 = true)
-  --nvidia INT                Only mine with Nvidia devices (0 = false, 1 = true)
-  --amd INT                   Only mine with AMD devices (0 = false, 1 = true)
-  --intel INT                 Only mine with Intel devices (0 = false, 1 = true)
+  --igpu BOOLEAN              Enable IGPU (0 = false, 1 = true, default 0)
+  --nvidia INT                Mine with Nvidia devices (0 = false, 1 = true, 1 is default)
+  --amd INT                   Mine with AMD devices (0 = false, 1 = true, 1 is default)
+  --intel INT                 Mine with Intel devices (0 = false, 1 = true, 0 is default)
   --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   --nvidia_opencl             Enable Nvidia opencl device enumeration
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
@@ -406,8 +406,8 @@ Options:
   --i3 INT                    Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
+  --allow_stales BOOLEAN      If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
   --throttle INT ...          Throttle mining (array of devices, or just one value to set all to same). default is 0.
-  --allow_stales INT          If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
   --mem_on_demand INT ...     An array of devices that should allocate memory (luts, dags) only when they are needed, then releasing that memory after they are no longer needed. Useful for cards that cannot hold two algos memory allocations at the same time such as nexa + zil on 8gb cards. Default is 0
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
@@ -470,16 +470,14 @@ Options:
   --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
                               Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
                               where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
-                              fMin and fMax are optional
-                              eg. --oc_fan_speed t:75[25-75] tm:85[50-100]
-                              eg. --oc_fan_speed m:65
+                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
   --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
   --oc_core_clock_offset INT ...
                               Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
   --oc_memory_clock_offset INT ...
                               Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
   --oc_core_volt_offset INT ...
-                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore. 
   --oc_memory_volt_offset INT ...
                               Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
   --oc_lock_core_clock INT ...
@@ -544,12 +542,6 @@ Options:
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
   --oc_reset_on_exit INT      Reset overclocks on bzminer exit. default 1 (enable), 0 = disable
-  --cukernel TEXT             Used for debugging only.
-  --cukernel2 TEXT            Used for debugging only.
-  --cukernel3 TEXT            Used for debugging only.
-  --clkernel TEXT             Used for debugging only.
-  --clkernel2 TEXT            Used for debugging only.
-  --clkernel3 TEXT            Used for debugging only.
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
