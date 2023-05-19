@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.0.0)?
+## Why use BzMiner (v15.1.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos (default 0.5% dev fee):
     - Ethw (AMD, Nvidia)
@@ -992,6 +992,7 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `a/r/i` - Accepted/Rejected/Invalid shares
 - `tbs` - Average time between shares
 - `tsls` - Time since last share
+- `spm` - Average number of shares per minute
 - `best` - Show the highest difficulty share found
 - `eff` - Efficiency, in the units of hashes per watt
 - `pool_hr` - Estimated effective hashrate based on pool difficulty and shares found (effective/current hashrate on some pools)
@@ -999,6 +1000,9 @@ default pool column configuration: `"#,uptime,a/r/i,avg,eff,pool mh,miner mh,sta
 - `status` - Device/Pool status.
 
 The pool table has an additional row at the bottom which is the summary of all devices mining to that pool. The status column for the pool includes the epoch number, difficulty, and average latency to pool.
+
+To update the column in config.txt (hiveos):
+`"pool_columns": "#,a/r/i,cfg,tbs,tsls,eff,pool_hr,miner_hr,status"`
 
 ### Customizing the display
 - Colors are integers and correspond to normal terminal color codes. Default BzMiner logging color is 7.
