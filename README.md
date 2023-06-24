@@ -3,22 +3,22 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.2.1)?
+## Why use BzMiner (v15.3.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
-- Supported Algos (default 0.5% dev fee):
-    - Ethw (AMD, Nvidia)
-    - Etchash (AMD, Nvidia) 
-    - Ergo (AMD, Nvidia) 
-    - Rvn (AMD, Nvidia)
-    - Neoxa (AMD, Nvidia)
+- Supported Algos:
+    - Ethw (AMD, Nvidia, 0.5% dev fee)
+    - Etchash (AMD, Nvidia, 0.5% dev fee) 
+    - Ergo (AMD, Nvidia, 1% dev fee) 
+    - Rvn (AMD, Nvidia, 0.5% dev fee)
+    - Neoxa (AMD, Nvidia, 0.5% dev fee)
     - Olhash (AMD, Nvidia, 1% dev fee)
-    - Alephium (AMD, Nvidia)
+    - Alephium (AMD, Nvidia, 0.5% dev fee)
     - Kaspa (AMD, Nvidia, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Radiant (AMD, Nvidia, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
     - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
-    - Meowcoin (AMD, Nvidia)
+    - Meowcoin (AMD, Nvidia, 0.5% dev fee)
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, 1% dev fee)
     - Kylacoin (AMD, Nvidia, 1% dev fee)
