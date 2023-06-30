@@ -3,14 +3,17 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.3.0)?
+## Why use BzMiner (v15.4.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethw (AMD, Nvidia, 0.5% dev fee)
     - Etchash (AMD, Nvidia, 0.5% dev fee) 
     - Ergo (AMD, Nvidia, 1% dev fee) 
-    - Rvn (AMD, Nvidia, 0.5% dev fee)
-    - Neoxa (AMD, Nvidia, 0.5% dev fee)
+    - Rvn (AMD, Nvidia, 1% dev fee)
+    - Meowcoin (AMD, Nvidia, 1% dev fee)
+    - Neoxa (AMD, Nvidia, 1% dev fee)
+    - Clore (AMD, Nvidia, 1% dev fee)
+    - Neurai (AMD, Nvidia, 1% dev fee)
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia, 0.5% dev fee)
     - Kaspa (AMD, Nvidia, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
@@ -18,7 +21,6 @@ https://www.bzminer.com/config-generator
     - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
     - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
     - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
-    - Meowcoin (AMD, Nvidia, 0.5% dev fee)
     - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, 1% dev fee)
     - Kylacoin (AMD, Nvidia, 1% dev fee)
@@ -41,7 +43,6 @@ https://www.bzminer.com/config-generator
     - Ergo + Kaspa (Nvidia only, experimental)
     - Ergo + Radiant (Nvidia only, experimental)
     - Any Algo + Zil (AMD, Nvidia)
-- Low dev fee of 0.5%
 - Supports Chinese Language (use `--lang cn` option)
 - Realtime console inputs!
 - Core Temp, Memory Temp, and Power Limit throttling (slowdown) notifications
@@ -152,6 +153,18 @@ bzminer -a rvn -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://st
 
 ```
 bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpool.org:10059 -r worker_name --nc 1
+```
+
+### Clore
+
+```
+bzminer -a clore -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-eu.rplant.xyz:17083 -r worker_name --nc 1
+```
+
+### Neurai
+
+```
+bzminer -a xna -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-eu.rplant.xyz:17029 -r worker_name --nc 1
 ```
 
 ### Nexa
