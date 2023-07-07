@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.4.0)?
+## Why use BzMiner (v15.4.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethw (AMD, Nvidia, 0.5% dev fee)
@@ -13,7 +13,7 @@ https://www.bzminer.com/config-generator
     - Meowcoin (AMD, Nvidia, 1% dev fee)
     - Neoxa (AMD, Nvidia, 1% dev fee)
     - Clore (AMD, Nvidia, 1% dev fee)
-    - Neurai (AMD, Nvidia, 1% dev fee)
+    - Neurai (xna) (AMD, Nvidia, 1% dev fee)
     - Olhash (AMD, Nvidia, 1% dev fee)
     - Alephium (AMD, Nvidia, 0.5% dev fee)
     - Kaspa (AMD, Nvidia, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
