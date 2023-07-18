@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.4.1)?
+## Why use BzMiner (v15.4.2)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethw (AMD, Nvidia, 0.5% dev fee)
@@ -438,9 +438,11 @@ Options:
   --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
   --max_dual_autotune_drop FLOAT
                               Max hashrate drop of first algo in dual mining when autotuning. 0.0 - 1.0. default 0.92.
-  --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards). If true will preload Ergo next dag
+  --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
   --zil_only                  Only mine zil for the first algo (for zil + non-eth algo). Will set for first pool_config. Will only generate a dag for epoch 0 (zil). use in combination with --multi_mine_type 1, --multi_mine_ms 0 10000 and cache_dag 1
-  --zil_retain_hashrate INT   If 1, zil hashrate will be retained in display after the zil window
+  --zil_retain_hashrate BOOLEAN
+                              Continue showing last zil hashrate outside the zil window. This may result in OS's showing a hashrate for zil outside the window as well
+  --zil_gpus INT ...          list if gpu indexes for which cards to mine zil. If not specified, all gpus by default will mine zil.
   --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --force_algo2 TEXT          Force an algorithm to run as the second algo in dual. Useful for OS's that do not currently have the desired algo implemented in integration scripts
   --opencl_workgroup_size INT Force an opencl algorithm to use a specific workgroup size.
@@ -710,6 +712,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "zil_pool": "", // zil pool to mine to
     
     "zil_wallet": "", // zil wallet to mine to
+    
+    "zil_gpus": [0, 1, 2, 3], // list of gpu indexes to mine zil. If no gpus are specified then all gpus will mine zil (if zil is enabled)
     
     "zil_retain_hashrate": false, // If true, zil hashrate will continue to display after the zil window has ended
     
