@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.4.2)?
+## Why use BzMiner (v15.4.3)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethw (AMD, Nvidia, 0.5% dev fee)
@@ -12,6 +12,7 @@ https://www.bzminer.com/config-generator
     - Rvn (AMD, Nvidia, 1% dev fee)
     - Meowcoin (AMD, Nvidia, 1% dev fee)
     - Neoxa (AMD, Nvidia, 1% dev fee)
+    - Gamepass (AMD, Nvidia, 1% dev fee)
     - Clore (AMD, Nvidia, 1% dev fee)
     - Neurai (xna) (AMD, Nvidia, 1% dev fee)
     - Olhash (AMD, Nvidia, 1% dev fee)
@@ -188,6 +189,12 @@ bzminer -a nexa -w 0x0000000000000000000000000000000000000000 -p solo+tcp://127.
 
 ```
 bzminer -a meowcoin -w 0x0000000000000000000000000000000000000000 -p stratum-eu.rplant.xyz:17078 -r worker_name --nc 1
+```
+
+### Gamepass
+
+```
+bzminer -a gamepass -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-eu.rplant.xyz:17041 -r worker_name --nc 1
 ```
 
 ### Radiant
@@ -420,7 +427,10 @@ Options:
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   --allow_stales BOOLEAN      If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
-  --throttle INT ...          Throttle mining (array of devices, or just one value to set all to same). default is 0.
+  --throttle INT ...          Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
+  --throttle1 INT ...         Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
+  --throttle2 INT ...         Throttle mining on pool 2 (array of devices, or just one value to set all to same). default is 0.
+  --throttle3 INT ...         Throttle mining on pool 3 (array of devices, or just one value to set all to same). default is 0.
   --mem_on_demand INT ...     An array of devices that should allocate memory (luts, dags) only when they are needed, then releasing that memory after they are no longer needed. Useful for cards that cannot hold two algos memory allocations at the same time such as nexa + zil on 8gb cards. Default is 0
   -g INT                      Ramp up miner rather than start at full speed.
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
@@ -804,7 +814,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
             "max_dual_autotune_drop": 0.92 // max alowable drop for dual autotune (eg. 0.92 ~ 92% lowest eth hashrate)
         }],
         
-    "throttle": [], // throttle mining on a gpu. 0 means disable throttle. higher means more throttling
+    "throttle": [], // List of throttle amount per algo (optionally 2d list for per gpu/algo). 0 means disable throttle. higher means more throttling
     "oc_delay_ms": 50, // for dual mining only, time before/after oc is applied when switching to next algo
     "oc_fan_speed": [], // List (optionally of lists for dual mining oc's) of fan speeds (%)
     "oc_power_limit": [], // List (optionally of lists for dual mining oc's) of power limits (watts)
