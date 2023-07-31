@@ -84,12 +84,10 @@ The LHR unlock can sometimes trigger an "LHR Exception". If this happens, lower 
 ## Prerequisites
 - Windows:
   - Requires Nvidia drivers supporting Cuda 11.2 or greater (Nvidia driver >= 460.27.03)
+  - AMD OpenCL drivers 21.50.2 or higher
 - Linux:
   - Nvidia driver >= 460.27.03
-- Linux (Ubuntu 16.04):
-  - Ubuntu 16.04 or higher
-  - Cuda 11.2
-  - Nvidia driver >= 495.29.05
+  - AMD OpenCL drivers 21.50.2 or higher
 
 ## Mining OS's that include BzMiner
 - MMPOS - https://app.mmpos.eu/
