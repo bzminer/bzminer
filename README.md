@@ -96,7 +96,7 @@ The LHR unlock can sometimes trigger an "LHR Exception". If this happens, lower 
 - HiveOS - https://hiveos.farm/
 - Minerstat - https://minerstat.com/
 - RaveOS - https://raveos.com/
-- OKMINER - https://okminer.com/
+- OkminerOS - https://okminer.com/
 
 ## Discord Server
 https://discord.gg/83EHruNzrh
