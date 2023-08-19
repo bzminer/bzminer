@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v15.4.3)?
+## Why use BzMiner (v16.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Ethw (AMD, Nvidia, 0.5% dev fee)
@@ -27,6 +27,8 @@ https://www.bzminer.com/config-generator
     - Kylacoin (AMD, Nvidia, 1% dev fee)
     - Novo (AMD, Nvidia, 1% dev fee)
     - Octa (AMD, Nvidia, 0.5% dev fee)
+    - Canxium (AMD, Nvidia, 0.5% dev fee)
+    - Rethereum (AMD, Nvidia, 1% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
     - Octa + Alph (Nvidia only, experimental)
