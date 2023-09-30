@@ -3,32 +3,33 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v16.0.5)?
+## Why use BzMiner (v17.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
-    - Ethw (AMD, Nvidia, 0.5% dev fee)
-    - Etchash (AMD, Nvidia, 0.5% dev fee) 
-    - Ergo (AMD, Nvidia, 1% dev fee) 
-    - Rvn (AMD, Nvidia, 1% dev fee)
-    - Meowcoin (AMD, Nvidia, 1% dev fee)
-    - Neoxa (AMD, Nvidia, 1% dev fee)
-    - Gamepass (AMD, Nvidia, 1% dev fee)
-    - Clore (AMD, Nvidia, 1% dev fee)
-    - Neurai (xna) (AMD, Nvidia, 1% dev fee)
-    - Olhash (AMD, Nvidia, 1% dev fee)
-    - Alephium (AMD, Nvidia, 0.5% dev fee)
-    - Kaspa (AMD, Nvidia, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
-    - Radiant (AMD, Nvidia, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
-    - Ixian (AMD, Nvidia, 1% dev fee, Not optimized for ubuntu 16.04)
-    - Woodcoin (AMD, Nvidia, 1% dev fee, use config "algo_opt" to move some processing to cpu)
-    - Zil (AMD, Nvidia, 0% dev fee. Dual with ANY other coin)
-    - Nexa (AMD, Nvidia, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
-    - Ironfish (AMD, Nvidia, 1% dev fee)
-    - Kylacoin (AMD, Nvidia, 1% dev fee)
-    - Novo (AMD, Nvidia, 1% dev fee)
-    - Octa (AMD, Nvidia, 0.5% dev fee)
-    - Canxium (AMD, Nvidia, 0.5% dev fee)
-    - Rethereum (AMD, Nvidia, 1% dev fee)
+    - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
+    - Etchash (AMD, Nvidia, Intel, 0.5% dev fee) 
+    - Ergo (AMD, Nvidia, Intel, 1% dev fee) 
+    - Rvn (AMD, Nvidia, Intel, 1% dev fee)
+    - Meowcoin (AMD, Nvidia, Intel, 1% dev fee)
+    - Neoxa (AMD, Nvidia, Intel, 1% dev fee)
+    - Gamepass (AMD, Nvidia, Intel, 1% dev fee)
+    - Clore (AMD, Nvidia, Intel, 1% dev fee)
+    - Neurai (xna) (AMD, Nvidia, Intel, 1% dev fee)
+    - Olhash (AMD, Nvidia, Intel, 1% dev fee)
+    - Alephium (AMD, Nvidia, Intel, 0.5% dev fee)
+    - Kaspa (AMD, Nvidia, Intel, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
+    - Radiant (AMD, Nvidia, Intel, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
+    - Ixian (AMD, Nvidia, Intel, 1% dev fee, Not optimized for ubuntu 16.04)
+    - Woodcoin (AMD, Nvidia, Intel, 1% dev fee, use config "algo_opt" to move some processing to cpu)
+    - Zil (AMD, Nvidia, Intel, 0% dev fee. Dual with ANY other coin)
+    - Nexa (AMD, Nvidia, Intel, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
+    - Ironfish (AMD, Nvidia, Intel, 1% dev fee)
+    - Kylacoin (AMD, Nvidia, Intel, 1% dev fee)
+    - Novo (AMD, Nvidia, Intel, 1% dev fee)
+    - Octa (AMD, Nvidia, Intel, 0.5% dev fee)
+    - Canxium (AMD, Nvidia, Intel, 0.5% dev fee)
+    - Rethereum (AMD, Nvidia, Intel, 1% dev fee)
+    - Decred (AMD, Nvidia, Intel 1% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
     - Octa + Alph (Nvidia only, experimental)
@@ -218,6 +219,34 @@ For solo mining change "stratum" to "alphstratum"
 
 ```
 bzminer -a alph -w 000000 -p stratum+tcp://eu.metapool.tech:20032 alphstratum+tcp://185.71.66.100:10159 --nc 1
+```
+
+### Decred
+
+Solo:
+Currently only solo mining is possible, and the mining address must be set in the nodes dcrd.conf file
+
+username and password must match what you have in your node's dcrd.conf file
+eg.
+rpcuser=username
+rpcpass=password
+miningaddr=0000
+
+on windows, the default location of dcrd.conf is:
+C:\Users\username\AppData\Local\Dcrd
+
+dcrd windows binaries can be found currently at:
+https://github.com/decred/decred-binaries/releases
+download and unpack decred-windows-amd64-v1.8.0.zip
+launch dcrd.exe, the appdata folder will be created and a default dcrd.conf file will be created
+modify the dcrd.conf file with above information (username, password, mining address) and relaunch dcrd.exe
+
+MUST WAIT FOR NODE TO SYNC! (otherwise bz will just keep attempting to reconnect)
+
+-w 0000 is just to make bz happy right now
+
+```
+bzminer -a decred -w 0000 -p https://127.0.0.1:9109 -r username --pool_password password --nc 1
 ```
 
 ### Kaspa
@@ -428,6 +457,7 @@ Options:
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   --allow_stales BOOLEAN      If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
+  --restart_on_disconnect BOOLEAN      If 1 (default 0), BzMiner will restart when a pool unexpectedly disconnects. Can be useful when having issues on auto reconnects.
   --throttle INT ...          Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
   --throttle1 INT ...         Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
   --throttle2 INT ...         Throttle mining on pool 2 (array of devices, or just one value to set all to same). default is 0.
@@ -714,6 +744,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "start_x": false, // attempt to start an x display (for nvidia, linux only)
     
+    "restart_on_disconnect": 0, // If 1 (default 0), BzMiner will restart when a pool unexpectedly disconnects. Can be useful when having issues on auto reconnects.
+
     "zil_test": false, // whether to test zil or not
     
     "zil_test_diff": 1, // zil difficulty (1-5)
