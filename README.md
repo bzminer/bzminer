@@ -232,8 +232,11 @@ rpcuser=username
 rpcpass=password
 miningaddr=0000
 
-on windows, the default location of dcrd.conf is:
+On windows, the default location of dcrd.conf is:
 C:\Users\username\AppData\Local\Dcrd
+
+On linux, the default location of dcrd.conf is:
+/home/username/.dcrd/dcrd.conf
 
 dcrd windows binaries can be found currently at:
 https://github.com/decred/decred-binaries/releases
