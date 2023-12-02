@@ -627,7 +627,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
         
     "lang": "en", // set the language. Default is en. Supported languages are en and cn
 
-    "intensity": [0], // set mining intensity for device. 0-64, 0 = auto
+    "intensity": [0], // array (one value for each device) to set mining intensity for each device. 0-64, 0 = auto.
 
     "repair_dag": [true], // Whether the dag (currently only ethash and etchash) should be repaired if an issue occurs. Useful for extreme overclocking. this has an impact on dag generation time
     
@@ -878,7 +878,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
             // pool settings for this device
             "pool": [0,1], // list of pools this device should mine to
             
-            "intensity": [0], // mining intensity. 0-64, 0 = auto. higher values generally means higher hashrate, but higher chance of stales
+            "intensity": [0], // mining intensity. 0-64, 0 = auto. higher values generally means higher hashrate, but higher chance of stales. one value for each algo mining on this device
             
             "repair_dag": [true],  // Whether the dag (currently only ethash and etchash) should be repaired if an issue occurs. Useful for extreme overclocking. this has an impact on dag generation time
             
@@ -993,8 +993,10 @@ Here's a sample dual mine config with oc's per algo:
     "rig_name": "ethash_rig",
     "log_file": "",
     "clear_log_file": false,
-    "nvidia_only": false,
-    "amd_only": false,
+    "enable_igpu": false,
+    "enable_nvidia": true,
+    "enable_amd": true,
+    "enable_intel": true,
     "lock_config": false,
     "pool_configs": [{
             "algorithm": "ethash",
