@@ -3,9 +3,10 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v17.0.0)?
+## Why use BzMiner (v18.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
+    - Dynex (AMD, Nvidia, Intel (Intel only supports POW) 2% dev fee)
     - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
     - Etchash (AMD, Nvidia, Intel, 0.5% dev fee) 
     - Ergo (AMD, Nvidia, Intel, 1% dev fee) 
@@ -126,6 +127,32 @@ Optionally you can edit `config.txt` and launch `bzminer`. You can specify the c
 
 ```
 bzminer -c eth-config.txt
+```
+
+### Dynex
+
+-- dynex_pow_ratio --
+Bz allows you to dedicate individual cards to either POW or POUW on Dynex using this option.
+
+- This is an array of values, one for each gpu
+- In config.txt (hiveos), an example for 3 gpus would be "dynex_pow_ratio": [1.0, 1.0, 1.0]
+- In command line, and example for 3 gpus would be --dynex_pow_ratio 1.0 1.0 1.0
+
+- A value of 0.0 will mine ONLY POUW
+- A value of 1.0 (Default) will mine both POUW and POW. It will choose a POW ratio that matches POUW
+- A value of 2.0 will fully mine only POW. Any value higher than 1.0 will not mine POUW
+- A value between 0.0 and 1.0 will determine how much POW is mined, values closer to 1.0 will mine POW more intensely, while values closer to 0.0 will mine POW less intensely
+- A value between 1.0 and 2.0 will determine how intensely to mine ONLY POW
+
+- A statistic in the status column of the tables called "pow slip" will show you how much POW hashrate above or below the POUW hashrate you are doing. If below (-), you should increase your pow hashrate. If above, you are wasting resources doing unecessary POW hashrate and you should lower your POW hashrate. NOTE: It is not possible to be rewarded for POW hashrate above your POUW hashrate!
+
+-- Dynex intensity --
+The "intensity" option in Bz will determine how much vram to utilize to mine Dynex. a value of 64 (highest), will use all available ram, a value of 1 will use the minimum amount of ram. Default is 0 (converts to 64 internally)
+
+For solo mining, use node+tcp
+
+```
+-a dynex -w 0000 -p us-east.dnx.minenow.space:18000 us.dynex.herominers.com:1120 pool.us.deepminerz.com:3333 --nc 1 --pool_password workername --dynex_pow_ratio 1.0
 ```
 
 ### Ethw (EthPOW)
@@ -402,211 +429,6 @@ The GUI will display (and allow you to navigate to) other rigs running BzMiner. 
 
 ![image](https://user-images.githubusercontent.com/83083846/147267304-8357dd99-1638-4d83-a41a-0ebabd01cd4b.png)
 
-
-## CLI
-BzMiner is a command line interface. Simply update `config.txt` and launch `bzminer`.
-
-`bzminer` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer -c custom_config.txt`.
-
-`bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
-
-```
->bzminer --help
-BzMiner - Advanced Crypto Miner
-Usage: bzminer [OPTIONS]
-
-Options:
-  -h,--help                   Print this help message and exit
-  --version                   Get the version of this binary
-  --lang TEXT                 Set the language (en, cn). Default en
-  -a TEXT                     Default Mining algorithm. eg. 'ethash'
-  --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
-  --a3 TEXT                   Default third Mining algorithm (tri mine, also zil + dual). eg. 'zil'
-  -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
-  --r2 TEXT                   Default Pool username for second algo (dual mine)
-  --r3 TEXT                   Default Pool username for third algo (tri mine, also zil + dual)
-  --temp_stop INT             Temperature to pause mining on a device (should be higher than temp_start)
-  --temp_start INT            Temperature to start mining on a device again (should be lower than temp_stop)
-  --pool_password TEXT        Default Pool password
-  --pool_password2 TEXT       Default Pool password for second algo (dual mine)
-  --pool_password3 TEXT       Default Pool password for second algo (dual mine)
-  --igpu BOOLEAN              Enable IGPU (0 = false, 1 = true, default 0)
-  --nvidia INT                Mine with Nvidia devices (0 = false, 1 = true, 1 is default)
-  --amd INT                   Mine with AMD devices (0 = false, 1 = true, 1 is default)
-  --intel INT                 Mine with Intel devices (0 = false, 1 = true, 0 is default)
-  --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
-  --nvidia_opencl             Enable Nvidia opencl device enumeration
-  -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
-  --w2 TEXT ...               Wallet Address for second algo (dual mine). If algorithm requires more than one address, list them same as -p
-  --w3 TEXT ...               Wallet Address for third algo (tri mine, also zil + dual). If algorithm requires more than one address, list them same as -p
-  -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
-  --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
-  --p3 TEXT ...               Array of Pool Addresses for third algo (tri mine, also zil + dual). eg. zmp+tcp://zil.flexpool:4444 ethproxy+tcp://us-east.ezil.me:5555
-  -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
-  --hide_disabled_devices     Do not log devices that are disabled.
-  --max_log_history INT       For http api. max retained log history. default is 1024. Higher values increase memory usage.
-  --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
-  --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
-  --immediate_log             If specified, logger will immediately output logs. This can have a small impact on performance.
-  --log_frequency_ms INT      Log frequency in milliseconds. Default is 500.
-  -o TEXT                     If provided, output will be logged to this file
-  --log_file_verbosity INT    Set log file verbosity. Default 2.
-  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
-  -c TEXT                     Config file to load settings from. Default is config.txt
-  -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --i3 INT                    Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
-  --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
-  --allow_stales BOOLEAN      If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
-  --restart_on_disconnect BOOLEAN      If 1 (default 0), BzMiner will restart when a pool unexpectedly disconnects. Can be useful when having issues on auto reconnects.
-  --throttle INT ...          Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
-  --throttle1 INT ...         Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
-  --throttle2 INT ...         Throttle mining on pool 2 (array of devices, or just one value to set all to same). default is 0.
-  --throttle3 INT ...         Throttle mining on pool 3 (array of devices, or just one value to set all to same). default is 0.
-  --mem_on_demand INT ...     An array of devices that should allocate memory (luts, dags) only when they are needed, then releasing that memory after they are no longer needed. Useful for cards that cannot hold two algos memory allocations at the same time such as nexa + zil on 8gb cards. Default is 0
-  -g INT                      Ramp up miner rather than start at full speed.
-  -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
-  --repair_dag INT            Validate and repair DAG. Default is 1
-  --nc INT                    Do not save to the config file (but still read from it).
-  --show_pending              Do not start watchdog service.
-  --update_frequency_ms INT   Output frequency in milliseconds. 0 = disabled. Default is 15000.
-  --update_frequency_shares INT
-                              Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
-  --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
-  --disable_index_html        Disable creating index.html file
-  --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
-  --cpu_validate INT          Validate solutions on cpu before sending to pool.
-  --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
-  --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
-  --max_dual_autotune_drop FLOAT
-                              Max hashrate drop of first algo in dual mining when autotuning. 0.0 - 1.0. default 0.92.
-  --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
-  --zil_only                  Only mine zil for the first algo (for zil + non-eth algo). Will set for first pool_config. Will only generate a dag for epoch 0 (zil). use in combination with --multi_mine_type 1, --multi_mine_ms 0 10000 and cache_dag 1
-  --zil_retain_hashrate BOOLEAN
-                              Continue showing last zil hashrate outside the zil window. This may result in OS's showing a hashrate for zil outside the window as well
-  --zil_gpus INT ...          list if gpu indexes for which cards to mine zil. If not specified, all gpus by default will mine zil.
-  --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
-  --force_algo2 TEXT          Force an algorithm to run as the second algo in dual. Useful for OS's that do not currently have the desired algo implemented in integration scripts
-  --opencl_workgroup_size INT Force an opencl algorithm to use a specific workgroup size.
-  --community_fund INT        Enable/Disable community fund (currently kaspa and radiant only). Value is a multiple of normal dev fee, so value of 1 = 1% donation, 2 = 2% donation, etc. Default is 1, 0 is disabled
-  --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
-  --test INT                  Test mine. Useful for setting up overclocks.
-  --testdiff INT              Test difficulty. 1 - lowest difficulty, no limit to max difficulty
-  --pool_reconnect_timeout_ms INT
-                              Pool reconnect timeout override in ms. default is 30000
-  --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
-  --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
-  --http_port INT             Set which port the HTTP API listens on. default is 4014.
-  --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
-  --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
-  --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
-  --devices                   Only log devices. Does not start miner
-  --no_watchdog               Do not start watchdog service.
-  --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
-  --enable TEXT ...           Enable specific GPUs from mining, separate by a space. This overrides --disable. Use device id in the format of pci_bus:pci_device (eg. --enable 1:0 3:0). use --devices to find device id.
-  --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
-  --start_script TEXT         If specified, this script will run when BzMiner starts.
-  --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
-  --crash_script TEXT         When hung GPU is detected, this script will run.
-  --hung_gpu_reboot INT       If 1 (default 0), BzMiner will reboot the rig when a hung GPU is detected.
-  --hung_gpu_restart_bzminer INT
-                              If 1 (default 1), and watchdog is enabled, watchdog will restart BzMiner process when hung GPU is detected.
-  --reboot_after_watchdog_restarts INT
-                              Reboot PC after watchdog restarts x number of times
-  --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
-  --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
-  --no_color INT              If 1 (default 0), output in console will not have color.
-  --webhook_discord_url TEXT  Discord webhook api url
-  --webhook_discord_solutions_only INT
-                              If true, only solutions will be sent to this webhook
-  --webhook_discord_interval_ms INT
-                              How often to send the logs to discord
-  --webhook_discord_verbosity INT
-                              verbosity of discord web hook. default is 2
-  --oc_delay_ms INT ...       Time (ms) to delay algo switch before/after oc changed for algo. default 50.
-  --oc_enable INT ...         Whether oc should be set for the first algo or not (per device). Default is 1.
-  --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
-                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
-                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
-                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
-  --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
-  --oc_core_clock_offset INT ...
-                              Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
-  --oc_memory_clock_offset INT ...
-                              Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
-  --oc_core_volt_offset INT ...
-                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore. 
-  --oc_memory_volt_offset INT ...
-                              Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
-  --oc_lock_core_clock INT ...
-                              Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
-  --oc_lock_memory_clock INT ...
-                              Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
-  --oc_pstate INT ...         Force a specific pstate. default is -1, will not change pstate
-  --oc_script TEXT ...        Instead of BzMiner setting oc's for a card/algo, call a script instead when oc needs to be set.
-                               script is called with parameters --gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}
-                               eg.
-                               'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
-                               BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
-  --oc_enable2 INT ...        Whether oc should be set for the second algo or not (per device). Default is 1.
-  --oc_fan_speed2 TEXT ...    (second algo) Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
-                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
-                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
-                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
-  --oc_power_limit2 INT ...   (second algo) Set the power limite for devices (in watts), separated by a space. 0 = ignore.
-  --oc_core_clock_offset2 INT ...
-                              (second algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
-  --oc_memory_clock_offset2 INT ...
-                              (second algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
-  --oc_core_volt_offset2 INT ...
-                              (second algo) Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
-  --oc_memory_volt_offset2 INT ...
-                              (second algo) Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
-  --oc_lock_core_clock2 INT ...
-                              (second algo) Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
-  --oc_lock_memory_clock2 INT ...
-                              (second algo) Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
-  --oc_pstate2 INT ...        (second algo) Force a specific pstate. default is -1, will not change pstate
-  --oc_script2 TEXT ...       (second algo) Instead of BzMiner setting oc's for a card/algo, call a script instead when oc needs to be set.
-                               script is called with parameters --gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}
-                               eg.
-                               'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
-                               BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
-  --oc_enable3 INT ...        Whether oc should be set for the third algo or not (per device). Default is 1.
-  --oc_fan_speed3 TEXT ...    (third algo) Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
-                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
-                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
-                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
-  --oc_power_limit3 INT ...   (third algo) Set the power limite for devices (in watts), separated by a space. 0 = ignore.
-  --oc_core_clock_offset3 INT ...
-                              (third algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
-  --oc_memory_clock_offset3 INT ...
-                              (third algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
-  --oc_core_volt_offset3 INT ...
-                              (third algo) Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
-  --oc_memory_volt_offset3 INT ...
-                              (third algo) Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
-  --oc_lock_core_clock3 INT ...
-                              (third algo) Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
-  --oc_lock_memory_clock3 INT ...
-                              (third algo) Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
-  --oc_pstate3 INT ...        (third algo) Force a specific pstate. default is -1, will not change pstate
-  --oc_script3 TEXT ...       (third algo) Instead of BzMiner setting oc's for a card/algo, call a script instead when oc needs to be set.
-                               script is called with parameters --gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}
-                               eg.
-                               'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
-                               BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
-  --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
-  --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
-  --oc_reset_all              Completely reset oc on all devices. Requires admin/root
-  --oc_reset_on_exit INT      Reset overclocks on bzminer exit. default 1 (enable), 0 = disable
-  ```
-  
-  ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
-
-
 ## The Configuration File (config.txt)
 The configuration file is in the json file format, and can be manually updated, or updated through `bzminer.exe`'s remote commands.
 
@@ -622,6 +444,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
 ```
 {
     "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
+
+    "dynex_pow_ratio": [1.0, 1.0], // see Dynex notes above in github. allows to dedicate gpus to pow or pouw on dynex, and to set ratio of pow/pouw
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
         
@@ -913,6 +737,225 @@ With "advanced_config" turned on (default), the full config file is as follows:
         }]
 }
 ```
+
+
+## CLI
+BzMiner is a command line interface. Simply update `config.txt` and launch `bzminer`.
+
+`bzminer` has an optional parameter, `-c`, which can be called to load a different configuration file. eg. `bzminer -c custom_config.txt`.
+
+`bzminer` also has optional parameters for setting the pool url, wallet address, algorithm and rig/worker name for all devices
+
+```
+>bzminer --help
+BzMiner - Advanced Crypto Miner
+Usage: bzminer [OPTIONS]
+
+Options:
+  -h,--help                   Print this help message and exit
+  --version                   Get the version of this binary
+  --lang TEXT                 Set the language (en, cn). Default en
+  -a TEXT                     Default Mining algorithm. eg. 'ethash'
+  --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
+  --a3 TEXT                   Default third Mining algorithm (tri mine, also zil + dual). eg. 'zil'
+  -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
+  --r2 TEXT                   Default Pool username for second algo (dual mine)
+  --r3 TEXT                   Default Pool username for third algo (tri mine, also zil + dual)
+  --temp_stop INT             Temperature to pause mining on a device (should be higher than temp_start)
+  --temp_start INT            Temperature to start mining on a device again (should be lower than temp_stop)
+  --pool_password TEXT        Default Pool password
+  --pool_password2 TEXT       Default Pool password for second algo (dual mine)
+  --pool_password3 TEXT       Default Pool password for second algo (dual mine)
+  --igpu BOOLEAN              Enable IGPU (0 = false, 1 = true, default 0)
+  --nvidia INT                Mine with Nvidia devices (0 = false, 1 = true, 1 is default)
+  --amd INT                   Mine with AMD devices (0 = false, 1 = true, 1 is default)
+  --intel INT                 Mine with Intel devices (0 = false, 1 = true, 1 is default)
+  --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
+  --nvidia_opencl             Enable Nvidia opencl device enumeration
+  -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
+  --w2 TEXT ...               Wallet Address for second algo (dual mine). If algorithm requires more than one address, list them same as -p
+  --w3 TEXT ...               Wallet Address for third algo (tri mine, also zil + dual). If algorithm requires more than one address, list them same as -p
+  -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p3 TEXT ...               Array of Pool Addresses for third algo (tri mine, also zil + dual). eg. zmp+tcp://zil.flexpool:4444 ethproxy+tcp://us-east.ezil.me:5555
+  -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
+  --hide_disabled_devices     Do not log devices that are disabled.
+  --max_log_history INT       For http api. max retained log history. default is 1024. Higher values increase memory usage.
+  --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
+  --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
+  --immediate_log             If specified, logger will immediately output logs. This can have a small impact on performance.
+  --log_frequency_ms INT      Log frequency in milliseconds. Default is 500.
+  -o TEXT                     If provided, output will be logged to this file
+  --log_file_verbosity INT    Set log file verbosity. Default 2.
+  --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
+  -c TEXT                     Config file to load settings from. Default is config.txt
+  -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i3 INT                    Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
+  --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
+  --allow_stales BOOLEAN      If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
+  --restart_on_disconnect BOOLEAN
+                              If 1 (default 0), BzMiner will restart when a pool unexpectedly disconnects. Can be useful when having issues on auto reconnects.
+  --throttle INT ...          Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
+  --throttle1 INT ...         Throttle mining on pool 1 (array of devices, or just one value to set all to same). default is 0.
+  --throttle2 INT ...         Throttle mining on pool 2 (array of devices, or just one value to set all to same). default is 0.
+  --throttle3 INT ...         Throttle mining on pool 3 (array of devices, or just one value to set all to same). default is 0.
+  --mem_on_demand INT ...     An array of devices that should allocate memory (luts, dags) only when they are needed, then releasing that memory after they are no longer needed. Useful for cards that cannot hold two algos memory allocations at the same time such as nexa + zil on 8gb cards. Default is 0
+  -g INT                      Ramp up miner rather than start at full speed.
+  -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
+  --repair_dag INT            Validate and repair DAG. Default is 1
+  --nc INT                    Do not save to the config file (but still read from it).
+  --show_pending              Do not start watchdog service.
+  --update_frequency_ms INT   Output frequency in milliseconds. 0 = disabled. Default is 15000.
+  --update_frequency_shares INT
+                              Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
+  --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
+  --disable_index_html        Disable creating index.html file
+  --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
+  --cpu_validate INT          Validate solutions on cpu before sending to pool.
+  --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
+  --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
+  --max_dual_autotune_drop FLOAT
+                              Max hashrate drop of first algo in dual mining when autotuning. 0.0 - 1.0. default 0.92.
+  --cache_dag INT             Useful for eth + zil. 0 = disabled (default), 1 = dag cached in vram (only supported on >6gb cards)
+  --zil_only                  Only mine zil for the first algo (for zil + non-eth algo). Will set for first pool_config. Will only generate a dag for epoch 0 (zil). use in combination with --multi_mine_type 1, --multi_mine_ms 0 10000 and cache_dag 1
+  --zil_retain_hashrate BOOLEAN
+                              Continue showing last zil hashrate outside the zil window. This may result in OS's showing a hashrate for zil outside the window as well
+  --zil_gpus INT ...          list if gpu indexes for which cards to mine zil. If not specified, all gpus by default will mine zil.
+  --force_algo TEXT           Force an algorithm to run. Useful for OS's that do not currently have the desired algo implemented in integration scripts
+  --force_algo2 TEXT          Force an algorithm to run as the second algo in dual. Useful for OS's that do not currently have the desired algo implemented in integration scripts
+  --opencl_workgroup_size INT Force an opencl algorithm to use a specific workgroup size.
+  --community_fund INT        Enable/Disable community fund (currently kaspa and radiant only). Value is a multiple of normal dev fee, so value of 1 = 1% donation, 2 = 2% donation, etc. Default is 1, 0 is disabled
+  --algo_opt INT ...          A list (one per device) of whether to use algorithm optimizations if the algo supports it.
+  --test INT                  Test mine. Useful for setting up overclocks.
+  --testdiff INT              Test difficulty. 1 - lowest difficulty, no limit to max difficulty
+  --pool_reconnect_timeout_ms INT
+                              Pool reconnect timeout override in ms. default is 30000
+  --dynex_cache_mallob BOOLEAN
+                              If 1, mallob will be cached to local disk in the 'cache' folder, so if miner restarts, the mallob will not need to be redownloaded. Everything in the 'cache' folder will be deleted on new mallob jobs. Default is no caching, 0
+  --dynex_test_mallob_file TEXT
+                              For testing, if specified will force the use of a local mallob file instead of downloading one from the network.
+  --dynex_max_chips INT       Set to 0 for no limit, otherwise set to >0 for max number of chips to use per device
+  --dynex_pow_ratio FLOAT ... space separated list of 0.0 - 2.0 values (one value per gpu). default is 1.0 meaning max pouw and pow. 0.0 = do not do pow, only pouw. 2.0 = only do pow, do not do pouw (pow on rig is limited by total pouw work done). Use this option to specify some cards to do only pow and other do pouw, allowing to set better ocs per card. Read docs for examples.
+  --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
+  --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
+  --http_port INT             Set which port the HTTP API listens on. default is 4014.
+  --http_password TEXT        Set password for HTTP API. If not set, HTTP API will not be enabled. default is empty.
+  --force_opencl INT          Force all devices to use the OpenCL implementation (if possible).
+  --reset_oc_dag_gen INT      Reset overclocks before dag generation. Clocks will be set back after dag is generated. 1 = enabled, 0 = disabled
+  --devices                   Only log devices. Does not start miner
+  --no_watchdog               Do not start watchdog service.
+  --disable TEXT ...          Disable specific GPUs from mining, separate by a space. Use device id in the format of pci_bus:pci_device (eg. --disable 1:0 3:0). use --devices to find device id.
+  --enable TEXT ...           Enable specific GPUs from mining, separate by a space. This overrides --disable. Use device id in the format of pci_bus:pci_device (eg. --enable 1:0 3:0). use --devices to find device id.
+  --advanced_config INT       If 1 (default 0), advanced config options will be showin in config.txt.
+  --start_script TEXT         If specified, this script will run when BzMiner starts.
+  --hung_gpu_ms INT           When GPU does not respond for this amount of time (ms), will be considered hung.
+  --crash_script TEXT         When hung GPU is detected, this script will run.
+  --hung_gpu_reboot INT       If 1 (default 0), BzMiner will reboot the rig when a hung GPU is detected.
+  --hung_gpu_restart_bzminer INT
+                              If 1 (default 1), and watchdog is enabled, watchdog will restart BzMiner process when hung GPU is detected.
+  --reboot_after_watchdog_restarts INT
+                              Reboot PC after watchdog restarts x number of times
+  --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
+  --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
+  --no_color INT              If 1 (default 0), output in console will not have color.
+  --webhook_discord_url TEXT  Discord webhook api url
+  --webhook_discord_solutions_only INT
+                              If true, only solutions will be sent to this webhook
+  --webhook_discord_interval_ms INT
+                              How often to send the logs to discord
+  --webhook_discord_verbosity INT
+                              verbosity of discord web hook. default is 2
+  --oc_delay_ms INT ...       Time (ms) to delay algo switch before/after oc changed for algo. default 50.
+  --oc_enable INT ...         Whether oc should be set for the first algo or not (per device). Default is 1.
+  --oc_fan_speed TEXT ...     Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
+                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
+                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
+  --oc_power_limit INT ...    Set the power limite for devices (in watts), separated by a space. 0 = ignore.
+  --oc_core_clock_offset INT ...
+                              Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_memory_clock_offset INT ...
+                              Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_core_volt_offset INT ...
+                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore. 
+  --oc_memory_volt_offset INT ...
+                              Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_lock_core_clock INT ...
+                              Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
+  --oc_lock_memory_clock INT ...
+                              Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
+  --oc_pstate INT ...         Force a specific pstate. default is -1, will not change pstate
+  --oc_script TEXT ...        Instead of BzMiner setting oc's for a card/algo, call a script instead when oc needs to be set.
+                               script is called with parameters --gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}
+                               eg.
+                               'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
+                               BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
+  --oc_enable2 INT ...        Whether oc should be set for the second algo or not (per device). Default is 1.
+  --oc_fan_speed2 TEXT ...    (second algo) Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
+                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
+                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
+  --oc_power_limit2 INT ...   (second algo) Set the power limite for devices (in watts), separated by a space. 0 = ignore.
+  --oc_core_clock_offset2 INT ...
+                              (second algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_memory_clock_offset2 INT ...
+                              (second algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_core_volt_offset2 INT ...
+                              (second algo) Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_memory_volt_offset2 INT ...
+                              (second algo) Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_lock_core_clock2 INT ...
+                              (second algo) Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
+  --oc_lock_memory_clock2 INT ...
+                              (second algo) Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
+  --oc_pstate2 INT ...        (second algo) Force a specific pstate. default is -1, will not change pstate
+  --oc_script2 TEXT ...       (second algo) Instead of BzMiner setting oc's for a card/algo, call a script instead when oc needs to be set.
+                               script is called with parameters --gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}
+                               eg.
+                               'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
+                               BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
+  --oc_enable3 INT ...        Whether oc should be set for the third algo or not (per device). Default is 1.
+  --oc_fan_speed3 TEXT ...    (third algo) Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
+                              Optionally use target temperature format, eg. --oc_fan_speed t:N[fMin-fMax]
+                              where t is core, tm is mem , N is target temp, fMin is min fan speed percent, fMax is max fan speed percent
+                              eg. --oc_fan_speed t:65[25-75] tm:85[50-100]
+  --oc_power_limit3 INT ...   (third algo) Set the power limite for devices (in watts), separated by a space. 0 = ignore.
+  --oc_core_clock_offset3 INT ...
+                              (third algo) Set the target core clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_memory_clock_offset3 INT ...
+                              (third algo) Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
+  --oc_core_volt_offset3 INT ...
+                              (third algo) Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_memory_volt_offset3 INT ...
+                              (third algo) Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
+  --oc_lock_core_clock3 INT ...
+                              (third algo) Lock the core clock for devices (in mhz), separated by a space. Overrides oc_core_clock.
+  --oc_lock_memory_clock3 INT ...
+                              (third algo) Lock the memory clock for devices (in mhz), separated by a space. Overrides oc_memory_clock.
+  --oc_pstate3 INT ...        (third algo) Force a specific pstate. default is -1, will not change pstate
+  --oc_script3 TEXT ...       (third algo) Instead of BzMiner setting oc's for a card/algo, call a script instead when oc needs to be set.
+                               script is called with parameters --gpu_index {gpu index} --gpu_id {gpu id} --algo {algorithm oc is being set for}
+                               eg.
+                               'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
+                               BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
+  --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
+  --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
+  --oc_reset_all              Completely reset oc on all devices. Requires admin/root
+  --oc_reset_on_exit INT      Reset overclocks on bzminer exit. default 1 (enable), 0 = disable
+  --cukernel TEXT             Used for debugging only.
+  --cukernel2 TEXT            Used for debugging only.
+  --cukernel3 TEXT            Used for debugging only.
+  --clkernel TEXT             Used for debugging only.
+  --clkernel2 TEXT            Used for debugging only.
+  --clkernel3 TEXT            Used for debugging only.
+  --force_architecture TEXT   Used for debugging only.
+  ```
+  
+  ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
+
 
 ### How to disable specific GPUs
 
