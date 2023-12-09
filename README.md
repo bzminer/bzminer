@@ -239,7 +239,7 @@ bzminer -a radiant -w 0x0000000000000000000000000000000000000000 -p stratum+tcp:
 bzminer -a olhash -w 0x0000000000000000000000000000000000000000 -p ethproxy+ssl://us.extremehash.net:3443 ethproxy+ssl://eu-ol.extremehash.net:3443 -r worker_name --nc 1
 ```
 
-### Alephium
+### Alephium https://www.bzminer.com/guides/how-to-mine-alephium
 
 Alephium mining may require 4 wallet addresses (solo mining)
 
@@ -280,7 +280,7 @@ MUST WAIT FOR NODE TO SYNC! (otherwise bz will just keep attempting to reconnect
 bzminer -a decred -w 0000 -p https://127.0.0.1:9109 -r username --pool_password password --nc 1
 ```
 
-### Karlsen
+### Karlsen https://www.bzminer.com/guides/how-to-mine-karlsen
 
 Karlsen mining currently requires a node running (experimental pool implementation provided in BzMiner)
 
@@ -296,7 +296,7 @@ For pool mining change "node" to "stratum"
 bzminer -a karlsen -w karlsen:0000 -p stratum+tcp://us.karlsen.herominers.com:1195 --nc 1
 ```
 
-### Kaspa
+### Kaspa https://www.bzminer.com/guides/how-to-mine-kaspa
 
 Kaspa mining currently requires a node running (experimental pool implementation provided in BzMiner)
 
