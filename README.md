@@ -3,9 +3,10 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v18.0.0)?
+## Why use BzMiner (v19.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
+    - Karlsen (AMD, Nvidia, Intel (Intel only supports POW) 1% dev fee)
     - Dynex (AMD, Nvidia, Intel (Intel only supports POW) 2% dev fee)
     - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
     - Etchash (AMD, Nvidia, Intel, 0.5% dev fee) 
@@ -277,6 +278,22 @@ MUST WAIT FOR NODE TO SYNC! (otherwise bz will just keep attempting to reconnect
 
 ```
 bzminer -a decred -w 0000 -p https://127.0.0.1:9109 -r username --pool_password password --nc 1
+```
+
+### Karlsen
+
+Karlsen mining currently requires a node running (experimental pool implementation provided in BzMiner)
+
+For solo mining, use node+tcp
+
+```
+bzminer -a karlsen -w 000000 -p solo+tcp://127.0.0.1:42110
+```
+
+For pool mining change "node" to "stratum"
+
+```
+bzminer -a karlsen -w karlsen:0000 -p stratum+tcp://us.karlsen.herominers.com:1195 --nc 1
 ```
 
 ### Kaspa
