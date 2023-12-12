@@ -3,10 +3,10 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v19.0.0)?
+## Why use BzMiner (v19.0.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
-    - Karlsen (AMD, Nvidia, (Intel support coming in later release) 1% dev fee) (Supports direct to node solo mining)
+    - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
     - Dynex (AMD, Nvidia, Intel (Intel only supports POW) 2% dev fee)
     - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
     - Etchash (AMD, Nvidia, Intel, 0.5% dev fee) 
