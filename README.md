@@ -510,7 +510,11 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "nvidia_opencl": false, // have opencl enumerate nvidia devices. allows the "force_opencl" option for nvidia cards. disabled by default
     
-    "amd_only": false, // only mine using amd cards
+    "enable_nvidia": true, // whether to mine with nvidia cards or not
+    
+    "enable_amd": true, // whether to mine with amd cards or not
+    
+    "enable_intel": true, // whether to mine with intel cards or not
     
     "disable_opencl ": false, // do not load OpenCL. Useful for some rigs that are having AMD driver issues
     
