@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v19.2.4)?
+## Why use BzMiner (v19.3.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -346,10 +346,10 @@ bzminer -a kylacoin -w 0000 -p stratum+tcp://pool.vipor.io:15020 --nc 1
 
 ### Novo
 
-Vipor:
+woolypooly:
 
 ```
-bzminer -a kylacoin -w 0000 -p pool.vipor.io:15075 --nc 1
+bzminer -a novo -w 0000 -p stratum+tcp://pool.woolypooly.com:3134 --nc 1
 ```
 
 ### Ironfish
