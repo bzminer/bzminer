@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v19.3.0)?
+## Why use BzMiner (v19.3.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -495,6 +495,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "temp_stop": 120, // temperature (C) that device should stop mining at
     
     "rig_name": "rig", // default name of rig, if pool does not specify, will use this as the username/worker name
+
+    "ssl_verify": false, // if true, bz will validate ssl certificates
     
     "force_algo": "", // Some OS's may not have updated scripts to allow mining new coins in BzMiner. Use this option to force the first algo
     
@@ -782,6 +784,7 @@ Options:
   -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
   --r2 TEXT                   Default Pool username for second algo (dual mine)
   --r3 TEXT                   Default Pool username for third algo (tri mine, also zil + dual)
+  --ssl_verify BOOLEAN        If 1, bz will verify ssl certificates. Default is 0.
   --temp_stop INT             Temperature to pause mining on a device (should be higher than temp_start)
   --temp_start INT            Temperature to start mining on a device again (should be lower than temp_stop)
   --pool_password TEXT        Default Pool password
