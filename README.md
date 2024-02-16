@@ -32,6 +32,9 @@ https://www.bzminer.com/config-generator
     - Canxium (AMD, Nvidia, Intel, 0.5% dev fee)
     - Rethereum (AMD, Nvidia, Intel, 1% dev fee)
     - Decred (AMD, Nvidia, Intel 1% dev fee)
+    - Nexellia (AMD, Nvidia, Intel 1% dev fee)
+    - DinarTether (DINT) (AMD, Nvidia, Intel 1% dev fee)
+    - Larissa (AMD, Nvidia, Intel 0.5% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
     - Octa + Alph (Nvidia only, experimental)
