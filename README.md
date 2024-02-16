@@ -171,13 +171,13 @@ bzminer -a etchash -w 0x0000000000000000000000000000000000000000 -p stratum+tcp:
 ### Ergo
 
 ```
-bzminer -a ergo -w 0x0000000000000000000000000000000000000000 -p stratum-ergo.flypool.org:3333 -r worker_name --nc 1
+bzminer -a ergo -p stratum+tcp://erg.kryptex.network:7777 -w WALLET_ADDRESS.WORKER_NAME
 ```
 
 ### Ravencoin
 
 ```
-bzminer -a rvn -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-ravencoin.flypool.org:3443 -r worker_name --nc 1
+bzminer -a rvn -p stratum+tcp://rvn.kryptex.network:7777 -w WALLET_ADDRESS.WORKER_NAME --nc 1
 ```
 
 ### Neoxa
@@ -189,13 +189,13 @@ bzminer -a neox -w 0x0000000000000000000000000000000000000000 -p neox-eu.minerpo
 ### Clore
 
 ```
-bzminer -a clore -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-eu.rplant.xyz:17083 -r worker_name --nc 1
+bzminer -a clore -p stratum+tcp://clore.kryptex.network:7777 -w WALLET_ADDRESS.WORKER_NAME --nc 1
 ```
 
 ### Neurai
 
 ```
-bzminer -a xna -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-eu.rplant.xyz:17029 -r worker_name --nc 1
+bzminer -a xna -p stratum+tcp://xna.kryptex.network:7777 -w WALLET_ADDRESS.WORKER_NAME --nc 1
 ```
 
 ### Nexa
@@ -309,7 +309,7 @@ bzminer -a kaspa -w 000000 -p node+tcp://127.0.0.1:16110
 For pool mining change "node" to "stratum"
 
 ```
-bzminer -a kaspa -w 000000 -p stratum+tcp://pool.us.woolypooly.com:3112
+bzminer -a kaspa -w 000000 -p stratum+tcp://kas.kryptex.network:7777
 ```
 
 ### Ixian
@@ -354,10 +354,10 @@ bzminer -a novo -w 0000 -p stratum+tcp://pool.woolypooly.com:3134 --nc 1
 
 ### Ironfish
 
-Flexpool:
+Kryptex:
 
 ```
-bzminer -a ironfish -w 0000 -p stratum+tcp://iron.fpmp.net:8888 --nc 1
+bzminer -a ironfish -p stratum+tcp://iron.kryptex.network:7777 -w WALLET_ADDRESS.WORKER_NAME --nc 1
 ```
 
 How to solo mine Ironfish:
