@@ -374,6 +374,30 @@ How to solo mine Ironfish:
 bzminer -a ironfish -w 0000 -p 127.0.0.1:9034 --nc 1
 ```
 
+### Nexellia
+
+herominers:
+
+```
+bzminer -a nexellia -w 0000 -p stratum+ssl://ca.nexellia.herominers.com:1143 --nc 1
+```
+
+### DinarTether (DINT)
+
+rplant:
+
+```
+bzminer -a dint -w 0000 -p stratum+ssl://stratum-na.rplant.xyz:17049 --nc 1
+```
+
+### Larissa
+
+mining4people:
+
+```
+bzminer -a larissa -w 0000 -p ethstratum+ssl://na.mining4people.com:23344 --nc 1
+```
+
 ### Dual Mining (eth + alph)
 
 ```
