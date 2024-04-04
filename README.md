@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v19.3.1)?
+## Why use BzMiner (v21.0.3)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -35,6 +35,7 @@ https://www.bzminer.com/config-generator
     - Nexellia (AMD, Nvidia, Intel 1% dev fee)
     - DinarTether (DINT) (AMD, Nvidia, Intel 1% dev fee)
     - Larissa (AMD, Nvidia, Intel 0.5% dev fee)
+    - Warthog (AMD, Nvidia, Intel 2.0% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
     - Octa + Alph (Nvidia only, experimental)
@@ -427,6 +428,43 @@ Zil can be mined with any other dual combo. Example below shows Erg + Kaspa + Zi
 ```
 bzminer -a ergo -w 0000 -p stratum-ergo.flypool.org:3333 --a2 kaspa --w2 1111 --p2 stratum+tcp://pool.woolypooly.com:3112 --a3 zil --w3 2222 --p3 zmp://zil.flexpool.io
 ```
+
+### Warthog
+- use option `warthog_cpu_threads` - Number of threads to use to compute the verus hashes. Default is 0, use number of cores available (bz will subtract 1-4 threads to ensure system doesn't lock up)
+  
+- use option `warthog_max_ram_gb` - Amount of RAM to use to store sha hashes while cpu threads are calculating verus hashes. Default is 0. Value of 0 will allow bz to choose (which is 2gb for 32 threads and under, otherwise 3gb). If not enough avaiable ram, will use available ram minus 1gb. if still not enough ram, will use available ram / 2.
+  
+- use option `warthog_verus_hr_target` - Specify the amount of verus hashrate each gpu should provide to the verus workers. If all gpu's have a verus hashrate specified, calibration will be skipped. Hashrates are specified in hashes per second, and are separated by spaces. Default is 0
+
+- Warthog gpu performance will depend on many variables, such as PCI generation (1,2,3,4), PCI lanes (1x, 4x, 8x, 16x), (if on risers, higher gen speeds can cause pci errors if cables are criss-crossed with other cables due to interference, leading to possible invalid sha shares sometimes), how many gpus are currently participating, ram speeds, ram and cpu caches, cpu speeds, and even the os (windows/linux) can have an impact. Just be aware that there are many reasons why different setups may cause the same card to have drasticaly different results from other setups using that same card.
+
+- Using all available processors will have a negative impact. If manually specifying threads, keep in mind that the os needs a processor to work on, bz itself needs a processor, gpus each need their own threads (they can share processors), and there's an additional processor pinned to 100% usage to distribute the work among the verus workers. bz will automatically reduce thread count to account for these if no thread count is specified.
+  
+- Status column now shows gpu hashrate/verus hashrate, where gpu hashrate is how many sha hashes the gpu is doing, and verus hashrate is how many sha hashes its currently providing the verus workers. those numbers across the gpus should add up to match the verus hr in the pool status
+
+- Lower end cpus, or rigs with under 2gb may not be able to mine warthog, or may have very bad hashrate
+
+Woolypooly:
+
+```
+bzminer -a warthog -r test -w 0000 -p stratum+tcp://pool.us.woolypooly.com:3140 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+
+```
+
+ACC Pool:
+
+```
+bzminer -a warthog -r test -w 0000 -p stratum+tcp://us.acc-pool.pw:12000 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+```
+
+How to solo mine Ironfish:
+
+- change 127.0.0.1 to ip node is running on, ensure to run node with `--stratum 0.0.0.0:3456`
+
+```
+bzminer -a warthog -w 0000 -p stratum+tcp://127.0.0.1:3456 --nc 1 --amd 1 --nvidia 1 --intel 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 4
+```
+
 
 ### OC Change on Algo Switch (eg. +zil)
 Bzminer supports changing the overclocks for gpus between algo changes. A common example of this is doing a core algo like kaspa and a memory hard algo like zil, where each algo wants a different oc for best performance. This can be done from the command line or from config.txt.
