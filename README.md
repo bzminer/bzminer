@@ -1062,6 +1062,10 @@ or
 
 Optionally they can be disabled directly from the `config.txt` file, under the gpu in the config.txt file, set `auto_start` to false
 
+To disable a GPU in Hive OS, use the "disable gpus" box in the miner config screen:
+![image](https://github.com/bzminer/bzminer/assets/83083846/26b7e20a-b258-4bb7-b15e-c8a96d994c20)
+
+
 ### Auto fan
 Bz has an autofan ability to keep gpu at a target temperature.
 Set the target fan speed (as percentage) for devices, separated by a space. 0 = auto, -1 = ignore, 100 = max.
