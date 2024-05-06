@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v21.1.1)?
+## Why use BzMiner (v21.1.5)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -36,6 +36,8 @@ https://www.bzminer.com/config-generator
     - DinarTether (DINT) (AMD, Nvidia, Intel 1% dev fee)
     - Larissa (AMD, Nvidia, Intel 0.5% dev fee)
     - Warthog (AMD, Nvidia, Intel 2.0% dev fee)
+    - Aidepin (AMD, Nvidia, Intel 1.0% dev fee)
+    - Aipg (AMD, Nvidia, Intel 1.0% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
     - Octa + Alph (Nvidia only, experimental)
@@ -164,6 +166,20 @@ For solo mining, use node+tcp
 
 ```
 bzminer -a ethw -w 0x0000000000000000000000000000000000000000 -p ethproxy+tcp://pool.woolypooly.com:3096 -r worker_name --nc 1
+```
+
+
+### AI-DEPIN
+
+```
+bzminer -a aidepin -w 0x0000000000000000000000000000000000000000 -p stratum+ssl://stratum-eu.rplant.xyz:17112 -r worker_name --nc 1
+```
+
+
+### AiPG
+
+```
+bzminer -a ethw -w 0x0000000000000000000000000000000000000000 -p stratum+tcp://us.aipg.herominers.com:1128 -r worker_name --nc 1
 ```
 
 ### Ethereum Classic
@@ -457,6 +473,20 @@ ACC Pool:
 bzminer -a warthog -r test -w 0000 -p stratum+tcp://us.acc-pool.pw:12000 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
 ```
 
+Solo RPC (recommended for solo):
+
+launch the node with `--rpc=0.0.0.0:3000`
+```
+bzminer -a warthog -r test -w 0000 -p http://node-ip-address:3001 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+```
+
+Solo Stratum:
+
+launch the node with `--stratum=0.0.0.0:3000`
+```
+bzminer -a warthog -r test -w 0000 -p http://node-ip-address:3001 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+```
+
 How to solo mine Ironfish:
 
 - change 127.0.0.1 to ip node is running on, ensure to run node with `--stratum 0.0.0.0:3456`
@@ -529,6 +559,16 @@ With "advanced_config" turned on (default), the full config file is as follows:
 
     "dynex_pow_ratio": [1.0, 1.0], // see Dynex notes above in github. allows to dedicate gpus to pow or pouw on dynex, and to set ratio of pow/pouw
 
+    "warthog_cpu_threads": 189, // number of cpu threads to use for warthog
+
+    "warthog_unused_cpu_offset": 0, // the start offset of unused threads. if there are 4 unused threads, and this is set to 0, the first 4 cores will not be utilized
+
+    "warthog_max_ram_gb": 0.0, // amount of ram to use for warthog buffers (default 3-4 if set to 0)
+
+    "warthog_verus_hr_target": "[0]", // array, per device, of how much verus hashrate each gpu should accomodate (in hashes, so 10mh would be 10000000)
+
+    "warthog_cache_config": 0, // to better utilize cache, bz can group threads by a cache level. default of 0 will group by L3 cache. 1 will group by cpu
+
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
         
     "lang": "en", // set the language. Default is en. Supported languages are en and cn
@@ -582,6 +622,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "enable_amd": true, // whether to mine with amd cards or not
     
     "enable_intel": true, // whether to mine with intel cards or not
+
+    "disable_cpu_metrics ": false, // Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to true. default is false
     
     "disable_opencl ": false, // do not load OpenCL. Useful for some rigs that are having AMD driver issues
     
@@ -849,7 +891,6 @@ Options:
   -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
   --r2 TEXT                   Default Pool username for second algo (dual mine)
   --r3 TEXT                   Default Pool username for third algo (tri mine, also zil + dual)
-  --ssl_verify BOOLEAN        If 1, bz will verify ssl certificates. Default is 0.
   --temp_stop INT             Temperature to pause mining on a device (should be higher than temp_start)
   --temp_start INT            Temperature to start mining on a device again (should be lower than temp_stop)
   --pool_password TEXT        Default Pool password
@@ -859,6 +900,8 @@ Options:
   --nvidia INT                Mine with Nvidia devices (0 = false, 1 = true, 1 is default)
   --amd INT                   Mine with AMD devices (0 = false, 1 = true, 1 is default)
   --intel INT                 Mine with Intel devices (0 = false, 1 = true, 1 is default)
+  --cpu INT                   Mine with CPU (0 = false, 1 = true, 0 is default). Certain algos such as warthog will automatically enable cpu devices
+  --disable_cpu_metrics       Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to 1. default is 0
   --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   --nvidia_opencl             Enable Nvidia opencl device enumeration
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
@@ -882,6 +925,7 @@ Options:
   --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --i3 INT                    Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --ssl_verify BOOLEAN        Verify SSL certs when set to 1. Default is 0.
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
   --allow_stales BOOLEAN      If 0 (default 1), BzMiner will prevent stales from being sent to the pool.
@@ -901,6 +945,7 @@ Options:
   --update_frequency_shares INT
                               Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
   --avg_hr_ms INT             Hashrate averaging window. Longer is more stable hashrate reporting. Default is 30000.
+  --reset_pool_hr_ms UINT     Reset the Pool hr column after milliseconds. Default is 3600000. Set to 0 to disable reset.
   --disable_index_html        Disable creating index.html file
   --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
@@ -922,12 +967,19 @@ Options:
   --testdiff INT              Test difficulty. 1 - lowest difficulty, no limit to max difficulty
   --pool_reconnect_timeout_ms INT
                               Pool reconnect timeout override in ms. default is 30000
-  --dynex_cache_mallob BOOLEAN
-                              If 1, mallob will be cached to local disk in the 'cache' folder, so if miner restarts, the mallob will not need to be redownloaded. Everything in the 'cache' folder will be deleted on new mallob jobs. Default is no caching, 0
+  --dynex_cache_mallob INT    If 0 - do not cache mallob config, If 1 - mallob will be cached to local disk in the 'cache' folder, so if miner restarts, the mallob will not need to be redownloaded. Everything in the 'cache' folder will be deleted on new mallob jobs. if 2 - same as 1 but will not clear the cache folder. Default is no caching, 1
   --dynex_test_mallob_file TEXT
                               For testing, if specified will force the use of a local mallob file instead of downloading one from the network.
-  --dynex_max_chips INT       Set to 0 for no limit, otherwise set to >0 for max number of chips to use per device
+  --dynex_max_chips INT ...   Set to 0 for no limit, otherwise set to >0 for max number of chips to use per device
   --dynex_pow_ratio FLOAT ... space separated list of 0.0 - 2.0 values (one value per gpu). default is 1.0 meaning max pouw and pow. 0.0 = do not do pow, only pouw. 2.0 = only do pow, do not do pouw (pow on rig is limited by total pouw work done). Use this option to specify some cards to do only pow and other do pouw, allowing to set better ocs per card. Read docs for examples.
+  --warthog_cache_config INT  Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
+  --warthog_cpu_threads INT   Number of CPU threads to use for warthog. Default = 0 (number of logical processors)
+  --warthog_unused_cpu_offset INT
+                              Unused processors start index. Bz will start mining on x number of processors after this offset (x being warthog_cpu_threads). Default is 0. If warthog_cpu_threads is larger than remaining processors, threads will wrap back to start of logical processor indexes on the cpu.
+  --warthog_max_ram_gb FLOAT  Maximum amount of cpu ram (gb) to use for warthog. Default is 0. value of 0 will dynamically choose how much ram to use based on thread count. If available ram is less than requested, will use available ram minus 1gb.
+  --warthog_verus_hr_target FLOAT ...
+                              Target verus hashrate for each gpu. Default is 0. space separated list of hashes per second (eg. 1mh would be 1000000). Any gpu that isn't specified will use calibration
+  --ironfish_graffiti TEXT    Set a custom graffiti. This is a string, max size is 32 characters. default is empty (or what pool provided)
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
   --http_port INT             Set which port the HTTP API listens on. default is 4014.
@@ -969,7 +1021,7 @@ Options:
   --oc_memory_clock_offset INT ...
                               Set the target memory clock offset (in mhz) for devices, separated by a space. 0 = ignore.
   --oc_core_volt_offset INT ...
-                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore. 
+                              Set the target core voltage offset (in mv) for devices, separated by a space. 0 = ignore.
   --oc_memory_volt_offset INT ...
                               Set the target memory voltage offset (in mv) for devices, separated by a space. 0 = ignore.
   --oc_lock_core_clock INT ...
@@ -1034,13 +1086,6 @@ Options:
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
   --oc_reset_on_exit INT      Reset overclocks on bzminer exit. default 1 (enable), 0 = disable
-  --cukernel TEXT             Used for debugging only.
-  --cukernel2 TEXT            Used for debugging only.
-  --cukernel3 TEXT            Used for debugging only.
-  --clkernel TEXT             Used for debugging only.
-  --clkernel2 TEXT            Used for debugging only.
-  --clkernel3 TEXT            Used for debugging only.
-  --force_architecture TEXT   Used for debugging only.
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
