@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v21.1.5)?
+## Why use BzMiner (v21.2.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -623,7 +623,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "enable_intel": true, // whether to mine with intel cards or not
 
-    "disable_cpu_metrics ": false, // Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to true. default is false
+    "disable_cpu_metrics ": true, // Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to true. default is true
     
     "disable_opencl ": false, // do not load OpenCL. Useful for some rigs that are having AMD driver issues
     
@@ -901,7 +901,7 @@ Options:
   --amd INT                   Mine with AMD devices (0 = false, 1 = true, 1 is default)
   --intel INT                 Mine with Intel devices (0 = false, 1 = true, 1 is default)
   --cpu INT                   Mine with CPU (0 = false, 1 = true, 0 is default). Certain algos such as warthog will automatically enable cpu devices
-  --disable_cpu_metrics       Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to 1. default is 0
+  --disable_cpu_metrics       Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to 1. default is 1
   --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   --nvidia_opencl             Enable Nvidia opencl device enumeration
   -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
