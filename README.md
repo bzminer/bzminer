@@ -26,7 +26,6 @@ https://www.bzminer.com/config-generator
     - Zil (AMD, Nvidia, Intel, 0% dev fee. Dual with ANY other coin)
     - Nexa (AMD, Nvidia, Intel, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Ironfish (AMD, Nvidia, Intel, 1% dev fee)
-    - Kylacoin (AMD, Nvidia, Intel, 1% dev fee)
     - Novo (AMD, Nvidia, Intel, 1% dev fee)
     - Octa (AMD, Nvidia, Intel, 0.5% dev fee)
     - Canxium (AMD, Nvidia, Intel, 0.5% dev fee)
@@ -354,14 +353,6 @@ vipor.net:
 
 ```
 bzminer -a octa -w 0000 -p ethproxy+ssl://us.vipor.net:5104  --nc 1
-```
-
-### Kylacoin
-
-Vipor:
-
-```
-bzminer -a kylacoin -w 0000 -p stratum+tcp://pool.vipor.io:15020 --nc 1
 ```
 
 ### Novo
