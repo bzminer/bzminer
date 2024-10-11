@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v21.4.0)?
+## Why use BzMiner (v21.5.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -39,6 +39,8 @@ https://www.bzminer.com/config-generator
     - Aipg (AMD, Nvidia, Intel 1.0% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
+    - Ironfish + Warthog (Nvidia/AMD/Intel, experimental)
+    - Karlsen + Warthog (Nvidia/AMD/Intel, experimental)
     - Octa + Alph (Nvidia only, experimental)
     - Octa + Kaspa (Nvidia only, experimental)
     - Octa + Radiant (Nvidia only, experimental)
@@ -560,7 +562,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
 
     "warthog_cache_config": 0, // to better utilize cache, bz can group threads by a cache level. default of 0 will group by L3 cache. 1 will group by cpu
 
-    "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list)
+    "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list). this can be a multi dimensional array, so that each internal array is a gpu and which algos that gpu should mine. for example if you have 3 gpus, and you want the first to dual mine algo 0 and algo 1, the second gpu to mine only algo 0, and the third to only mine algo 1: "pool": "[[0,1],[0],[1]]"
         
     "lang": "en", // set the language. Default is en. Supported languages are en and cn
 
