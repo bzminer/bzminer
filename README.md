@@ -82,6 +82,17 @@ https://www.bzminer.com/config-generator
 - GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
 - TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
 
+
+## Mine multiple different algos across devices
+### Hive OS (top level config.txt option)
+- "pool" option supports multi dimensional arrays, specifically made for hiveos extra options. format is as follows: "pool": "[[gpu0_algo0, gpu0_algo1], [gpu1_algo0, gpu1_algo1]]"
+- make sure to keep the value in quotes for hive os.
+- an example of this is say you have 3 gpus, and you want the first gpu to dual mine, and the second gpu to only mine the first algo and third gpu to mine only the second algo, you would do: "pool": "[0,1],[0],[1]"
+- This has always been in bz in the config.txt's device_overrides.pool option, but now its accessible from the hiveos interface
+  
+### config.txt device_overrides.pool option
+- In the config.txt, in the device_overrides section, there is an option called "pool" which can be a list of indexes into the pool_config list. bz allows mining any number of algorithms in parallel or alternately (multi_mine_type/multi_mine_ms) on a device
+
 ## 100% LHR Unlock v1
 BzMiner v9.1.0 introduced a 100% LHR unlocker, which was only semi-stable. v9.1.3 has much higher stability and hashrate.
 
