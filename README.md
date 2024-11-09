@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v21.5.1)?
+## Why use BzMiner (v21.5.3)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -37,8 +37,11 @@ https://www.bzminer.com/config-generator
     - Warthog (AMD, Nvidia, Intel 2.0% dev fee)
     - Aidepin (AMD, Nvidia, Intel 1.0% dev fee)
     - Aipg (AMD, Nvidia, Intel 1.0% dev fee)
+    - Verus Coin (CPU 1.0% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
+    - Ironfish + Warthog (Nvidia and AMD, experimental)
+    - Karlsen + Warthog (Nvidia and AMD, experimental)
     - Ironfish + Warthog (Nvidia/AMD/Intel, experimental)
     - Karlsen + Warthog (Nvidia/AMD/Intel, experimental)
     - Octa + Alph (Nvidia only, experimental)
@@ -82,6 +85,20 @@ https://www.bzminer.com/config-generator
 - GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
 - TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
 
+##cpu_affinity option:##
+This applies to cpu mineable algos (warthog, verus)
+Available in both command line and config.txt
+can be a single value, or multiple values
+eg. command line:
+`--cpu_affinity FFFFFFFF FFFFFFFF`
+eg. config.txt:
+`"cpu_affinity": ["FFFFFFFF", "FFFFFFFF"]`
+
+if dual mining, make sure that the indexes of the option match the cpu algorithms, for example if dual mining ironfish and warthog, and ironfish is specified first (which has no cpu component), you would do something like this:
+`"cpu_affinity": ["", "FFFFFFFF"]`
+You may also just specify a single string that all cpu algorithms will use
+`"cpu_affinity": "FFFFFFFF"`
+if cpu_affinity is specified, cpu_threads and cpu_threads_start_offset are ignored, as both of these are inherently defined in the affinity hex mask
 
 ## Mine multiple different algos across devices
 ### Hive OS (top level config.txt option)
@@ -89,7 +106,105 @@ https://www.bzminer.com/config-generator
 - make sure to keep the value in quotes for hive os.
 - an example of this is say you have 3 gpus, and you want the first gpu to dual mine, and the second gpu to only mine the first algo and third gpu to mine only the second algo, you would do: "pool": "[0,1],[0],[1]"
 - This has always been in bz in the config.txt's device_overrides.pool option, but now its accessible from the hiveos interface
-  
+
+config.txt now has top level options to allow overriding mining configuration in HiveOS:
+```
+"algo_override" - list of algorithm names to mine
+"url_override" - list of urls for each algorithm (this can be multi-dimensional for backup urls, just make sure entire value is in double quotes)
+"wallet_override": list of wallets for each algorithm
+"workername_override": list of worker names for each algorithm
+"password_override": list of pool passwords for each algorithm
+"pool_override": list of devices to mine each algorithm. this can be a multi-dimensional array. (make sure full value in double quotes)
+"intensity":  list of intensities for each algorithm (per device). this can be a multi-dimensional array. (make sure full value in double quotes)
+```
+example HiveOS extra config arguments (6 algorithms, first two devices dual mining (notice the [0,2] and [1,2], meaning first device will mine karlsen+warthog and second device will mine ironfish+warthog):
+```
+"algo_override": ["karlsen", "ironfish", "warthog", "dynex", "nexa", "rvn"]
+"url_override": ["stratum+ssl://pool.woolypooly.com:3132", "stratum+ssl://us.ironfish.herominers.com:1145", "stratum+ssl://pool.woolypooly.com:3140", "stratum+ssl://us-east.dnx.minenow.space:18443", "stratum+ssl://bzdev.vipor.net:5184", "pool.woolypooly.com:55555"]
+"wallet_override": ["karlsen_wallet", "ironfish_wallet", "warthog_wallet", "dynex_wallet", "nexa_wallet", "rvn_wallet"]
+"workername_override": ["karlsen_worker", "ironfish_worker", "warthog_worker", "dynex_worker", "nexa_worker", "rvn_worker"]
+"password_override": ["", "", "", "", "", ""]
+"pool_override": "[[0,2],[1,2],[2],[3],[4],[5]]"
+"intensity": "[[5,10], [6,20], [1], [2], [3], [4]]"
+```
+
+command line now allows for up to 9 different algorithms to be specified. below are the list of these command line options:
+```
+--a1 {first algorithm name}
+--a2
+--a3
+--a4
+--a5
+--a6
+--a7
+--a8
+--a9
+
+--p1 {first algorithm pool url}
+--p2
+--p3
+--p4
+--p5
+--p6
+--p7
+--p8
+--p9
+
+--w1 {first algorithm wallet}
+--w2
+--w3
+--w4
+--w5
+--w6
+--w7
+--w8
+--w9
+
+--r1 {first algorithm worker name}
+--r2
+--r3
+--r4
+--r5
+--r6
+--r7
+--r8
+--r9
+
+--pool_password1 {first algorithm password}
+--pool_password2
+--pool_password3
+--pool_password4
+--pool_password5
+--pool_password6
+--pool_password7
+--pool_password8
+--pool_password9
+
+--i1 {first algorithm intensities (per gpu, so should be a list of intensities to control individual gpu intensities for this algorithm)}
+--i2
+--i3
+--i4
+--i5
+--i6
+--i7
+--i8
+--i9
+
+--pool_devices1 {first algorithm list of gpus that should mine this algorithm. these can be either device index OR device pcie id's (eg. 23:0)}
+--pool_devices2
+--pool_devices3
+--pool_devices4
+--pool_devices5
+--pool_devices6
+--pool_devices7
+--pool_devices8
+--pool_devices9
+```
+
+example command line run for 6 different algorithms on different devices, first 2 devices dual mining:
+
+```--a1 karlsen --a2 ironfish --a3 warthog --a4 dynex --a5 nexa --a6 rvn --p1 stratum+ssl://pool.woolypooly.com:3132 --p2 stratum+ssl://us.ironfish.herominers.com:1145 --p3 stratum+ssl://pool.woolypooly.com:3140 --p4 stratum+ssl://us-east.dnx.minenow.space:18443 --p5 stratum+ssl://bzdev.vipor.net:5184 --p6 pool.woolypooly.com:55555 --w1 karlsen_wallet --w2 ironfish_wallet --w3 warthog_wallet --w4 dynex_wallet --w5 nexa_wallet --w6 rvn_wallet --pool_devices1 0 --pool_devices2 1 --pool_devices3 0 1 2 --pool_devices4 3 --pool_devices5 4 --pool_devices6 5```
+
 ### config.txt device_overrides.pool option
 - In the config.txt, in the device_overrides section, there is an option called "pool" which can be a list of indexes into the pool_config list. bz allows mining any number of algorithms in parallel or alternately (multi_mine_type/multi_mine_ms) on a device
 
@@ -561,6 +676,14 @@ With "advanced_config" turned on (default), the full config file is as follows:
 {
     "extra_dev_fee": 0.0, // additional percentage to add to dev fee (thanks for your support!)
 
+    "algo_override": ["karlsen", "ironfish", "warthog", "dynex", "nexa", "rvn"], // which algos to mine
+    "url_override": ["stratum+ssl://pool.woolypooly.com:3132", "stratum+ssl://us.ironfish.herominers.com:1145", "stratum+ssl://pool.woolypooly.com:3140", "stratum+ssl://us-east.dnx.minenow.space:18443",    "stratum+ssl://bzdev.vipor.net:5184", "pool.woolypooly.com:55555"], // urls for each algo
+    "wallet_override": ["karlsen_wallet", "ironfish_wallet", "warthog_wallet", "dynex_wallet", "nexa_wallet", "rvn_wallet"], // wallets for each algo
+    "workername_override": ["karlsen_worker", "ironfish_worker", "warthog_worker", "dynex_worker", "nexa_worker", "rvn_worker"], // worker names for each algo
+    "password_override": ["", "", "", "", "", ""], // pool passwords for each algo
+    "pool_override": "[[0,2],[1,2],[2],[3],[4],[5]]", // which algos each gpu should mine
+    "intensity": "[[5,10], [6,20], [1], [2], [3], [4]]", // intensity per gpu per algo
+
     "dynex_pow_ratio": [1.0, 1.0], // see Dynex notes above in github. allows to dedicate gpus to pow or pouw on dynex, and to set ratio of pow/pouw
 
     "warthog_cpu_threads": 189, // number of cpu threads to use for warthog
@@ -889,46 +1012,98 @@ Options:
   -h,--help                   Print this help message and exit
   --version                   Get the version of this binary
   --lang TEXT                 Set the language (en, cn). Default en
-  -a TEXT                     Default Mining algorithm. eg. 'ethash'
-  --a2 TEXT                   Default second Mining algorithm (dual mine). eg. 'ethash'
-  --a3 TEXT                   Default third Mining algorithm (tri mine, also zil + dual). eg. 'zil'
-  -r TEXT                     Default Rig (worker/username) name. eg. 'Rig'
-  --r2 TEXT                   Default Pool username for second algo (dual mine)
-  --r3 TEXT                   Default Pool username for third algo (tri mine, also zil + dual)
+  -a TEXT                     first Mining algorithm. eg. 'ethash'
+  --a1 TEXT                   first Mining algorithm. eg. 'ethash'
+  --a2 TEXT                   second Mining algorithm (dual mine). eg. 'ethash'
+  --a3 TEXT                   third Mining algorithm (tri mine, also zil + dual). eg. 'zil'
+  --a4 TEXT                   fourth Mining algorithm
+  --a5 TEXT                   fifth Mining algorithm
+  --a6 TEXT                   sixth Mining algorithm
+  --a7 TEXT                   seventh Mining algorithm
+  --a8 TEXT                   eighth Mining algorithm
+  --a9 TEXT                   ninth Mining algorithm
+  -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p1 TEXT ...               Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
+  --p3 TEXT ...               Array of Pool Addresses for third algo (tri mine, also zil + dual). eg. zmp+tcp://zil.flexpool:4444 ethproxy+tcp://us-east.ezil.me:5555
+  --p4 TEXT ...               fourth Pool Addresses
+  --p5 TEXT ...               fifth Pool Addresses
+  --p6 TEXT ...               sixth Pool Addresses
+  --p7 TEXT ...               seventh Pool Addresses
+  --p8 TEXT ...               eighth Pool Addresses
+  --p9 TEXT ...               ninth Pool Addresses
+  -w TEXT ...                 first Wallet Address. If algorithm requires more than one address, list them same as -p
+  --w1 TEXT ...               first Wallet Address. If algorithm requires more than one address, list them same as -p
+  --w2 TEXT ...               second Wallet Address (dual mine). If algorithm requires more than one address, list them same as -p
+  --w3 TEXT ...               third Wallet Address (tri mine, also zil + dual). If algorithm requires more than one address, list them same as -p
+  --w4 TEXT ...               fourth Wallet Address
+  --w5 TEXT ...               fifth Wallet Address
+  --w6 TEXT ...               sixth Wallet Address
+  --w7 TEXT ...               seventh Wallet Address
+  --w8 TEXT ...               eighth Wallet Address
+  --w9 TEXT ...               ninth Wallet Address
+  -r TEXT                     first Rig (worker/username) name. eg. 'Rig'
+  --r1 TEXT                   first Pool username.
+  --r2 TEXT                   second Pool username (dual mine)
+  --r3 TEXT                   third Pool username (tri mine, also zil + dual)
+  --r4 TEXT                   fourth Pool username
+  --r5 TEXT                   fifth Pool username
+  --r6 TEXT                   sixth Pool username
+  --r7 TEXT                   seventh Pool username
+  --r8 TEXT                   eighth Pool username
+  --r9 TEXT                   ninth Pool username
+  --pool_password TEXT        first Pool password
+  --pool_password1 TEXT       first Pool password
+  --pool_password2 TEXT       second Pool password for second algo (dual mine)
+  --pool_password3 TEXT       third Pool password for third algo (tripple mine)
+  --pool_password4 TEXT       fourth Pool password
+  --pool_password5 TEXT       fifth Pool password
+  --pool_password6 TEXT       sixth Pool password
+  --pool_password7 TEXT       seventh Pool password
+  --pool_password8 TEXT       eighth Pool password
+  --pool_password9 TEXT       ninth Pool password
+  -i INT ...                  Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i1 INT ...                Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i2 INT ...                Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i3 INT ...                Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
+  --i4 INT ...                fourth mining intensity
+  --i5 INT ...                fifth mining intensity
+  --i6 INT ...                sixth mining intensity
+  --i7 INT ...                seventh mining intensity
+  --i8 INT ...                eighth mining intensity
+  --i9 INT ...                ninth mining intensity
+  --pool_devices1 TEXT ...    Devices that should mine the first coin (--a1). Can be a list of device indexes or device pcie id's (eg. 21:0)
+  --pool_devices2 TEXT ...    Devices that should mine the second coin (--a2)
+  --pool_devices3 TEXT ...    Devices that should mine the third coin (--a3)
+  --pool_devices4 TEXT ...    Devices that should mine the fourth coin (--a4)
+  --pool_devices5 TEXT ...    Devices that should mine the fifth coin (--a5)
+  --pool_devices6 TEXT ...    Devices that should mine the sixth coin (--a6)
+  --pool_devices7 TEXT ...    Devices that should mine the seventh coin (--a7)
+  --pool_devices8 TEXT ...    Devices that should mine the eighth coin (--a8)
+  --pool_devices9 TEXT ...    Devices that should mine the ninth coin (--a9)
   --temp_stop INT             Temperature to pause mining on a device (should be higher than temp_start)
   --temp_start INT            Temperature to start mining on a device again (should be lower than temp_stop)
-  --pool_password TEXT        Default Pool password
-  --pool_password2 TEXT       Default Pool password for second algo (dual mine)
-  --pool_password3 TEXT       Default Pool password for second algo (dual mine)
   --igpu BOOLEAN              Enable IGPU (0 = false, 1 = true, default 0)
   --nvidia INT                Mine with Nvidia devices (0 = false, 1 = true, 1 is default)
   --amd INT                   Mine with AMD devices (0 = false, 1 = true, 1 is default)
   --intel INT                 Mine with Intel devices (0 = false, 1 = true, 1 is default)
   --cpu INT                   Mine with CPU (0 = false, 1 = true, 0 is default). Certain algos such as warthog will automatically enable cpu devices
-  --disable_cpu_metrics       Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to 1. default is 1
+  --disable_cpu_metrics BOOLEAN
+                              Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to 0. default is 1
   --disable_opencl            Disable OpenCL. Useful for BzMiner crashing during startup due to AMD drivers.
   --nvidia_opencl             Enable Nvidia opencl device enumeration
-  -w TEXT ...                 Wallet Address. If algorithm requires more than one address, list them same as -p
-  --w2 TEXT ...               Wallet Address for second algo (dual mine). If algorithm requires more than one address, list them same as -p
-  --w3 TEXT ...               Wallet Address for third algo (tri mine, also zil + dual). If algorithm requires more than one address, list them same as -p
-  -p TEXT ...                 Array of Pool Addresses. eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
-  --p2 TEXT ...               Array of Pool Addresses for second algo (dual mine). eg. stratum+tcp://us1.ethermine.org:4444  stratum+tcp://us2.ethermine.org:4444
-  --p3 TEXT ...               Array of Pool Addresses for third algo (tri mine, also zil + dual). eg. zmp+tcp://zil.flexpool:4444 ethproxy+tcp://us-east.ezil.me:5555
   -v INT                      Set log verbosity. 0 = Error, 1 = warn, 2 = info 3 = debug, 4 = network
   --hide_disabled_devices     Do not log devices that are disabled.
   --max_log_history INT       For http api. max retained log history. default is 1024. Higher values increase memory usage.
   --log_solutions INT         If 1 (default 1), Solutions will be logged in output (as green).
   --log_date INT              If 1 (default 0), the current date/time will be logged at the start of every line of output.
   --immediate_log             If specified, logger will immediately output logs. This can have a small impact on performance.
+  --summary_table BOOLEAN     Log a summary table of all pools. default 1 eanbled. to disable set to 0. will only show if more than 1 algo is mining
   --log_frequency_ms INT      Log frequency in milliseconds. Default is 500.
   -o TEXT                     If provided, output will be logged to this file
   --log_file_verbosity INT    Set log file verbosity. Default 2.
   --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
   -c TEXT                     Config file to load settings from. Default is config.txt
-  -i INT                      Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --i1 INT                    Set mining intensity (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --i2 INT                    Set mining intensity for second algo (dual mine) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
-  --i3 INT                    Set mining intensity for third algo (tri mine, also zil + dual) (0 - 64). 0 = auto. Higher means more gpu spends more time hashing. Default is 0.
   --ssl_verify BOOLEAN        Verify SSL certs when set to 1. Default is 0.
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
   --lhr_exception_reboot      Reboot the pc when an LHR exception happens on a device (device hard reset currently requires pc reboot).
@@ -976,10 +1151,11 @@ Options:
                               For testing, if specified will force the use of a local mallob file instead of downloading one from the network.
   --dynex_max_chips INT ...   Set to 0 for no limit, otherwise set to >0 for max number of chips to use per device
   --dynex_pow_ratio FLOAT ... space separated list of 0.0 - 2.0 values (one value per gpu). default is 1.0 meaning max pouw and pow. 0.0 = do not do pow, only pouw. 2.0 = only do pow, do not do pouw (pow on rig is limited by total pouw work done). Use this option to specify some cards to do only pow and other do pouw, allowing to set better ocs per card. Read docs for examples.
-  --warthog_cache_config INT  Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
-  --warthog_cpu_threads INT   Number of CPU threads to use for warthog. Default = 0 (number of logical processors)
-  --warthog_unused_cpu_offset INT
+  --cpu_threads INT ...       Number of CPU threads to use for warthog. Default = 0 (number of logical processors)
+  --cpu_threads_start_offset INT ...
                               Unused processors start index. Bz will start mining on x number of processors after this offset (x being warthog_cpu_threads). Default is 0. If warthog_cpu_threads is larger than remaining processors, threads will wrap back to start of logical processor indexes on the cpu.
+  --cpu_affinity TEXT ...     Hex string representing which cpu cores a mining algorithm should pin its threads to, and how many threads to launch. default is 0 and will let the miner decide. every bit in the hex string represents whether a logical processor is going to mine or not. Multiple hex strings can be provided in the case of more than one algorithm is being mined. An example for a 32 core cpu, having every other core mined is '55555555', or to have the first half of the cores mine 'FFFF0000'. Look into thread affinity (windows vs linux) and logical/physical cores (a physical core may have 2 logical cores, but they may not be next to each other in the affinity, which is why you may want to either use 55555555 for even core or FFFF0000 for the first half of logical cores)
+  --warthog_cache_config INT  Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
   --warthog_max_ram_gb FLOAT  Maximum amount of cpu ram (gb) to use for warthog. Default is 0. value of 0 will dynamically choose how much ram to use based on thread count. If available ram is less than requested, will use available ram minus 1gb.
   --warthog_verus_hr_target FLOAT ...
                               Target verus hashrate for each gpu. Default is 0. space separated list of hashes per second (eg. 1mh would be 1000000). Any gpu that isn't specified will use calibration
@@ -1090,6 +1266,7 @@ Options:
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
   --oc_reset_on_exit INT      Reset overclocks on bzminer exit. default 1 (enable), 0 = disable
+  --force_architecture TEXT   Used for debugging only.
   ```
   
   ![image](https://user-images.githubusercontent.com/83083846/147267767-29a8f092-694f-40f0-acb9-bb01fceba41d.png)
