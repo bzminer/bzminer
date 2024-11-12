@@ -688,7 +688,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
 
     "warthog_cpu_threads": 189, // number of cpu threads to use for warthog
 
-    "warthog_unused_cpu_offset": 0, // the start offset of unused threads. if there are 4 unused threads, and this is set to 0, the first 4 cores will not be utilized
+    "cpu_threads_start_offset": 0, // the start offset of cpu threads. if there are 4 unused threads, and this is set to 4, the first 4 cores will not be utilized
 
     "warthog_max_ram_gb": 0.0, // amount of ram to use for warthog buffers (default 3-4 if set to 0)
 
@@ -1153,7 +1153,7 @@ Options:
   --dynex_pow_ratio FLOAT ... space separated list of 0.0 - 2.0 values (one value per gpu). default is 1.0 meaning max pouw and pow. 0.0 = do not do pow, only pouw. 2.0 = only do pow, do not do pouw (pow on rig is limited by total pouw work done). Use this option to specify some cards to do only pow and other do pouw, allowing to set better ocs per card. Read docs for examples.
   --cpu_threads INT ...       Number of CPU threads to use for warthog. Default = 0 (number of logical processors)
   --cpu_threads_start_offset INT ...
-                              Unused processors start index. Bz will start mining on x number of processors after this offset (x being warthog_cpu_threads). Default is 0. If warthog_cpu_threads is larger than remaining processors, threads will wrap back to start of logical processor indexes on the cpu.
+                              processors start index. Bz will start mining on x number of processors after this offset (x being cpu_threads_start_offset). Default is 0. If cpu_threads_start_offset is larger than remaining processors, threads will wrap back to start of logical processor indexes on the cpu.
   --cpu_affinity TEXT ...     Hex string representing which cpu cores a mining algorithm should pin its threads to, and how many threads to launch. default is 0 and will let the miner decide. every bit in the hex string represents whether a logical processor is going to mine or not. Multiple hex strings can be provided in the case of more than one algorithm is being mined. An example for a 32 core cpu, having every other core mined is '55555555', or to have the first half of the cores mine 'FFFF0000'. Look into thread affinity (windows vs linux) and logical/physical cores (a physical core may have 2 logical cores, but they may not be next to each other in the affinity, which is why you may want to either use 55555555 for even core or FFFF0000 for the first half of logical cores)
   --warthog_cache_config INT  Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
   --warthog_max_ram_gb FLOAT  Maximum amount of cpu ram (gb) to use for warthog. Default is 0. value of 0 will dynamically choose how much ram to use based on thread count. If available ram is less than requested, will use available ram minus 1gb.
