@@ -565,7 +565,7 @@ bzminer -a ergo -w 0000 -p stratum-ergo.flypool.org:3333 --a2 kaspa --w2 1111 --
 ```
 
 ### Warthog
-- use option `warthog_cpu_threads` - Number of threads to use to compute the verus hashes. Default is 0, use number of cores available (bz will subtract 1-4 threads to ensure system doesn't lock up)
+- use option `cpu_threads` - Number of threads to use to compute the verus hashes. Default is 0, use number of cores available (bz will subtract 1-4 threads to ensure system doesn't lock up)
   
 - use option `warthog_max_ram_gb` - Amount of RAM to use to store sha hashes while cpu threads are calculating verus hashes. Default is 0. Value of 0 will allow bz to choose (which is 2gb for 32 threads and under, otherwise 3gb). If not enough avaiable ram, will use available ram minus 1gb. if still not enough ram, will use available ram / 2.
   
@@ -582,28 +582,28 @@ bzminer -a ergo -w 0000 -p stratum-ergo.flypool.org:3333 --a2 kaspa --w2 1111 --
 Woolypooly:
 
 ```
-bzminer -a warthog -r test -w 0000 -p stratum+tcp://pool.us.woolypooly.com:3140 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+bzminer -a warthog -r test -w 0000 -p stratum+tcp://pool.us.woolypooly.com:3140 --nc 1 --nvidia 1 --amd 1 --cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
 
 ```
 
 ACC Pool:
 
 ```
-bzminer -a warthog -r test -w 0000 -p stratum+tcp://us.acc-pool.pw:12000 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+bzminer -a warthog -r test -w 0000 -p stratum+tcp://us.acc-pool.pw:12000 --nc 1 --nvidia 1 --amd 1 --cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
 ```
 
 Solo RPC (recommended for solo):
 
 launch the node with `--rpc=0.0.0.0:3000`
 ```
-bzminer -a warthog -r test -w 0000 -p http://node-ip-address:3001 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+bzminer -a warthog -r test -w 0000 -p http://node-ip-address:3001 --nc 1 --nvidia 1 --amd 1 --cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
 ```
 
 Solo Stratum:
 
 launch the node with `--stratum=0.0.0.0:3000`
 ```
-bzminer -a warthog -r test -w 0000 -p http://node-ip-address:3001 --nc 1 --nvidia 1 --amd 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
+bzminer -a warthog -r test -w 0000 -p http://node-ip-address:3001 --nc 1 --nvidia 1 --amd 1 --cpu_threads 0 --warthog_max_ram_gb 0 --warthog_verus_hr_target 0
 ```
 
 How to solo mine Ironfish:
@@ -611,7 +611,7 @@ How to solo mine Ironfish:
 - change 127.0.0.1 to ip node is running on, ensure to run node with `--stratum 0.0.0.0:3456`
 
 ```
-bzminer -a warthog -w 0000 -p stratum+tcp://127.0.0.1:3456 --nc 1 --amd 1 --nvidia 1 --intel 1 --warthog_cpu_threads 0 --warthog_max_ram_gb 4
+bzminer -a warthog -w 0000 -p stratum+tcp://127.0.0.1:3456 --nc 1 --amd 1 --nvidia 1 --intel 1 --cpu_threads 0 --warthog_max_ram_gb 4
 ```
 
 
@@ -686,7 +686,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
 
     "dynex_pow_ratio": [1.0, 1.0], // see Dynex notes above in github. allows to dedicate gpus to pow or pouw on dynex, and to set ratio of pow/pouw
 
-    "warthog_cpu_threads": 189, // number of cpu threads to use for warthog
+    "cpu_threads": 189, // number of cpu threads to use for warthog
 
     "cpu_threads_start_offset": 0, // the start offset of cpu threads. if there are 4 unused threads, and this is set to 4, the first 4 cores will not be utilized
 
