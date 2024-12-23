@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v21.5.3)?
+## Why use BzMiner (v22.0.0)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -11,6 +11,7 @@ https://www.bzminer.com/config-generator
     - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
     - Etchash (AMD, Nvidia, Intel, 0.5% dev fee) 
     - Ergo (AMD, Nvidia, Intel, 1% dev fee) 
+    - Blocx (AMD, Nvidia, Intel, 1% dev fee) 
     - Rvn (AMD, Nvidia, Intel, 1% dev fee)
     - Meowcoin (AMD, Nvidia, Intel, 1% dev fee)
     - Neoxa (AMD, Nvidia, Intel, 1% dev fee)
@@ -40,6 +41,8 @@ https://www.bzminer.com/config-generator
     - Verus Coin (CPU 1.0% dev fee)
 - Optimized dual mining for specific coins:
     - **Note**: Bz was designed around running multiple algos on a single gpu, so ALL algos can be mined together, these are just "optimized" combos
+    - Ergo + Warthog (Nvidia only, experimental)
+    - Blocx + Warthog (Nvidia only, experimental)
     - Ironfish + Warthog (Nvidia and AMD, experimental)
     - Karlsen + Warthog (Nvidia and AMD, experimental)
     - Ironfish + Warthog (Nvidia/AMD/Intel, experimental)
@@ -84,6 +87,15 @@ https://www.bzminer.com/config-generator
 - Ubuntu 16.04 support
 - GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
 - TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
+
+## For qubic miners ##
+Bz does not support qubic mining itself, however bz has been used recently while qubic is not mining. Bz has some http commands you can use to start and stop bz mining (when qubic mining is needed)
+
+To stop:
+`curl http://localhost:4014/rig_command?command=stop`
+
+To start:
+`#curl http://localhost:4014/rig_command?command=start`
 
 ##cpu_affinity option:##
 This applies to cpu mineable algos (warthog, verus)
