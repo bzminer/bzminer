@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v22.0.0)?
+## Why use BzMiner (v23.0.2)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -696,6 +696,30 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "pool_override": "[[0,2],[1,2],[2],[3],[4],[5]]", // which algos each gpu should mine
     "intensity": "[[5,10], [6,20], [1], [2], [3], [4]]", // intensity per gpu per algo
 
+    "cpu_affinity": "[]", // multi dimentional array, one for each algorithm. a hex string where each bit represents whether a thread should be assigned to that processor or not. can instead use "x,y" where x is the number of threads on cpu 0 and y is the number of threads on cpu 1
+
+    "cpu_threads_priority": 3, // default worker thread priority. 4 and 5 are realtime priorities can can hang the pc
+
+    "mgmt_thread_affinity_mask": "", // Hex string representing which cpu logical processors bzminer's management threads should NOT be allowed to run on. This is a mask
+                                     // so by default it matches cpu_affinity, meaning management threads will run on logical processors that worker threads will not utilize.
+
+    "split_cpu_by_level": 0, // allows you to create virtual cpus by splitting your cpu by various group levels (numa, l3 cache, core, etc)
+
+    "gpu_numa_node": "", // This allows you to dedicate a gpu to one or more numa nodes. Right now only used on warthog. The format is {gpu}|{node index},
+                               // and space separated options. For example, to dedicate gpu 0 to node 1, 2, and 3, and gpu 1 to node 0, you would do `0|1 0|2 0|3 1|0',
+                               // you may also use gpu pci ids like this `33:0|0 8:0|1` which would bind gpu 33:0 to node 0 and gpu 8:0 to node 1
+
+    "cpu_threads_cache_group": 0, // the group level (numa, l3, processor, etc) that threads in a cpu algorithm will group by. useful for caching in some situations
+
+    "disable_avx512": false, // Disable avx512 support/optimizations.
+    "disable_avx": false, // Disable avx support/optimizations.
+    "disable_sse": false, // Disable sse support/optimizations.
+    "disable_huge_pages": false, // Disable Huge pages support.
+
+    "watchdog_no_new_work_seconds": 0, // if no new work is received after this many seconds, bz will reconnect to the pool. default is 0 which is disabled
+
+    "debug": false, // Enable debug settings, equivalent to -v4 --clear_log_file 1 --log_file_verbosity 4 --show_pending --log_solutions 1 --immediate_log --log_date 1
+
     "dynex_pow_ratio": [1.0, 1.0], // see Dynex notes above in github. allows to dedicate gpus to pow or pouw on dynex, and to set ratio of pow/pouw
 
     "cpu_threads": 189, // number of cpu threads to use for warthog
@@ -707,6 +731,11 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "warthog_verus_hr_target": "[0]", // array, per device, of how much verus hashrate each gpu should accomodate (in hashes, so 10mh would be 10000000)
 
     "warthog_cache_config": 0, // to better utilize cache, bz can group threads by a cache level. default of 0 will group by L3 cache. 1 will group by cpu
+
+    "warthog_shaquality_mod ": 0.0, // Percentage to adjust the warthog balancer. positive values can increase sha quality (at the potential expense of verus hr),
+                                // negative values will produce lower quality sha hashes from the gpu, but can keep the cpu more busy, potentially increasing
+                                // hashrate at the potential expense of pool hr (lower quality hashes means more hashes, but because they are lower quality
+                                // the chance of them being a valid share is less). default is 0.0
 
     "pool": [0,1], // one or more pools to mine to. devices that do not specify will mine to these pools (these are indices into the pool_config list). this can be a multi dimensional array, so that each internal array is a gpu and which algos that gpu should mine. for example if you have 3 gpus, and you want the first to dual mine algo 0 and algo 1, the second gpu to mine only algo 0, and the third to only mine algo 1: "pool": "[[0,1],[0],[1]]"
         
@@ -1115,6 +1144,8 @@ Options:
   -o TEXT                     If provided, output will be logged to this file
   --log_file_verbosity INT    Set log file verbosity. Default 2.
   --clear_log_file INT        If 1 (default 0), BzMiner will overwrite the log file on start.
+  --debug                     Enable debug settings, equivalent to -v4 --clear_log_file 1 --log_file_verbosity 4 --show_pending --log_solutions 1 --immediate_log --log_date 1
+  --debug_url TEXT            Enable debug settings, equivalent to -v4 --clear_log_file 1 --log_file_verbosity 4 --show_pending --log_solutions 1 --immediate_log --log_date 1
   -c TEXT                     Config file to load settings from. Default is config.txt
   --ssl_verify BOOLEAN        Verify SSL certs when set to 1. Default is 0.
   --lhr_stability INT ...     Set the LHR Unlock Stability value for each device. Lower is more stable, higher is less stable and higher hashrate. Default is 100.
@@ -1131,7 +1162,7 @@ Options:
   -b INT                      Cooldown period. 0 = disabled. Higher value means longer time between cooldown periods. default is 0
   --repair_dag INT            Validate and repair DAG. Default is 1
   --nc INT                    Do not save to the config file (but still read from it).
-  --show_pending              Do not start watchdog service.
+  --show_pending              show pending shares (shares that the pool has not yet responded to, in the a/r/i/p column (p being pending)).
   --update_frequency_ms INT   Output frequency in milliseconds. 0 = disabled. Default is 15000.
   --update_frequency_shares INT
                               Output frequency based on new shares found. 0 = disabled. Does not replace update_frequency_ms, works in parallel. set update_frequency_ms to 0 if you only want to use update_frequency_shares. Default is 0.
@@ -1140,6 +1171,8 @@ Options:
   --disable_index_html        Disable creating index.html file
   --extra_dev_fee FLOAT       Add a little extra time for dev fee (percentage). Adds to default dev fee. Default 0.0
   --cpu_validate INT          Validate solutions on cpu before sending to pool.
+  --watchdog_no_new_work_seconds INT
+                              If no new work is received (after pool connects and received initial work) for this many seconds, reconnect.
   --multi_mine_ms INT ...     Time (ms) to mine each algo when dual mining.
   --multi_mine_type INT ...   Multi mine type. 0 = parallel, 1 = alternating (can oc per algo), 2 = mine only during DAG generation. default = 0
   --max_dual_autotune_drop FLOAT
@@ -1163,14 +1196,23 @@ Options:
                               For testing, if specified will force the use of a local mallob file instead of downloading one from the network.
   --dynex_max_chips INT ...   Set to 0 for no limit, otherwise set to >0 for max number of chips to use per device
   --dynex_pow_ratio FLOAT ... space separated list of 0.0 - 2.0 values (one value per gpu). default is 1.0 meaning max pouw and pow. 0.0 = do not do pow, only pouw. 2.0 = only do pow, do not do pouw (pow on rig is limited by total pouw work done). Use this option to specify some cards to do only pow and other do pouw, allowing to set better ocs per card. Read docs for examples.
-  --cpu_threads INT ...       Number of CPU threads to use for warthog. Default = 0 (number of logical processors)
+  --cpu_threads_priority INT  cpu worker thread priority. 0 = low, 1 = below normal, 2 = normal, 3 (default) = above normal, 4 = high (careful with 4 and 5, can halt system if using all threads), 5 = time critical
+  --cpu_threads INT ...       Number of CPU threads to use for mining on the cpu. Default = 0 (number of logical processors)
   --cpu_threads_start_offset INT ...
                               processors start index. Bz will start mining on x number of processors after this offset (x being cpu_threads_start_offset). Default is 0. If cpu_threads_start_offset is larger than remaining processors, threads will wrap back to start of logical processor indexes on the cpu.
-  --cpu_affinity TEXT ...     Hex string representing which cpu cores a mining algorithm should pin its threads to, and how many threads to launch. default is 0 and will let the miner decide. every bit in the hex string represents whether a logical processor is going to mine or not. Multiple hex strings can be provided in the case of more than one algorithm is being mined. An example for a 32 core cpu, having every other core mined is '55555555', or to have the first half of the cores mine 'FFFF0000'. Look into thread affinity (windows vs linux) and logical/physical cores (a physical core may have 2 logical cores, but they may not be next to each other in the affinity, which is why you may want to either use 55555555 for even core or FFFF0000 for the first half of logical cores)
-  --warthog_cache_config INT  Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
+  --cpu_threads_cache_group INT ...
+                              Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology. This is a multi-dimensional array, one value for each algo, same as --cpu_threads.
+  --cpu_affinity TEXT ...     Hex string representing which cpu logical processors a mining algorithm should pin its threads to, and how many threads to launch. default is 0 and will let the miner decide. every bit in the hex string represents whether a logical processor is going to mine or not. Multiple hex strings can be provided in the case of more than one algorithm is being mined. An example for a 32 core cpu, having every other core mined is '55555555', or to have the first half of the cores mine 'FFFF0000'. Look into thread affinity (windows vs linux) and logical/physical cores (a physical core may have 2 logical cores, but they may not be next to each other in the affinity, which is why you may want to either use 55555555 for even core or FFFF0000 for the first half of logical cores)
+  --mgmt_thread_affinity_mask TEXT
+                              Hex string representing which cpu logical processors bzminer's management threads should NOT be allowed to run on. This is a mask so by default it matches cpu_affinity, meaning management threads will run on logical processors that worker threads will not utilize.
+  --split_cpu_by_level INT    By splitting the CPU at level (for example, numa node, level, l3 cache, etc), bz will create multiple cpu devices, one for each of the level groups.
+  --gpu_numa_node TEXT ...    This allows you to dedicate a gpu to one or more numa nodes. Right now only used on warthog. The format is {gpu}|{node index}, and space separated options. For example, to dedicate gpu 0 to node 1, 2, and 3, and gpu 1 to node 0, you would do `"0|1" "0|2" "0|3" "1|0"', you may also use gpu pci ids like this `"33:0|0" "8:0|1"` which would bind gpu 33:0 to node 0 and gpu 8:0 to node 1
+  --warthog_cache_config INT  (old option, use --cpu_threads_cache_group) Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
   --warthog_max_ram_gb FLOAT  Maximum amount of cpu ram (gb) to use for warthog. Default is 0. value of 0 will dynamically choose how much ram to use based on thread count. If available ram is less than requested, will use available ram minus 1gb.
   --warthog_verus_hr_target FLOAT ...
                               Target verus hashrate for each gpu. Default is 0. space separated list of hashes per second (eg. 1mh would be 1000000). Any gpu that isn't specified will use calibration
+  --warthog_shaquality_mod FLOAT
+                              Percentage to adjust the warthog balancer. positive values can increase sha quality (at the potential expense of verus hr), negative values will produce lower quality sha hashes from the gpu, but can keep the cpu more busy, potentially increasing hashrate at the potential expense of pool hr (lower quality hashes means more hashes, but because they are lower quality the chance of them being a valid share is less). default is 0.0
   --ironfish_graffiti TEXT    Set a custom graffiti. This is a string, max size is 32 characters. default is empty (or what pool provided)
   --http_enabled INT          Enable or disable HTTP API. 0 = disabled, 1 = enabled Default is enabled.
   --http_address TEXT         Set IP address for HTTP API to listen on. Default is 0.0.0.0.
@@ -1191,7 +1233,8 @@ Options:
                               If 1 (default 1), and watchdog is enabled, watchdog will restart BzMiner process when hung GPU is detected.
   --reboot_after_watchdog_restarts INT
                               Reboot PC after watchdog restarts x number of times
-  --restart_miner_minutes INT If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes).
+  --restart_miner_minutes FLOAT
+                              If specified and greater than 0, BzMiner watchdog will restart BzMiner process after this amount of time (minutes, can be less than 1, eg. 0.5 = 30 seconds).
   --reboot_minutes INT        If specified and greater than 0, BzMiner will reboot the rig after this amount of time (minutes).
   --no_color INT              If 1 (default 0), output in console will not have color.
   --webhook_discord_url TEXT  Discord webhook api url
@@ -1274,6 +1317,10 @@ Options:
                                eg.
                                'oc_script.bat --gpu_index 0 --gpu_id 1:0 --algo kaspa`
                                BzMiner will call this script for each gpu that needs oc to be set. If this parameter is specified, BzMiner will not set any overclocks on it's own. Can pass an array of scripts, one for each gpu. Default is empty string
+  --disable_avx512            Disable avx512 support/optimizations.
+  --disable_avx               Disable avx support/optimizations.
+  --disable_sse               Disable sse support/optimizations.
+  --disable_huge_pages        Disable Huge pages support.
   --oc_mem_tweak INT          gddr5x memory tweak. 0-4, 0 = disabled, 1-4 = timing, higher = faster. May need to reduce overclocks.
   --oc_unlock_clocks          Unlock the core and memory clocks. Will not mine (same as --devices argument).
   --oc_reset_all              Completely reset oc on all devices. Requires admin/root
