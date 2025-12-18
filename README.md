@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v23.0.2)?
+## Why use BzMiner (v23.0.4)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
@@ -35,7 +35,7 @@ https://www.bzminer.com/config-generator
     - Nexellia (AMD, Nvidia, Intel 1% dev fee)
     - DinarTether (DINT) (AMD, Nvidia, Intel 1% dev fee)
     - Larissa (AMD, Nvidia, Intel 0.5% dev fee)
-    - Warthog (AMD, Nvidia, Intel 2.0% dev fee)
+    - Warthog (AMD, Nvidia, Intel 2.0% dev fee, + 2% Warthog Dev Fund at address https://wartscan.io/account/257edaceb6cb5ded59afd2051b93c5244053da527fc28d6a)
     - Aidepin (AMD, Nvidia, Intel 1.0% dev fee)
     - Aipg (AMD, Nvidia, Intel 1.0% dev fee)
     - Verus Coin (CPU 1.0% dev fee)
@@ -716,7 +716,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "disable_sse": false, // Disable sse support/optimizations.
     "disable_huge_pages": false, // Disable Huge pages support.
 
-    "watchdog_no_new_work_seconds": 0, // if no new work is received after this many seconds, bz will reconnect to the pool. default is 0 which is disabled
+    "watchdog_no_new_work_seconds": 0, // if no new work is received after this many seconds, bz will reconnect to the pool, this includes if the SAME work is sent over and over (usually due to a bug on the node or pool). default is 0 which is disabled
 
     "debug": false, // Enable debug settings, equivalent to -v4 --clear_log_file 1 --log_file_verbosity 4 --show_pending --log_solutions 1 --immediate_log --log_date 1
 
