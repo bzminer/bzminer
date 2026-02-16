@@ -3,9 +3,10 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v23.0.4)?
+## Why use BzMiner (v24.0.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
+    - Xelis (CPU 1.0% dev fee)
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
     - Dynex (AMD, Nvidia, Intel (Intel only supports POW) 2% dev fee)
     - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
@@ -538,6 +539,14 @@ rplant:
 bzminer -a dint -w 0000 -p stratum+ssl://stratum-na.rplant.xyz:17049 --nc 1
 ```
 
+### Xelis
+
+vipor:
+
+```
+bzminer -a xelis -w 0000 -p stratum+ssl://us.vipor.net:5177 --nvidia 0 --amd 0 --intel 0 --igpu 0 --cpu 1 --cpu_threads 0 --nc 1
+```
+
 ### Larissa
 
 mining4people:
@@ -711,6 +720,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
 
     "cpu_threads_cache_group": 0, // the group level (numa, l3, processor, etc) that threads in a cpu algorithm will group by. useful for caching in some situations
 
+    "disable_vaes": false, // Disable vaes support/optimizations.
     "disable_avx512": false, // Disable avx512 support/optimizations.
     "disable_avx": false, // Disable avx support/optimizations.
     "disable_sse": false, // Disable sse support/optimizations.
@@ -731,6 +741,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "warthog_verus_hr_target": "[0]", // array, per device, of how much verus hashrate each gpu should accomodate (in hashes, so 10mh would be 10000000)
 
     "warthog_cache_config": 0, // to better utilize cache, bz can group threads by a cache level. default of 0 will group by L3 cache. 1 will group by cpu
+
+    "warthog_gpu_tmp_buff_size": 256.0, //  Size in MB of intermediate buffer to store sha hashes on the cpu from the gpu. If this buffer is too small, downloading hashes from the gpu will be done in chunks, which can have a negative impact on performance. default is 256.50.
 
     "warthog_shaquality_mod ": 0.0, // Percentage to adjust the warthog balancer. positive values can increase sha quality (at the potential expense of verus hr),
                                 // negative values will produce lower quality sha hashes from the gpu, but can keep the cpu more busy, potentially increasing
@@ -1209,6 +1221,7 @@ Options:
   --gpu_numa_node TEXT ...    This allows you to dedicate a gpu to one or more numa nodes. Right now only used on warthog. The format is {gpu}|{node index}, and space separated options. For example, to dedicate gpu 0 to node 1, 2, and 3, and gpu 1 to node 0, you would do `"0|1" "0|2" "0|3" "1|0"', you may also use gpu pci ids like this `"33:0|0" "8:0|1"` which would bind gpu 33:0 to node 0 and gpu 8:0 to node 1
   --warthog_cache_config INT  (old option, use --cpu_threads_cache_group) Changes the way bz groups threads in order to maximize cache hits. Default 0 (try grouping by l3 cache). 1 = all threads in one group (per cpu). 2 is highest cache/grouping level in cpu topology. higher means more groups, 10 might mean each thread is grouped by itself if there were less than 10 groups in the cpu topology.
   --warthog_max_ram_gb FLOAT  Maximum amount of cpu ram (gb) to use for warthog. Default is 0. value of 0 will dynamically choose how much ram to use based on thread count. If available ram is less than requested, will use available ram minus 1gb.
+  --warthog_gpu_tmp_buff_size FLOAT  Size in MB of intermediate buffer to store sha hashes on the cpu from the gpu. If this buffer is too small, downloading hashes from the gpu will be done in chunks, which can have a negative impact on performance. default is 256.50.
   --warthog_verus_hr_target FLOAT ...
                               Target verus hashrate for each gpu. Default is 0. space separated list of hashes per second (eg. 1mh would be 1000000). Any gpu that isn't specified will use calibration
   --warthog_shaquality_mod FLOAT
