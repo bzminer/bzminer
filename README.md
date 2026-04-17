@@ -6,7 +6,7 @@ https://www.bzminer.com/config-generator
 ## Why use BzMiner (v24.0.1)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
-    - Xelis (CPU 1.0% dev fee)
+    - Xelis (CPU, AMD, Nvidia 1.0% dev fee)
     - Karlsen (AMD, Nvidia, Intel 1% dev fee) (Supports direct to node solo mining)
     - Dynex (AMD, Nvidia, Intel (Intel only supports POW) 2% dev fee)
     - Ethw (AMD, Nvidia, Intel, 0.5% dev fee)
@@ -635,6 +635,30 @@ How to solo mine Ironfish:
 bzminer -a warthog -w 0000 -p stratum+tcp://127.0.0.1:3456 --nc 1 --amd 1 --nvidia 1 --intel 1 --cpu_threads 0 --warthog_max_ram_gb 4
 ```
 
+### Xelis mining
+
+Xelis can be mined on gpu or cpu. (GPU support added in v24.0.2)
+
+CPU command line:
+
+```
+bzminer -a xelis -w xel_wallet -p stratum+ssl://us.vipor.net:5177 --nc 1 --cpu_threads 0 --nvidia 0 --amd 0 --cpu 1 -v2 --log_file_verbosity 2 -o log.txt
+```
+
+GPU command line:
+
+```
+bzminer -a xelis -w xel_wallet -p stratum+ssl://us.vipor.net:5177 --nc 1 --cpu_threads 0 --nvidia 1 --amd 1 --cpu 0 -v2 --log_file_verbosity 2 -o log.txt
+```
+
+Both gpu and cpu can be mined together
+
+On HiveOS, you must enable the cpu to mine, bz does not mine on the cpu by default:
+
+In extra config arguments in bz, add this:
+```
+"enable_cpu": true
+```
 
 ### OC Change on Algo Switch (eg. +zil)
 Bzminer supports changing the overclocks for gpus between algo changes. A common example of this is doing a core algo like kaspa and a memory hard algo like zil, where each algo wants a different oc for best performance. This can be done from the command line or from config.txt.
@@ -802,6 +826,8 @@ With "advanced_config" turned on (default), the full config file is as follows:
     "enable_amd": true, // whether to mine with amd cards or not
     
     "enable_intel": true, // whether to mine with intel cards or not
+    
+    "enable_cpu": false, // whether to mine with the cpu or not
 
     "disable_cpu_metrics ": true, // Disable cpu metrics. cpu metrics can have a small overhead, also if crashing early try setting this to true. default is true
     
