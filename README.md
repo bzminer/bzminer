@@ -639,25 +639,25 @@ bzminer -a warthog -w 0000 -p stratum+tcp://127.0.0.1:3456 --nc 1 --amd 1 --nvid
 
 Xelis can be mined on gpu or cpu. (GPU support added in v24.0.2)
 
-CPU command line:
+Command line:
 
 ```
-bzminer -a xelis -w xel_wallet -p stratum+ssl://us.vipor.net:5177 --nc 1 --cpu_threads 0 --nvidia 0 --amd 0 --cpu 1 -v2 --log_file_verbosity 2 -o log.txt
+bzminer -a xelis -w xel_wallet -p stratum+ssl://us.vipor.net:5177 --nc 1 --cpu_threads 0 --nvidia 1 --amd 1 --cpu 1 -v2 --log_file_verbosity 2 -o log.txt
 ```
 
-GPU command line:
-
-```
-bzminer -a xelis -w xel_wallet -p stratum+ssl://us.vipor.net:5177 --nc 1 --cpu_threads 0 --nvidia 1 --amd 1 --cpu 0 -v2 --log_file_verbosity 2 -o log.txt
-```
-
-Both gpu and cpu can be mined together
+To disable cpu mining, set --cpu 0
 
 On HiveOS, you must enable the cpu to mine, bz does not mine on the cpu by default:
 
 In extra config arguments in bz, add this:
 ```
 "enable_cpu": true
+```
+
+Xelis solo mining command line:
+
+```
+bzminer -a xelis -w xel_wallet -p ws://127.0.0.1:8080 --nc 1 --cpu_threads 0 --nvidia 1 --amd 1 --cpu 1 -v2 --log_file_verbosity 2 -o log.txt
 ```
 
 ### OC Change on Algo Switch (eg. +zil)
