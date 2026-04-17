@@ -660,6 +660,13 @@ Xelis solo mining command line:
 bzminer -a xelis -w xel_wallet -p ws://127.0.0.1:8080 --nc 1 --cpu_threads 0 --nvidia 1 --amd 1 --cpu 1 -v2 --log_file_verbosity 2 -o log.txt
 ```
 
+On HiveOS, they add stratum+tcp:// in front of the url, so in extra config arguments when mining to your local node you have to add this:
+
+```
+"url_override": ["ws://127.0.0.1:8080"]
+```
+use the ip address and port of your node
+
 ### OC Change on Algo Switch (eg. +zil)
 Bzminer supports changing the overclocks for gpus between algo changes. A common example of this is doing a core algo like kaspa and a memory hard algo like zil, where each algo wants a different oc for best performance. This can be done from the command line or from config.txt.
 
