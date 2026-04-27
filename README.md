@@ -23,7 +23,7 @@ https://www.bzminer.com/config-generator
     - Alephium (AMD, Nvidia, Intel, 0.5% dev fee)
     - Kaspa (AMD, Nvidia, Intel, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
     - Radiant (AMD, Nvidia, Intel, 1% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
-    - Ixian (AMD, Nvidia, Intel, 1% dev fee, Not optimized for ubuntu 16.04)
+    - Ixian (AMD, Nvidia, Intel, 1% dev fee, Not optimized for ubuntu 18.04)
     - Woodcoin (AMD, Nvidia, Intel, 1% dev fee, use config "algo_opt" to move some processing to cpu)
     - Zil (AMD, Nvidia, Intel, 0% dev fee. Dual with ANY other coin)
     - Nexa (AMD, Nvidia, Intel, 2% dev fee, +1% community fund can be optionally be enabled with community_fund options, disabled by DEFAULT)
@@ -85,7 +85,7 @@ https://www.bzminer.com/config-generator
 - Advanced mining features, including cooldown, ramp up, dual/multi coin mining
 - DAG Validation for very high OC cards
 - Auto intensity, dyanamically adjusts gpu workloads, reducing stales while keeping hashrate high
-- Ubuntu 16.04 support
+- Ubuntu 18.04 support
 - GDDR5 Memory Tweak (`--oc_mem_tweak`). Levels 1 - 3
 - TBS Watchdog (monitors time since last share and resets gpus/reconnects to pools if too long)
 
