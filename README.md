@@ -3,7 +3,7 @@ Having troubles figuring out how to configure BzMiner?
 Try the config generator:
 https://www.bzminer.com/config-generator
 
-## Why use BzMiner (v24.0.1)?
+## Why use BzMiner (v24.0.2)?
 - Stable 100% LHR Unlock v1! (Tested on windows/linux drivers 465-511, see below)
 - Supported Algos:
     - Xelis (CPU, AMD, Nvidia 1.0% dev fee)
@@ -846,7 +846,7 @@ With "advanced_config" turned on (default), the full config file is as follows:
     
     "lock_config": false, // if true, bzminer will never write to this file
     
-    "cache_dag": 0, // when running eth + zil, if set to 1 eth dag will be cached while mining zil, so dag does not need to be recalculated after zil session. If mining Ergo, will preload next dag
+    "cache_dag": 1, // Useful for ergo. 0 = disabled, 1 = dag cached in vram (default, if enough memory supports two dags)
     
     "advanced_config": true, // show advanced config options (after setting true, must run bzminer once so it can update this file)
     
