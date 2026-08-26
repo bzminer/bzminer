@@ -327,14 +327,35 @@ run your way. It is the number to watch if a miner looks fast but pays badly.
 Expect it to swing over minutes and settle over hours - it is computed from
 accepted shares, so a short run says very little.
 
-**Keys, on every screen:**
+### Hotkeys
+
+The same on every screen. `h` prints this list in the miner, with the current
+setting beside each key that has one.
 
 | key | |
 |---|---|
 | `o` | next screen |
-| `+` / `-` | more / less log detail, live |
+| `d` | device detail page |
 | `c` | open the command line |
+| `h` | this list |
+| `p` | pause / resume mining |
 | `q` | quit |
+| `+` / `-` | more / less log detail, live |
+| `i` / `I` | refresh faster / slower |
+| `t` / `T` | CPU mining threads, up / down |
+| `n` | aim the tuning keys at the next card |
+| `g` / `G` | core clock offset, ±15 MHz |
+| `l` / `L` | core clock lock, ±15 MHz |
+| `m` / `M` | memory clock offset, ±50 MHz |
+| `k` / `K` | memory clock lock, through the card's own steps |
+
+The tuning keys move **one card**, not the rig. `n` picks which, and its row is
+marked `>` in the device tables. A lock and an offset are separate settings and a
+card can carry both, which is why each has its own key. Every step starts from
+what the card is actually set to, read back per device, so a rig started with an
+offset in `config.txt` does not jump on the first press.
+
+The device page adds `a` (all metrics), `/` (filter), arrows and `Esc`.
 
 On the `tui` dashboard the log pane **scrolls**: the mouse wheel, `Up`/`Down`,
 `PageUp`/`PageDown`, `Home` and `End`. While you are scrolled up the pane holds
@@ -432,14 +453,21 @@ oc 0 core=+150 mem=+500             card 0 only
 oc all fan=70                       every card
 oc 1 power=300 clock=2600           card 1: 300 W limit, 2600 MHz locked core
 oc 2 mem=1200 fan=85                card 2: +1200 memory, fans at 85%
+oc 3 memclock=810                   card 3: memory locked to 810 MHz
 oc 0 fan=auto                       hand the fan back to the driver
 oc reset [dev|all]                  undo it
 ```
 
-The settings are `core`, `mem`, `power`, `clock` and `fan`. `core` and `mem` are
-**offsets** in MHz; `power` is watts; `clock` locks the core to an absolute MHz;
-`fan` is a duty percentage or `auto`. A device is named by its number as shown in
-the table, or `all`.
+The settings are `core`, `mem`, `power`, `clock`, `memclock` and `fan`. `core` and
+`mem` are **offsets** in MHz; `power` is watts; `clock` and `memclock` lock the
+core and the memory to an absolute MHz, and `0` unlocks; `fan` is a duty
+percentage or `auto`. A device is named by its number as shown in the table, or
+`all`.
+
+A memory lock is only honoured at one of the clocks the board publishes as
+lockable — ask for anything else and the driver quietly runs the nearest one it
+does support, so bzminer reads the clock back and tells you what the card is
+actually doing.
 
 `fan=auto` is not `fan=0`. Zero means *stop the fan*.
 
