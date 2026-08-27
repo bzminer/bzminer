@@ -1,5 +1,7 @@
 # bzminer
 
+WARNING: BzMiner v100 is still in a beta phase, and should be ready soon, but not all coins from the previous bzminer versions were implemented in the new bzminer codebase. those may be available upon request though. If you are currently using bzminer to mine a coin that does not exist in this new version, please roll back to bzminer v25 and request that coin be added to the new bzminer v100
+
 A GPU and CPU cryptocurrency miner for Windows, Linux and macOS.
 
 Mines **Ergo**, **Pearl**, **VERUS**, **Warthog** and **XELIS**, and ships
