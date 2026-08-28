@@ -1,11 +1,10 @@
 # bzminer
 
-WARNING: BzMiner v100 is still in a beta phase, and should be ready soon, but not all coins from the previous bzminer versions were implemented in the new bzminer codebase. those may be available upon request though. If you are currently using bzminer to mine a coin that does not exist in this new version, please roll back to bzminer v25 and request that coin be added to the new bzminer v100
-
 A GPU and CPU cryptocurrency miner for Windows, Linux and macOS.
 
-Mines **Ergo**, **Pearl**, **VERUS**, **Warthog** and **XELIS**, and ships
-**sha256d** as the open-source SDK example.
+Mines **Ergo**, **Ravencoin**, **Neurai**, **Neoxa**, **Meowcoin**, **Clore**,
+**Pearl**, **VERUS**, **Warthog** and **XELIS**, and ships **sha256d** as the
+open-source SDK example.
 
 One binary, no installer. It writes nothing outside its own folder except the log
 file and the config you point it at.
@@ -104,6 +103,7 @@ been renamed shows up as a warning at startup instead of silently doing nothing.
 | algorithm | coin | dev fee | notes |
 |---|---|---|---|
 | `ergo` | Ergo | 1% | Autolykos v2. GPU only, and memory-hard: it builds a table of N 32-byte elements (about 2 GB) in VRAM, so a card needs the room for it. N grows with block height, and the table is rebuilt when it changes. Wallet addresses start with '9'. |
+| `kawpow` | Ravencoin (`rvn`)<br>Neurai (`xna`)<br>Neoxa (`neoxa`)<br>Meowcoin (`meowcoin`)<br>Clore (`clore`) | 1% | KawPow on NVIDIA CUDA, AMD OpenCL, and Apple Metal GPUs. NVIDIA specializes the three-block random program through the driver's PTX JIT, with precompiled cubins as its fallback; AMD uses offline-native gfx code objects; Apple Silicon uses a portable offline metallib. No CUDA toolkit, NVRTC, ROCm compiler, OpenCL C source, Metal source, or external GPU compiler is required on the mining rig; the AMD and Apple paths do no runtime compilation. Answers to `kawpow` and to each KawPow coin by name (rvn, xna, neoxa, meowcoin, clore), which is also what selects the dev-fee destination. A wallet address for the coin being mined, optionally followed by .worker. |
 | `pearl` | Pearl | 1% | a zk proof-of-work: each share is a STARK proof, so it is far heavier per hash than a normal algorithm. Also mines SOLO - point -p at your node's RPC URL instead of a pool. Wallet addresses start with 'prl1'. |
 | `sha256d` | — | none | The open-source SDK example: a full algorithm plugin (CPU+GPU, pool stratum, bench job source). Copy plugins/public/sha256d as a template for your own. |
 | `verus` | VERUS | 1% | VerusHash v2.2 CPU mining. A Verus R-address, optionally followed by .worker. |
@@ -350,6 +350,7 @@ setting beside each key that has one.
 | `l` / `L` | core clock lock, ±15 MHz |
 | `m` / `M` | memory clock offset, ±50 MHz |
 | `k` / `K` | memory clock lock, through the card's own steps |
+| `w` / `W` | board power cap, up / down |
 
 The tuning keys move **one card**, not the rig. `n` picks which, and its row is
 marked `>` in the device tables. A lock and an offset are separate settings and a
@@ -366,12 +367,19 @@ under you — and the bar says `held N up  [End] live` so a frozen pane is never
 mistaken for a stalled miner. `End` returns to following the newest line.
 
 **Selecting and copying text keeps working too.** Scrolling and selecting are
-separate actions and bzminer does not take the mouse away from your terminal to get
-the wheel: on Windows the console's own quick-edit selection stays on, and
-elsewhere the terminal is asked to translate wheel ticks into key presses. So you
-can drag out a log line to paste into a bug report while the wheel still scrolls
-the pane. (`BZ_MOUSE=1` switches to full mouse reporting, which adds click events
-at the cost of drag-selection — you should not need it.)
+separate actions, and where the terminal can serve both bzminer never takes the
+mouse: it asks the terminal to turn wheel ticks into key presses instead. That
+covers every Linux and macOS terminal, and on Windows every modern one — Windows
+Terminal, VS Code, ConEmu. Drag out a log line to paste into a bug report while the
+wheel still scrolls the pane.
+
+The old Windows console window (`conhost`, still the default on Windows 10) is the
+exception. It cannot translate wheel ticks, and it hands a program the wheel only
+with its own quick-edit selection switched off, so there the two really are
+exclusive — and the wheel wins. Set `BZ_MOUSE=0` to keep selection instead, or run
+bzminer under Windows Terminal and have both. (`BZ_MOUSE=1` goes the other way and
+takes the mouse everywhere, which adds click events at the cost of drag-selection —
+you should not need it.)
 
 ### Commands
 
@@ -383,7 +391,7 @@ Press `c`, type, press enter.
 | `pause` / `resume` | stop and restart mining without exiting |
 | `oc ...` | overclock — see below |
 | `intensity <n>` | mining intensity; `0` is auto |
-| `level <name>` | log level: `trace`, `network`, `debug`, `info`, `warn`, `error` |
+| `level <name>` | log level: `network`, `debug`, `info`, `warn`, `error` |
 | `output <name>` | switch screen by name |
 | `quit` | exit |
 
@@ -774,20 +782,31 @@ Overclocking (NVIDIA; on Linux every knob is a privileged NVML write):
 
 Logging:
   --internal-log          Also show DEVELOPER lines: kernel tile shapes, operand
-                          layouts, per-share prover timings. Off even at
-                          --log-level trace, because they are for whoever wrote
-                          the kernel, not for whoever is running it. Implies
-                          --log-level trace.
-  --log-level <level>     trace | network | debug | info (default) | warn | error
+                          layouts, per-share prover timings. They are for whoever
+                          wrote the kernel, not whoever is running it, so they are
+                          off at every user level. This is also the only way to
+                          `trace`, which carries nothing else.
+  --log-level <level>     network | debug | info (default) | warn | error
                           `network` shows the exact pool/stratum wire messages
-  --logfile-level <level> the same, for the LOG FILE only. Empty = follow --log-level.
+  --logfile <file>        Write the log to <file> instead of bzminer.worker.log. There
+                          is always a file log; this only changes its name/path.
+                          It holds what the `log` SCREEN holds - the lines AND the
+                          periodic tables - whichever screen you are watching.
+  --logfile-level <level> the same, for the LOG FILE only. Empty = follow --log-level,
+                          including the live [+/-] keys. Setting it PINS the file:
                           `--log-level info --logfile-level debug` keeps the screen
                           readable and still writes a file worth sending to support.
-  -v, -vv, -v2 ...        More verbose (each step toward trace; -v2 == -vv)
+  --logfile-mode <mode>   append (default) | overwrite | timestamp. `timestamp` keeps
+                          every run: bzminer.worker.<date>_<time>.log
+  --monitor-logfile <f>   Write the MONITOR screen's sensor table to <f>, one block per
+                          sample, ONLY while that screen is being viewed. Unset = off.
+  --monitor-logfile-mode  append (default) | overwrite | timestamp, for that file
+  -v, -vv, -v2 ...        More verbose (each step toward network; -v2 == -vv)
   -q, -qq, -q2 ...        Quieter (each step toward error)
   --log-wire-max <n>      In `network` logs, elide any single field longer than n chars
-                          (default 0 = exact raw messages); set a positive cap to keep
-                          huge opaque values like a Pearl share from drowning the frame
+                          (default 256). Long values become <elided, N chars> and runs of
+                          unprintable bytes become <binary, N bytes>; the rest of the
+                          frame is logged exactly as sent. 0 = raw, nothing removed.
 
 Configuration:
   --config <path>         Config file to load (default: config.txt)
@@ -817,10 +836,13 @@ Configuration:
                           (source/PTX overrides are not accepted)
 
 Settings (set in config.txt, or with --set <path>=<value>):
-  log.level                  Log verbosity: trace, network, debug, info, warn, or error (network = raw pool traffic)
+  log.level                  Log verbosity: network, debug, info, warn, or error (network = the exact pool/stratum wire messages). `trace` is developer detail and is reached only with --internal-log; a config that still says trace is read as network
   log.file                   Write the log to this file instead of bzminer.worker.log. There is always a file log; this only changes its name/path
-  log.file_level             Verbosity of the LOG FILE, when it should differ from the console. Same names as `level`. Empty = follow `level`. Set this to debug with `level` left at info to keep the screen readable while still capturing a file worth sending to support (CLI: --logfile-level)
-  log.wire_max               Longest single field kept in a `network`-level wire log line, in characters. The default 0 prints exact raw wire messages. Set a positive cap to elide very large opaque values (a Pearl share can contain a ~140 KB proof) and summarize mostly-binary frames. CLI: --log-wire-max
+  log.file_level             Verbosity of the LOG FILE, when it should differ from the console. Same names as `level`. Empty = follow `level`, INCLUDING live changes from the [+/-] keys. Set this to pin the file: e.g. file_level debug with level info keeps the screen readable while still capturing a file worth sending to support (CLI: --logfile-level)
+  log.file_mode              What to do with an existing log file: append (default - what bzminer has always done), overwrite (truncate, so the file is only this run), or timestamp (leave it and open bzminer.worker.<date>_<time>.log, keeping every run). A watchdog RESTART never truncates - it would delete the crash that caused it - so overwrite appends from the second worker onwards. CLI: --logfile-mode
+  log.monitor_file           Write the MONITOR screen's sensor table to this file, one block per sample. Only while that screen is being viewed - on any other output there is nothing of its to record. Empty (default) = no monitor log. CLI: --monitor-logfile
+  log.monitor_file_mode      The same three choices as `file_mode`, for the monitor log. Separate so a rolling appended miner log can sit beside a timestamped file per monitoring session. CLI: --monitor-logfile-mode
+  log.wire_max               Longest single field kept in a `network`-level wire log line, in characters. Anything longer becomes "<elided, N chars>" and runs of unprintable bytes become "<binary, N bytes>" - the rest of the frame is logged exactly as it went over the wire, so a Pearl share's ~140 KB proof no longer buries the frames either side of it. 0 prints raw frames with nothing removed. CLI: --log-wire-max
   network.timeout_ms         Pool / network socket timeout, in milliseconds
   network.reconnect_ms       Delay before reconnecting after a disconnect, in milliseconds
   network.proxy              Route all pool connections through a SOCKS5 proxy: socks5://[user:pass@]host:port (empty = direct). CLI: --proxy
@@ -845,7 +867,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   tui_interval               How often the 'tui' dashboard redraws, in ms. A keypress redraws immediately regardless. CLI: --tui-interval
   metrics                    Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
   device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
-  mining_columns             Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. Drop 'status' and the per-device status text, the pool difficulty and the latency rows go with it - they have nowhere to sit. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
+  mining_columns             Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   cpu_metrics                Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
   superio_fans               Read the motherboard's sensor chip directly for fan speeds when no kernel driver publishes them (Linux, x86, and only as root). Many boards - mini-PCs especially - carry an ITE or Nuvoton chip that Linux has no driver for, and then nothing reports a CPU fan at all. Reads only, and never runs where hwmon already has fans. Set false to leave that chip alone. CLI: --superio-fans 0
   tui_width                  Console width in characters. 0 = use the terminal's own width and follow a resize, which is the default and is what you want. Set it to pin the width - for a terminal that misreports, or output being captured with no tty to ask. Pinning it LARGER than the real window makes every row wrap and the dashboard scroll, so measure before setting it. CLI: --tui-width
@@ -928,14 +950,20 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
 // with:  --set <path>=<value>
 {
   "log": {
-    // Log verbosity: trace, network, debug, info, warn, or error (network = raw pool traffic)
+    // Log verbosity: network, debug, info, warn, or error (network = the exact pool/stratum wire messages). `trace` is developer detail and is reached only with --internal-log; a config that still says trace is read as network
     "level": "info",
     // Write the log to this file instead of bzminer.worker.log. There is always a file log; this only changes its name/path
     "file": "",
-    // Verbosity of the LOG FILE, when it should differ from the console. Same names as `level`. Empty = follow `level`. Set this to debug with `level` left at info to keep the screen readable while still capturing a file worth sending to support (CLI: --logfile-level)
+    // Verbosity of the LOG FILE, when it should differ from the console. Same names as `level`. Empty = follow `level`, INCLUDING live changes from the [+/-] keys. Set this to pin the file: e.g. file_level debug with level info keeps the screen readable while still capturing a file worth sending to support (CLI: --logfile-level)
     "file_level": "",
-    // Longest single field kept in a `network`-level wire log line, in characters. The default 0 prints exact raw wire messages. Set a positive cap to elide very large opaque values (a Pearl share can contain a ~140 KB proof) and summarize mostly-binary frames. CLI: --log-wire-max
-    "wire_max": 0
+    // What to do with an existing log file: append (default - what bzminer has always done), overwrite (truncate, so the file is only this run), or timestamp (leave it and open bzminer.worker.<date>_<time>.log, keeping every run). A watchdog RESTART never truncates - it would delete the crash that caused it - so overwrite appends from the second worker onwards. CLI: --logfile-mode
+    "file_mode": "append",
+    // Write the MONITOR screen's sensor table to this file, one block per sample. Only while that screen is being viewed - on any other output there is nothing of its to record. Empty (default) = no monitor log. CLI: --monitor-logfile
+    "monitor_file": "",
+    // The same three choices as `file_mode`, for the monitor log. Separate so a rolling appended miner log can sit beside a timestamped file per monitoring session. CLI: --monitor-logfile-mode
+    "monitor_file_mode": "append",
+    // Longest single field kept in a `network`-level wire log line, in characters. Anything longer becomes "<elided, N chars>" and runs of unprintable bytes become "<binary, N bytes>" - the rest of the frame is logged exactly as it went over the wire, so a Pearl share's ~140 KB proof no longer buries the frames either side of it. 0 prints raw frames with nothing removed. CLI: --log-wire-max
+    "wire_max": 256
   },
   "network": {
     // Pool / network socket timeout, in milliseconds
@@ -991,7 +1019,7 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "metrics": "",
   // Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   "device_columns": "",
-  // Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. Drop 'status' and the per-device status text, the pool difficulty and the latency rows go with it - they have nowhere to sit. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
+  // Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   "mining_columns": "",
   // Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
   "cpu_metrics": true,
@@ -1122,7 +1150,8 @@ that matter. These are the ones worth knowing.
 | `BZ_XELIS_STREAMS=1\|2` | Force one launch slot, or force the two-slot schedule measured on GA100, onto another NVIDIA card. A/B testing knob |
 | `BZ_ZK_THREADS=<n>` | Worker cap for Pearl's ZK prover |
 | `BZ_NO_CPU=1`, `BZ_NO_CUDA=1`, `BZ_NO_OPENCL=1` | Skip a whole compute backend. Blunter than `--nvidia`/`--amd`/`--cpu`, and useful for isolating one device while benchmarking. `BZ_NO_OPENCL=1` also stops the OpenCL loader being opened at all |
-| `BZ_MOUSE=1` | Use full mouse reporting instead of the default wheel handling. Adds click events, but the terminal loses click-and-drag text selection while it is on. The wheel already scrolls without it |
+| `BZ_MOUSE=1` | Take the mouse everywhere, by full mouse reporting. Adds click events, but the terminal loses click-and-drag text selection while it is on. The wheel already scrolls without it |
+| `BZ_MOUSE=0` | Never take the mouse. Only matters in the old Windows console window (`conhost`), which cannot give a program the wheel and keep its own text selection: this picks selection, and the wheel stops scrolling the pane |
 | `BZ_WARTHOG_SHAVERUS=<H/s>` | Pin the candidate rate each Warthog GPU is asked for instead of letting the tuner find it. This is the modern equivalent of bzminer 1.x's `--warthog_verus_hr_target`, which maps onto it automatically |
 | `BZ_WARTHOG_SHA_QUALITY=<pct>` | Nudge Warthog's balance point without pinning it |
 | `BZ_WARTHOG_AFFINITY=auto\|group\|none\|pu` | How Warthog's verus workers are pinned to cores |
@@ -1140,6 +1169,7 @@ Algorithms, hardware monitors, the console screens and the web dashboard are all
 plugins behind one C ABI, and this release has every one of them compiled in:
 
 - `ergo` — Autolykos v2. GPU only, and memory-hard: it builds a table of N 32-byte elements (about 2 GB) in VRAM, so a card needs the room for it. N grows with block height, and the table is rebuilt when it changes.
+- `kawpow` — KawPow on NVIDIA CUDA, AMD OpenCL, and Apple Metal GPUs. NVIDIA specializes the three-block random program through the driver's PTX JIT, with precompiled cubins as its fallback; AMD uses offline-native gfx code objects; Apple Silicon uses a portable offline metallib. No CUDA toolkit, NVRTC, ROCm compiler, OpenCL C source, Metal source, or external GPU compiler is required on the mining rig; the AMD and Apple paths do no runtime compilation. Answers to `kawpow` and to each KawPow coin by name (rvn, xna, neoxa, meowcoin, clore), which is also what selects the dev-fee destination.
 - `mon_amd` — AMD GPU sensors, via ADL and sysfs.
 - `mon_cpu` — CPU sensors: per-core temperature, frequency, package power.
 - `mon_intel` — Intel GPU sensors, via IGCL and sysfs.
@@ -1191,3 +1221,26 @@ Some algorithms mine to the developer for a small share of the time. Each declar
 its own, it is in the table above, and it is printed in the log at startup — so
 you can see it before committing a rig, not discover it later. `sha256d`, the
 open-source example, has none.
+
+Every line about it is tagged `[dev fee]`, and each slice announces both ends:
+
+```
+[dev fee] warthog 2% - announced here, and at START and END of every slice
+[dev fee] START - mining for the warthog developer on stratum+ssl://ussw.vipor.net:5120 (2.00% -> 13 pools (split evenly))
+[dev fee] END - back to your pool stratum+ssl://us.vipor.net:5120 (paid 1.94% of this run so far, aiming for 2.00% -> 13 pools (split evenly))
+```
+
+The fee is spread over several destinations rather than sent to one, so no single
+pool sees all of it. **You do not have to be able to reach them all.** A
+destination that will not connect is backed off, and after three failed attempts
+it is dropped for the rest of the run — the others carry its share and the fee is
+still paid in full. If you block some of these pools at your firewall, the miner
+notices once and stops trying; it will not warn you about a pool you blocked on
+purpose. The one case it does warn about is the fee having nowhere left to go:
+
+```
+[dev fee] none of the 13 destinations could be reached - the fee is not being paid. Mining continues on your pool.
+```
+
+None of this happens on the thread that reads your pool's jobs, so an unreachable
+dev pool costs your mining nothing — not a stale job, and not a reconnect.
