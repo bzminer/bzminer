@@ -1,35 +1,55 @@
 # bzminer
 
-A GPU and CPU cryptocurrency miner for Windows, Linux and macOS.
+A high performance NVIDIA, AMD, Intel, Apple Silicon and CPU cryptocurrency miner
+and hardware monitor. Runs on Windows, Linux and macOS.
 
-Mines **Ergo**, **Ravencoin**, **Neurai**, **Neoxa**, **Meowcoin**, **Clore**,
-**Pearl**, **VERUS**, **Warthog** and **XELIS**, and ships **sha256d** as the
-open-source SDK example.
+Mines **Ergo**, **Ethereum Classic**, **EthereumPoW**, **Ravencoin**,
+**Neurai**, **Neoxa**, **Meowcoin**, **Clore**, **Pearl**, **Monero**,
+**VERUS**, **Warthog** and **XELIS**, and ships **sha256d** as the open-source
+SDK example.
 
 One binary, no installer. It writes nothing outside its own folder except the log
 file and the config you point it at.
 
-**No CUDA toolkit, no OpenCL install.** Every NVIDIA architecture from the GTX
-1080 up ships a precompiled kernel, so the driver is all you need. Nothing is
-compiled on your machine and nothing is linked against a vendor SDK: CUDA,
-OpenCL, AMD's HIP and Apple's Metal are all opened at runtime *if they are
-present*, and a backend whose driver is missing is simply left out. An NVIDIA rig
-with no OpenCL installed loses nothing, and the build refuses to ship if any of
-those libraries creeps back into the import table.
+## Algorithms and coins
 
-> **Public beta.** It mines, and it has been run against real pools on real
-> hardware — but it is new. Watch a rig before you leave it alone with it, and
-> please report what you find.
+| `-a` name | coin | dev fee | devices | what it is |
+|---|---|---|---|---|
+| `ergo` | Ergo | 1% | NVIDIA · AMD · Intel · Apple | A smart-contract proof-of-work chain built on an extended UTXO model. Autolykos v2 is memory-hard: it builds a ~2 GB table in VRAM before it can mine, so a card needs the room for it. Wallet addresses start with '9'. |
+| `etchash`, `etc` | Ethereum Classic | 0.50% | NVIDIA · AMD · Apple | The original Ethereum chain, still proof-of-work; ECIP-1099 halved its epoch, so its DAG is about half ETHW's at a comparable height. |
+| `ethash`, `ethw`, `ethereumpow` | EthereumPoW | 0.50% | NVIDIA · AMD · Apple | The proof-of-work fork kept alive after Ethereum moved to proof-of-stake. |
+| `rvn` (or `kawpow`) | Ravencoin | 1% | NVIDIA · AMD · Intel · Apple | A Bitcoin-derived chain for issuing and transferring user-created assets. |
+| `xna` (or `kawpow`) | Neurai | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork aimed at tying asset tokens to IoT devices and AI data. |
+| `neoxa` (or `kawpow`) | Neoxa | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork built around gaming and in-game reward tokens. |
+| `meowcoin` (or `kawpow`) | Meowcoin | 1% | NVIDIA · AMD · Intel · Apple | A community-run Ravencoin fork with the same asset layer. |
+| `clore` (or `kawpow`) | Clore | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork whose coin pays for time on a GPU-rental marketplace. |
+| `pearl` | Pearl | 1% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
+| `randomx`, `rx/0`, `xmr`, `monero` | Monero | 1% | CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
+| `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
+| `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
+| `warthog` | Warthog | 2% | NVIDIA · AMD · Intel · Apple **and** CPU | A chain whose janushash proof-of-work is deliberately split across both processors: the GPU filters sha256t and the CPU runs VerusHash over the same nonces. Neither half finds anything alone. Wallet addresses are 48 hex characters. |
+| `xelis` | XELIS | 1% | NVIDIA · AMD · Intel · CPU | A privacy-oriented BlockDAG with encrypted balances and homomorphic transfers. Wallet addresses start with 'xel:'. |
 
-**Contents** — [Download](#download) · [Start mining](#start-mining) ·
-[Algorithms](#algorithms) · [Testing without a pool](#testing-without-a-pool) ·
-[Pools and failover](#pools-backups-and-failover) · [The console](#the-console) ·
-[Overclocking](#overclocking) · [Safety limits](#safety-limits) ·
-[Web dashboard](#the-web-dashboard) · [Monitoring only](#monitoring-without-mining) ·
-[Several GPUs](#rigs-with-several-gpus--or-several-cpus) ·
-[Configuration](#configuration) · [Every option](#every-command-line-option) ·
-[Every setting](#every-setting) · [Environment variables](#environment-variables) ·
-[Troubleshooting](#if-something-goes-wrong) · [Dev fee](#dev-fee)
+**Warthog needs both a GPU and the CPU.** Neither half finds anything alone, so
+disabling either one stops the rig. Every other algorithm mines on whichever of
+its listed device types are present.
+
+The five KawPow coins share one algorithm, and **the name you give `-a` is what
+picks the chain you mine**: `-a rvn`, `-a xna`, `-a neoxa`, `-a meowcoin` or
+`-a clore` names your chain outright, while `-a kawpow` names only the algorithm.
+Each coin has its own address format, so the wallet changes with the name.
+
+"Intel" means an Intel Arc or integrated GPU through OpenCL; "Apple" means an
+Apple Silicon GPU through Metal, on macOS. Four algorithms have a Metal path —
+`ergo`, `kawpow`, `pearl` and `warthog` — and those are the ones that use the GPU
+on a Mac. `xelis`, `randomx` and `verus` mine on the CPU there, and so does
+`pearl` alongside its GPU work. macOS has had no CUDA since 10.13, and OpenCL on
+an Apple GPU is left to Metal, so an algorithm without a Metal kernel simply has
+no Mac GPU to use.
+
+The dev fee is declared by each algorithm, printed in the log at startup, and
+listed here straight from the shipped binary — so what you read is what you run.
+`bzminer --list-algos` prints your own copy's algorithms and fees as JSON.
 
 ## Download
 
@@ -42,9 +62,9 @@ and check the SHA-256 published beside it.
 tar -xzf bzminer_<version>_linux.tar.gz && cd bzminer_<version>_linux
 ```
 
-One archive per platform. Every algorithm, every hardware monitor, both console
-screens and the web dashboard are compiled **into the binary** — there is nothing
-else to download and no plugins folder to manage.
+One archive per platform. Every algorithm, every hardware monitor, all four
+console screens and the web dashboard are compiled **into the binary** — there is
+nothing else to download and no plugins folder to manage.
 
 | | |
 |---|---|
@@ -54,6 +74,70 @@ else to download and no plugins folder to manage.
 
 Inside: the binary, a launcher per algorithm (`start_xelis.sh` / `.bat` and so
 on), a fully commented `config.txt`, and `readme.txt`.
+
+There is also a **lite** build and a separate **plugins** archive. The lite binary
+has nothing compiled in and loads everything from a `plugins/` folder beside it;
+the content is identical, so take the full build unless you specifically want to
+replace one plugin without shipping a new miner.
+
+macOS blocks unsigned downloads outright — if it refuses to open, clear the
+quarantine flag once, in the unpacked folder:
+
+```bash
+xattr -dr com.apple.quarantine .
+```
+
+## Monitoring without mining
+
+bzminer can run as a **hardware monitor with no mining at all**: every sensor it can
+read, on the console and in the web dashboard, and nothing hashing.
+
+```bash
+./bzminer --dmon
+```
+
+Then open **<http://127.0.0.1:4014/>**. No wallet, no pool, no algorithm — it
+needs none of them. Useful for watching a rig that is busy with something else,
+for checking sensors before you commit a card to a job, or simply as a permanent
+sensor readout for a machine.
+
+The same thing from `config.txt` (`"dmon": true`), and the same thing implicitly:
+a run with no pool configured, or with `"pool": []`, falls into monitoring mode
+rather than exiting, and says so in the log.
+
+Which sensors are shown is `--metrics`:
+
+```bash
+./bzminer --dmon --metrics temps,powers,clocks
+./bzminer --metrics ?            # every group and live metric on this machine
+```
+
+A group expands to every sensor of that kind the machine actually reports, so
+`temps` on a card with per-die sensors gives you all of them without naming one.
+Columns nothing reports are dropped rather than filled with dashes. The groups are
+`temps`, `clocks`, `powers`, `fans`, `volts`, `currents`, `pcie`, `utilization`,
+`memory`, `timings`, `counters`, `performance` and `all`; any single column name
+and any vendor metric key (`pcie.tx`, `temp.vr_core`, …) works too.
+[More on the monitoring screens below.](#monitor--the-sensor-table)
+
+**One-shot inspection**, no mining, no dashboard, no screen — each prints and
+exits:
+
+```bash
+./bzminer --gpu-info       # NVIDIA devices as CUDA sees them
+./bzminer --cpu-info       # CPU topology and live metrics
+./bzminer --ram-info       # memory modules, DRAM timings and SMBus temperatures
+./bzminer --list-metrics   # every sensor this machine exposes
+./bzminer --list-columns   # every console-table column name available here
+./bzminer --list-algos     # algorithms in this build, with their dev fees
+```
+
+And the device page prints itself in full, once, when its output is redirected —
+a complete hardware report for one card:
+
+```bash
+./bzminer -o device --device-select 1 --device-metrics all > rig.txt
+```
 
 ## Start mining
 
@@ -66,95 +150,133 @@ the command line:
 
 Then open **<http://127.0.0.1:4014/>** for the dashboard.
 
-The three flags that matter: `-a` the algorithm, `-p` the pool URL, `-w` your
-wallet. `--worker` names the rig at the pool and is optional.
+The three flags that matter are the same for every algorithm: **`-a`** the
+algorithm, **`-p`** the pool URL, **`-w`** your wallet. `--worker` names the rig at
+the pool and is optional; `--pass` is the pool password where one is wanted. Note
+that `-p` is the **pool**, not the password.
 
-macOS blocks unsigned downloads outright — if it refuses to open, clear the
-quarantine flag once, in the unpacked folder:
+Every section below adds `--worker rig1` and nothing else. Anything from
+[Overclocking](#overclocking), [several GPUs](#rigs-with-several-gpus--or-several-cpus)
+or [pool failover](#pools-backups-and-failover) can be appended to any of them.
 
-```bash
-xattr -dr com.apple.quarantine .
-```
+### XELIS
 
-### Coming from bzminer 1.x
-
-Old start scripts run as they are. `-p` is the **pool URL**, as it always was (the
-password is `--pass`), and the underscore spellings of the tuning flags —
-`--oc_power_limit`, `--oc_fan_speed`, `--cpu_threads`, `--warthog_verus_hr_target`
-— are all accepted and mapped to their modern equivalents.
-
-One flag changed meaning: **`-o` now selects the console screen** (it is short for
-`--output`), because `-O` for that and `-o` for a pool was backwards. A URL passed
-to `-o` is still taken as a pool, with a warning saying so, rather than silently
-leaving you with no pool at all.
-
-Two 1.x options describe machinery this version no longer has:
-`--warthog_max_ram_gb` and `--warthog_target_cpu_pressure`. The GPU→CPU hand-off
-is now a small cache-local ring rather than a RAM buffer you size, and the balance
-between the two stages is found by a tuner rather than aimed at a pressure number.
-bzminer accepts both options and says what governs that behaviour now, instead of
-quietly mapping them onto something that merely looks similar.
-
-Anything it does not recognise is reported rather than ignored, so a flag that has
-been renamed shows up as a warning at startup instead of silently doing nothing.
-
-## Algorithms
-
-| algorithm | coin | dev fee | notes |
-|---|---|---|---|
-| `ergo` | Ergo | 1% | Autolykos v2. GPU only, and memory-hard: it builds a table of N 32-byte elements (about 2 GB) in VRAM, so a card needs the room for it. N grows with block height, and the table is rebuilt when it changes. Wallet addresses start with '9'. |
-| `kawpow` | Ravencoin (`rvn`)<br>Neurai (`xna`)<br>Neoxa (`neoxa`)<br>Meowcoin (`meowcoin`)<br>Clore (`clore`) | 1% | KawPow on NVIDIA CUDA, AMD OpenCL, and Apple Metal GPUs. NVIDIA specializes the three-block random program through the driver's PTX JIT, with precompiled cubins as its fallback; AMD uses offline-native gfx code objects; Apple Silicon uses a portable offline metallib. No CUDA toolkit, NVRTC, ROCm compiler, OpenCL C source, Metal source, or external GPU compiler is required on the mining rig; the AMD and Apple paths do no runtime compilation. Answers to `kawpow` and to each KawPow coin by name (rvn, xna, neoxa, meowcoin, clore), which is also what selects the dev-fee destination. A wallet address for the coin being mined, optionally followed by .worker. |
-| `pearl` | Pearl | 1% | a zk proof-of-work: each share is a STARK proof, so it is far heavier per hash than a normal algorithm. Also mines SOLO - point -p at your node's RPC URL instead of a pool. Wallet addresses start with 'prl1'. |
-| `sha256d` | — | none | The open-source SDK example: a full algorithm plugin (CPU+GPU, pool stratum, bench job source). Copy plugins/public/sha256d as a template for your own. |
-| `verus` | VERUS | 1% | VerusHash v2.2 CPU mining. A Verus R-address, optionally followed by .worker. |
-| `warthog` | Warthog | 2% | janushash - the GPU filters sha256t and the CPU runs verushash, on the same nonces. Needs BOTH a GPU and the CPU; one without the other finds nothing. Wallet addresses are 48 hex characters. |
-| `xelis` | XELIS | 1% | xelhash. Wallet addresses start with 'xel:'. |
-
-The dev fee is declared by each algorithm, printed in the log at startup, and
-listed here straight from the shipped binary — so what you read is what you run.
-
-Which hardware each one uses:
-
-| algorithm | GPU | CPU |
-|---|---|---|
-| `ergo` | NVIDIA, AMD, Intel, Apple | — |
-| `xelis` | NVIDIA, AMD, Intel, Apple | yes |
-| `pearl` | NVIDIA, AMD, Intel | yes |
-| `warthog` | NVIDIA, AMD, Intel, Apple | **required, with a GPU** |
-| `verus` | — | yes |
-| `sha256d` | NVIDIA, AMD, Intel, Apple | yes |
-
-"Apple" means an Apple Silicon GPU through Metal, on macOS. Pearl is the one
-exception: its GPU kernels need integer matrix hardware that Metal does not
-expose, so on a Mac it mines on the CPU.
-
-### Mining each one
-
-**XELIS** — CPU and GPU, both at once on the same rig.
+xelhash, on **GPUs and the CPU at once** on the same rig.
 
 ```bash
 ./bzminer -a xelis -p stratum+ssl://us.vipor.net:5177 -w xel:YOUR_WALLET --worker rig1
 ```
 
 Pools: `stratum+ssl://us.vipor.net:5177` ·
-`stratum+ssl://us.xelis.herominers.com:1225` · solo to your own node with
+`stratum+ssl://us.xelis.herominers.com:1225`. Solo to your own node with
 `ws://127.0.0.1:8080`.
 
-**Ergo** — Autolykos v2, **GPU only**, and memory-hard: it builds a table of about
-2 GB in VRAM before it can mine, so a card needs the room for it and there is a
-pause at startup (and again whenever the table is rebuilt) while it is filled.
-Cards with less VRAM than the table needs are reported and skipped rather than
-quietly producing nothing.
+### Ergo
+
+Autolykos v2, **GPU only**, and memory-hard: it builds a table of about 2 GB in
+VRAM before it can mine, so a card needs the room for it and there is a pause at
+startup — and again whenever the table is rebuilt — while it is filled. Cards with
+less VRAM than the table needs are reported and skipped rather than quietly
+producing nothing.
 
 ```bash
 ./bzminer -a ergo -p stratum+tcp://pool.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET --worker rig1
 ```
 
-Pools: `stratum+tcp://pool.woolypooly.com:3100`. Wallets start with `9`.
+On an **Apple Silicon** Mac the table comes out of unified memory, sized against
+what Metal says it may use rather than against installed RAM. 2 GB fits an 8 GB
+M2 with room to spare — but it is the machine's memory, so leave the Mac something
+to live in.
 
-**Pearl** — a zk proof-of-work: every share is a STARK proof, so it is far heavier
-per hash than an ordinary algorithm and the hashrate numbers look small by
-comparison. Normal.
+Pools: `stratum+tcp://pool.woolypooly.com:3100`. MoneroOcean mines Autolykos2 and
+pays in XMR — point `-w` at a Monero address and pin the algorithm in the
+password:
+
+```bash
+./bzminer -a ergo -p stratum+tcp://gulf.moneroocean.stream:10128 \
+  -w 4YOUR_MONERO_WALLET --pass "rig1~autolykos2"
+```
+
+### Ethash and etchash — Ethereum Classic, EthereumPoW
+
+**NVIDIA, AMD and Apple Silicon**, and **memory-hard**: both build a DAG in VRAM
+before they can mine — several gigabytes of it, growing with the chain — so there
+is a pause at startup while it is generated, and again each time the chain crosses
+an epoch. A card without the room is reported and skipped rather than quietly
+producing nothing.
+
+**The `-a` name picks the chain, and it is not interchangeable.** Ethash and
+etchash are the same algorithm, but ECIP-1099 halved Ethereum Classic's epoch, so
+the same block height means a *different DAG* on each. Point `-a ethash` at an
+Ethereum Classic pool and the miner builds the wrong DAG — a bigger one — and
+every share it finds is worthless. Use `etchash` (or `etc`) for Ethereum Classic,
+and `ethash` (or `ethw`, `ethereumpow`) for EthereumPoW.
+
+```bash
+# Ethereum Classic
+./bzminer -a etchash -p stratum+tcp://etc.2miners.com:1010 -w 0xYOUR_ETC_WALLET --worker rig1
+```
+
+Because ETC's epoch is halved, its DAG is about **half** EthereumPoW's at a
+comparable height — so a card that can no longer hold an ETHW DAG will usually
+still mine ETC.
+
+Pools: `stratum+tcp://etc.2miners.com:1010` ·
+`stratum+ssl://etc.2miners.com:11010`. MoneroOcean takes etchash and pays in XMR
+— point `-w` at a Monero address and pin the algorithm in the password, or it
+will serve you whatever it happens to be mining:
+
+```bash
+./bzminer -a etchash -p stratum+tcp://gulf.moneroocean.stream:10128 \
+  -w 4YOUR_MONERO_WALLET --pass "rig1~etchash"
+```
+
+EthereumPoW pools have thinned out a long way. `stratum+tcp://ethw.f2pool.com:6688`
+was the one still answering when this release was built — and F2Pool signs you in
+with your **account name**, not a wallet address:
+
+```bash
+# EthereumPoW
+./bzminer -a ethash -p stratum+tcp://ethw.f2pool.com:6688 -w YOUR_F2POOL_ACCOUNT --worker rig1
+```
+
+### KawPow — Ravencoin, Neurai, Neoxa, Meowcoin, Clore
+
+**GPU only.** Name the coin, not `kawpow`: the name is what selects the chain you
+mine, and each coin has its own address format.
+
+```bash
+# Ravencoin
+./bzminer -a rvn -p stratum+ssl://pool.us.woolypooly.com:55555 -w RYOUR_RVN_WALLET --worker rig1
+
+# Neurai (rplant carries it on the ASIA host only)
+./bzminer -a xna -p stratum+ssl://stratum-asia.rplant.xyz:17029 -w NYOUR_XNA_WALLET --worker rig1
+
+# Neoxa
+./bzminer -a neoxa -p stratum+ssl://stratum-eu.rplant.xyz:17069 -w GYOUR_NEOXA_WALLET --worker rig1
+
+# Meowcoin
+./bzminer -a meowcoin -p stratum+ssl://stratum-eu.rplant.xyz:17120 -w MYOUR_MEWC_WALLET --worker rig1
+```
+
+MoneroOcean takes any KawPow coin and pays in XMR:
+
+```bash
+./bzminer -a kawpow -p stratum+tcp://gulf.moneroocean.stream:10128 \
+  -w 4YOUR_MONERO_WALLET --pass "rig1~kawpow"
+```
+
+No CUDA toolkit, NVRTC, ROCm compiler or Metal source is needed on the rig.
+NVIDIA specializes KawPow's three-block random program through the driver's PTX
+JIT with precompiled cubins as a fallback; AMD uses offline-native gfx code
+objects and Apple a portable offline metallib, neither of which compiles anything
+at runtime.
+
+### Pearl
+
+A zk proof-of-work: every share is a STARK proof, so it is far heavier per hash
+than an ordinary algorithm and the hashrate numbers look small by comparison.
+That is normal — judge it by accepted shares.
 
 ```bash
 ./bzminer -a pearl -p stratum+tcp://us.pearl.herominers.com:1200 -w prl1YOUR_WALLET --worker rig1
@@ -167,11 +289,43 @@ Pools: `stratum+tcp://us.pearl.herominers.com:1200` ·
 Pearl also mines **solo** — point `-p` at your own node's RPC URL instead of a
 pool.
 
-**Warthog** — needs a GPU *and* the CPU together. The GPU filters sha256t and the
-CPU runs VerusHash over the same nonces; neither half finds anything alone, so
-disabling either one stops the rig. The first two minutes show `calibrating
-verus` while it works out how hard to drive the filter — a near-zero rate during
-that is expected, not a fault.
+### RandomX — Monero
+
+**CPU only.** `-a randomx`, `-a rx/0`, `-a xmr` and `-a monero` all select it.
+
+```bash
+./bzminer -a randomx -p stratum+ssl://gulf.moneroocean.stream:20128 -w YOUR_MONERO_WALLET --worker rig1
+```
+
+Pools: `stratum+ssl://gulf.moneroocean.stream:20128` ·
+`stratum+ssl://xmr.2miners.com:12222` · `stratum+ssl://monero.herominers.com:1118`.
+
+RandomX needs **2080 MB for its dataset plus 2 MB per mining thread**, and drops
+to a slower low-memory mode if that does not fit. It uses huge pages where the
+system allows them, and the startup line says which it got. More threads is not
+always faster: each one wants 2 MB of cache, so past roughly *L3 size ÷ 2 MB* they
+compete — see [`--cpu_threads`](#how-much-of-the-cpu-mines). A CPU without AES
+instructions runs it roughly four times slower, and bzminer says so.
+
+### VERUS
+
+VerusHash v2.2, **CPU only**. No GPU is used, so a rig can mine this on the
+processor while the cards do something else.
+
+```bash
+./bzminer -a verus -p stratum+ssl://bzdev.vipor.net:5140 -w YOUR_VERUS_ADDRESS.rig1
+```
+
+The wallet is a Verus R-address, optionally with `.worker` appended — that form
+carries the worker name, so `--worker` is not needed.
+
+### Warthog
+
+Needs a GPU **and** the CPU together. The GPU filters sha256t and the CPU runs
+VerusHash over the same nonces; neither half finds anything alone, so disabling
+either one stops the rig. The first two minutes show `calibrating verus` while it
+works out how hard to drive the filter — a near-zero rate during that is expected,
+not a fault.
 
 ```bash
 ./bzminer -a warthog -p stratum+ssl://us.vipor.net:5120 -w YOUR_48_HEX_WALLET --worker rig1
@@ -187,26 +341,626 @@ Warthog's CPU stage needs hardware AES and carry-less multiply: any x86-64 from
 2013 on, or Apple Silicon. On anything else the miner says so and refuses rather
 than pretending.
 
-**VERUS** — VerusHash v2.2, **CPU only**. No GPU is used, so a rig can mine this
-on the processor while the cards do something else.
+It runs on **Apple Silicon** with both halves on the one chip: the GPU filters
+sha256t through Metal and the CPU runs VerusHash through the ARMv8 Crypto
+Extensions.
 
-```bash
-./bzminer -a verus -p stratum+ssl://bzdev.vipor.net:5140 -w YOUR_VERUS_ADDRESS.rig1
-```
+It also plans the whole rig at once, because its two halves feed each other: it
+groups CPU workers by shared L3 cache and measures each GPU's PCIe bandwidth so it
+knows an x16 slot from an x1 riser, then sizes the candidate flow per card.
+`--no-bandwidth-test` skips that measurement if you would rather save the second
+per GPU at startup.
 
-The wallet is a Verus R-address, optionally with `.worker` appended — that form
-carries the worker name, so `--worker` is not needed.
+### SHA-256d
 
-**SHA-256d** is the open-source example that ships with the plugin SDK. It mines,
-but SHA-256d is ASIC territory — it is there to be read and copied, not to earn.
+The open-source example that ships with the plugin SDK. It mines, but SHA-256d is
+ASIC territory — it is there to be read and copied, not to earn.
 
 ```bash
 ./bzminer -a sha256d -p stratum+tcp://your-pool:3333 -w YOUR_WALLET
+./bzminer --bench -a sha256d      # what start_sha256d does: no pool, just prove it runs
 ```
 
-## Testing without a pool
+### Updating on a mining OS
 
-Two ways to make the miner work without pointing it at anyone, both useful for
+Both scripts fetch **v100.10**, the version on this page, so they can be
+pasted as they are. To move a rig to a later release, change the version at the
+top of the script.
+
+**MMPOS** — put this in *miner profile → advanced → "Initiate command prior to
+miner launch"*. It downloads once; on every later launch the `if` sees the archive
+already in `/tmp` and exits immediately, so it costs nothing per restart.
+
+```bash
+export version="v100.10"
+if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
+exit 0
+else
+cd /tmp; wget https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz; tar -xvf bzminer_${version}_linux.tar.gz; sudo cp -adpR bzminer_${version}_linux/bzminer /opt/mmp/miners/bzminer/
+fi
+```
+
+**Hive OS** — run it over SSH or in the Hive web shell. You do **not** need to
+know which bzminer version is installed: Hive keeps one folder per version under
+`/hive/miners/bzminer/` and the flight sheet decides which one runs, so this
+replaces the binary in *every* bzminer folder it finds and whichever one your
+flight sheet points at gets the new build.
+
+```bash
+version=v100.10
+cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
+miner stop
+n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
+[ "$n" -gt 0 ] && echo "updated $n bzminer folder(s)" || echo "no /hive/miners/bzminer/<version>/ found - install bzminer from the flight sheet first"
+miner start
+```
+
+It prints how many folders it updated. `0` means bzminer has never been installed
+from a flight sheet on that rig, so there is nothing to replace yet.
+
+Both mining OSes rewrite the pool block from their own algorithm list, so an
+algorithm bzminer gained after that front-end shipped cannot be picked in their
+UI. `--force_algo <name>` (or `force_algo` in `config.txt`) overrides it whatever
+wrote it — that is what it is for.
+
+## Console output modes
+
+Four screens, all compiled in, all showing the same run. Press **`o`** to cycle
+through them, or start on one with **`-o <name>`** (`--output` in full).
+
+| screen | what it shows |
+|---|---|
+| [`tui`](#tui--the-dashboard) | boxed dashboard: devices, shares, pool state, scrollable log pane. **The default whenever there is a terminal** |
+| [`log`](#log--the-scrolling-log) | plain scrolling log, with the device table reprinted every 30s. **The default when output is redirected** |
+| [`monitor`](#monitor--the-sensor-table) | one dense sensors table, `nvidia-smi dmon` style, redrawn in place |
+| [`device`](#device--the-hardware-inspector) | full-screen hardware inspector: one page per device, every sensor it publishes |
+
+Three ways to choose one, all naming the same screen:
+
+```bash
+./bzminer -o monitor ...        # start on it
+```
+```json
+{ "output": "monitor" }
+```
+```
+c  →  output monitor            # switch live, from the console command line
+```
+
+`o` cycles from wherever you are, `d` jumps straight to the device page, and `Esc`
+comes back from it.
+
+**If you pipe or redirect bzminer's output it defaults to `log` on purpose** — a
+full-screen dashboard sent to a file is just a file full of cursor codes, so that
+is what mining OSes get without asking. An explicit `-o tui` is still obeyed;
+the fallback only applies when you have not named a screen. `--color` /
+`--no-color` overrides the terminal detection for colour specifically.
+
+Every screen is a plugin. In the **full** build all four are compiled in and there
+is no way to remove one from the `o` cycle; in the **lite** build they are files in
+`plugins/`, so deleting `out_monitor.so` removes `monitor` from the rig entirely.
+The web dashboard is the same plugin story and *does* have a switch —
+`http_enabled=false` — because it is a listening socket rather than a screen.
+
+### Refresh rates
+
+How often each screen redraws is separate from how often the engine *publishes*
+data. The web dashboard and the metric history want that fast; a human reading a
+table does not.
+
+```bash
+--interval 1000              # the underlying data rate for every screen and the web UI
+--tui-interval 400           # 'tui': repaint the dashboard every 400ms
+--log-table-interval 30000   # 'log': reprint the device table every 30s (0 = every snapshot)
+--device-interval 1000       # 'device': that page's own clock (unset = --interval)
+--hashrate-window 30         # seconds the reported hashrate averages over
+```
+
+`--hashrate-window` is a different kind of thing from the four above it: they
+decide how often a number is *drawn*, it decides what the number *is*. A GPU's
+hash counter advances one batch at a time, so an un-averaged rate reads 0, 0, 0,
+BURST, 0 — the window is what makes it a rate. Raise it for a calmer number on a
+bursty rig, lower it to see an intensity or thread change take effect sooner. The
+`avg` figure is unaffected; that is always since start.
+
+`i` / `I` steps the refresh rate up and down live, through round numbers.
+
+### `tui` — the dashboard
+
+The default screen, and the one that shows what the program is doing: a hardware
+box, an algorithm box per pool, and a log pane underneath.
+
+Two tables, two column settings, because they answer different questions:
+
+```bash
+--device-columns free,total,core,mem,fan,power,temp
+     # the HARDWARE box. Same vocabulary as --metrics: single names, sensor
+     # groups, or any vendor metric key this rig emits.
+
+--mining-columns id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo
+     # the ALGORITHM box. Its own closed vocabulary:
+     #   id name cfg shares accepted rejected pending stale errors
+     #   eff poolhr hr avghr power temp fan core mem tbs status poolinfo
+```
+
+`bzminer --list-columns` prints every name all three tables accept on *your*
+machine, vendor keys included.
+
+Worth knowing about four of them:
+
+- **`cfg`** says how each device is *configured*, as opposed to what it is doing:
+  `i64` is a GPU at intensity 64, `i0` a GPU on auto, `t16` a CPU mining on 16
+  threads. The quickest way to confirm a setting actually took.
+- **`tbs`** is the *measured* average time between shares found — what a device
+  delivers, as opposed to the `est. tbs` its difficulty predicts.
+- **`poolhr`** is the pool's credited rate as a percentage of the miner's own:
+  **100%** means the pool is crediting exactly what your rig reports, below means
+  it is finding fewer shares than its hashrate implies, above means luck has run
+  your way. It is the number to watch if a miner looks fast but pays badly. Expect
+  it to swing over minutes and settle over hours — it is computed from accepted
+  shares, so a short run says very little.
+- **`poolinfo`** is the pool's own column: height, difficulty, estimated time
+  between shares and latency, one per row. Warthog leaves it out by default
+  because its status column carries the rig summary and wants the width; name it
+  explicitly to get it there too. Drop it and those four pack into `status`
+  instead; drop `status` as well and the per-device status text goes with them.
+
+**The log pane scrolls.** Mouse wheel, `Up`/`Down`, `PageUp`/`PageDown`, `Home`
+and `End`. While you are scrolled up the pane holds still — new lines keep
+arriving behind it rather than dragging the text out from under you — and the bar
+says `held N up  [End] live` so a frozen pane is never mistaken for a stalled
+miner. `End` returns to following the newest line.
+
+**Selecting and copying text keeps working too.** Scrolling and selecting are
+separate actions, and where the terminal can serve both bzminer never takes the
+mouse: it asks the terminal to turn wheel ticks into key presses instead. That
+covers every Linux and macOS terminal, and on Windows every modern one — Windows
+Terminal, VS Code, ConEmu. Drag out a log line to paste into a bug report while the
+wheel still scrolls the pane. The old Windows console window (`conhost`, still the
+default on Windows 10) is the exception: it cannot translate wheel ticks and hands
+a program the wheel only with its own quick-edit selection switched off, so there
+the two really are exclusive — and the wheel wins. Run bzminer under Windows
+Terminal and have both.
+
+In `--dmon` the tui drops the mining boxes and shows the sensors table instead, so
+it stays the screen that shows what the program is doing.
+
+### `log` — the scrolling log
+
+A plain scrolling log: one coloured line per event, with a compact device and pool
+table reprinted every 30 seconds (`--log-table-interval`, `0` for every snapshot).
+Nothing repaints in place, so it is what redirection, `journald`, and mining-OS
+log windows want — and it is what they get automatically.
+
+Every line carries its level in that level's colour: `[error]` red, `[warn]`
+yellow, `[debug]` light blue, `[network]` purple, `[trace]` dark grey. Info is
+untagged on purpose — it is what a normal run is made of.
+
+```bash
+--log-level info          # network | debug | info (default) | warn | error
+-v, -vv, -v2 …            # one step more verbose each
+-q, -qq, -q2 …            # one step quieter each
+```
+
+`+` and `-` move the level live, on any screen. `--log-level network` prints the
+raw stratum traffic, which is the fastest way to settle an argument with a pool
+about what was actually sent; `--log-wire-max <n>` elides fields longer than *n*
+characters in those lines so a Pearl share's ~140 KB proof does not bury the
+frames either side of it (`0` = raw).
+
+There is **always a file log**, whichever screen you are watching, and it holds the
+same lines *and* the periodic tables:
+
+```bash
+--logfile rig1.log            # name/path (default bzminer.worker.log)
+--logfile-level debug         # pin the FILE's level; empty = follow the screen, live
+--logfile-mode timestamp      # append (default) | overwrite | timestamp
+```
+
+`--log-level info --logfile-level debug` is the useful pair: a readable screen and
+a file worth sending to support.
+
+`--internal-log` additionally shows developer lines — kernel tile shapes, operand
+layouts, per-share prover timings. They are for whoever wrote the kernel, not
+whoever is running it, so they are off at every user level, and this is the only
+way to reach `trace`.
+
+### `monitor` — the sensor table
+
+The sensors, dense: one in-place table, no boxes, in the spirit of `nvidia-smi
+dmon`, with a small log pane at the bottom. It is available while mining as well
+as in `--dmon`.
+
+```
+   #  device                      used     free    util  memutil    core     mem    temp  memtemp     hot
+   0  AMD Radeon RX 9070 XT       4.1G    11.9G      8%       3%      75      96     52C        -     55C
+   1  AMD Ryzen Threadripper P       -        -      0%        -    2501       -       -        -       -
+   2  NVIDIA RTX 6000 Ada Gene    1.2G    46.8G      0%       0%     210     405     37C      41C       -
+  total power 26W
+```
+
+`-` means the metric is not available — CPU temperatures without an elevated
+driver, for instance. Columns are `--metrics`:
+
+```bash
+./bzminer --dmon --metrics temps,powers,clocks
+./bzminer --dmon --metrics all
+./bzminer --metrics ?                          # everything selectable on this machine
+```
+
+Groups (`temps`, `clocks`, `powers`, `fans`, `volts`, `currents`, `pcie`,
+`memory`, `timings`, `utilization`, `counters`, `performance`, `all`) expand to
+every sensor of that kind the machine actually reports; single names
+(`memused`, `memfree`, `memtotal`, `util`, `memutil`, `core`, `mem`, `temp`,
+`memtemp`, `hotspot`, `power`, `fan`) and raw vendor keys (`pcie.tx`,
+`temp.vr_core`) work too. Unset gives you
+`memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot`.
+
+Every tick, each device's selected metrics also go through the log system, so they
+scroll in the log pane, land in the log file, and survive a switch to another
+screen:
+
+```
+[metrics] dev 2 (c1:0) RTX 6000 Ada Generation: used=1.2G free=46.8G util=0% core=210 mem=405 temp=37C
+```
+
+`dev N` is the row number — a position, not an identity, since the list is ordered
+by sensor-backend priority and a CPU can sit between two GPUs. `(c1:0)` is the PCI
+id, which does not move, and is what the `oc` command takes.
+
+This screen can also write **its own** file, separate from the miner log, and only
+while it is the screen being viewed:
+
+```bash
+--monitor-logfile sensors.txt
+--monitor-logfile-mode timestamp     # append (default) | overwrite | timestamp
+```
+
+One block per sample. A rolling appended miner log can sit beside a timestamped
+file per monitoring session, which is why the two have separate settings.
+
+### `device` — the hardware inspector
+
+A full-screen page answering *what is this device*, for every device in the
+machine — GPUs that are mining, GPUs that are not, and the CPU. A selector table
+on top, a scrollable detail page below: identity, firmware, board, PCIe link,
+memory type and lockable clocks, DRAM timings, and every sensor the driver
+publishes.
+
+Press **`d`** from any screen to get here, `Esc` to go back.
+
+```
+--------------------------------------------- devices ----------------------------------------------
+|  # | pci   | device                                   | arch         | memory          | link    |
+|  0 | 29:0  | GeForce RTX 4070 Ti SUPER                | Ada Lovelace | 15.99 GiB       | Gen4 x16|
+| ▸1 | 26:0  | Radeon RX 6800 XT                        | gfx1030      | 15.98 GiB GDDR6 | Gen4 x16|
+|  2 | 255:0 | AMD Ryzen 5 3600 6-Core Processor        | 6c/12t       | 31.93 GiB DDR4  | --      |
+---- 11:45:22 ------------------------------------------------------------------ [<-/->] device ----
+```
+
+Its own keys, on top of the shared ones:
+
+| key | |
+|---|---|
+| `←` / `→` | previous / next device, wrapping — **and aims the tuning keys at it** |
+| `↑` / `↓` / wheel | scroll the detail page |
+| `PgUp` / `PgDn` / `Home` / `End` | scroll by a screenful, or to the ends |
+| `a` | compact ↔ **every** available sensor |
+| `/` | filter rows by substring (Enter keeps it, Esc clears) |
+| `Esc` | back to `tui` |
+
+`[a]` is opt-in because NVIDIA publishes well over a hundred readings on a modern
+card. Sensors are bucketed by category in the same taxonomy and order the web
+dashboard uses, so a card's page and its browser card group identically.
+
+Three flags point it at a device with nobody at the keyboard:
+
+```bash
+--device-select 1        # open on that row (and aim the tuning keys at it)
+--device-metrics all     # start with every sensor shown
+--device-interval 2000   # this page's refresh, in ms
+```
+
+It refreshes on its own timer and does **not** wait for mining snapshots —
+everything on it comes from the hardware inventory — so a monitoring-only run, a
+run between pools, and a run whose algorithm publishes nothing all keep it ticking.
+
+**The selection is the overclock target.** Moving the caret with `←`/`→` aims
+`g`/`G`, `l`/`L`, `m`/`M`, `k`/`K` and `w`/`W` at the card you are looking at, and
+`n` moves the caret as well as the target — the two cannot disagree. Selecting the
+CPU leaves the aim on the last card, since there is nothing on a CPU to tune.
+
+Also useful here: a **memory-clock lock is only accepted at one of a card's
+discrete states**, so the memory group lists them — `405, 810, 5001, 10251,
+[10501]` — with the state the card is currently running in brackets. "Why is
+memory at 810" is the question that sends someone to this page.
+
+## The web dashboard
+
+Served at **<http://127.0.0.1:4014/>**, and it is the same data the console shows:
+per-device hashrate, shares, pool state, every sensor, and the overclock controls.
+
+```bash
+--set http_port=8080            # different port
+--set http_address=0.0.0.0      # reachable from the rest of the LAN
+--set http_enabled=false        # off
+```
+
+It binds to localhost by default. `0.0.0.0` exposes it to anything that can reach
+the machine — **there is no password on it**, so put it behind something you trust.
+In `--dmon` it is forced on, because in that mode it is the point.
+
+Two tabs, with a poll-interval selector (0.5s / 1s / 2s / 5s / off):
+
+- **Monitoring** — a card per GPU (usage, core/mem/hotspot temp, power, fan,
+  clocks vs. rated, PCIe gen×width and TX/RX, GDDR timings), grouped advanced
+  sections for fan RPM, rail power/current/voltage, engine utilization, PCIe
+  errors and performance limits; an lstopo-style CPU topology map with
+  Utilization/Temperature and Boxes/Tree toggles; per-DIMM RAM cards with a
+  temperature graph; and storage volumes. **Click any metric to chart it over
+  10m / 1h / 1d.** "Show all metrics" reveals every vendor sensor as a graphable
+  tile; histories are collected even while the tiles are hidden.
+- **Mining** — per-device hashrate, accepted/rejected/pending shares, temps and
+  power, and the pool/rig summary, pushed live over a WebSocket.
+
+Overclocking from the dashboard goes through the same implementation as the
+console and the command line, so the three cannot disagree.
+
+JSON, for scripting or your own dashboard:
+
+| endpoint | |
+|---|---|
+| `/api/snapshot` | everything: devices, pools, hashrate, shares |
+| `/api/stream` | the same, pushed as it changes (WebSocket) |
+| `/api/gpus`, `/api/metrics`, `/api/topology`, `/api/ram`, `/api/storage` | hardware detail |
+| `/api/oc` | read and apply overclocks |
+| `/status` | the shape other mining dashboards expect |
+| `/hive_status` | HiveOS |
+
+## Hotkeys
+
+The same on every screen. `h` prints this list *in the miner*, with the current
+setting beside each key that has one, and `h` again closes it.
+
+| key | |
+|---|---|
+| `h` | this list (again to close) |
+| `c` | open the command line |
+| `o` | next screen |
+| `d` | device detail page |
+| `u` | **pool details: url, wallet, worker, password** (again to close) |
+| `p` | pause / resume mining |
+| `q` | quit |
+| `+` / `-` | more / less log detail, live |
+| `i` / `I` | refresh faster / slower |
+| `t` / `T` | CPU mining threads, up / down |
+| `n` | aim the tuning keys at the next card |
+| `g` / `G` | core clock offset, ±15 MHz |
+| `l` / `L` | core clock lock, ±15 MHz |
+| `m` / `M` | memory clock offset, ±50 MHz |
+| `k` / `K` | memory clock lock, through the card's own steps |
+| `w` / `W` | board power cap, ±5% of the card's range |
+
+**`u` is the one to know when a pool is crediting you nothing.** It prints every
+configured pool in failover order with its url, algorithm, wallet, worker name and
+password, each on its own line — read from the *config*, not from the snapshot,
+because the snapshot only carries the joined `wallet.worker` login, in which a
+wallet typo and a worker typo look identical. The password is only shown for a
+pool that actually set one, and it never leaves the console: the web host does not
+answer that field, so nothing here reaches `/status`.
+
+**The tuning keys move one card, not the rig.** `n` picks which, and its row is
+marked `>` in the device tables and `▸` on the device page. A lock and an offset
+are separate settings and a card can carry both, which is why each has its own key.
+Every step starts from what the card is actually set to, read back per device, so
+a rig started with an offset in `config.txt` does not jump on the first press.
+
+### The command line
+
+Press `c`, type, press enter. `Esc` cancels.
+
+| command | what it does |
+|---|---|
+| `help` | list the commands |
+| `pause` / `resume` | stop and restart mining without exiting |
+| `oc ...` | overclock — [see below](#live-from-the-console) |
+| `intensity <n>` | mining intensity on every device; `0` is auto |
+| `level <name>` | log level: `network`, `debug`, `info`, `warn`, `error` |
+| `output <name>` | switch screen by name |
+| `quit` | exit |
+
+## Overclocking
+
+Three routes — a start script or `config.txt`, the console, or the web dashboard —
+all going through **one implementation**, so they cannot disagree with each other.
+Every refusal tells you *why* ("needs root/administrator", "the driver would not
+expose the clock-offset API for this device") instead of failing quietly.
+
+### What each device type can do
+
+| device | power | core clock | memory clock | fan |
+|---|---|---|---|---|
+| **NVIDIA** | yes | offset **and** lock | offset **and** lock | duty, temperature target, or automatic |
+| **AMD** | — | — | — | duty, temperature target, or automatic |
+| **Intel** | — | — | — | — |
+| **CPU** | — | — | — | — |
+
+NVIDIA is the full set, through NVML and NvAPI. On AMD only the fan is settable —
+ask for a clock or a power limit on a Radeon and bzminer says so by name rather
+than reporting a card that is not there. The fan curve below works on both, because
+it is computed by bzminer and handed to the driver as a duty. Intel cards report
+their fan but expose no way to drive it, and everything else about them is
+read-only. There is no CPU overclocking; use
+[`--cpu_threads` / `--cpu_affinity`](#how-much-of-the-cpu-mines) to decide how
+much of the processor mines instead.
+
+On **Linux every knob is a privileged write** — run as root, or nothing applies.
+On AMD, fan control additionally needs the amdgpu overdrive gate, which bzminer
+turns on at startup when it is run as root. bzminer restores whatever it changed
+when it exits.
+
+### From the command line (or `config.txt`)
+
+```
+--oc-power-limit 160             board power cap, watts
+--oc-core-clock-offset 150       core offset, MHz
+--oc-memory-clock-offset 1000    memory offset, MHz
+--oc-lock-core-clock 1600        pin the core clock; 0 unlocks
+--oc-lock-memory-clock 810       pin the memory clock; 0 unlocks
+--oc-fan-speed 60                fan duty, or a temperature target (below)
+--oc-reset                       back to driver defaults
+```
+
+Each takes one value for every card, or **one per card**: `--oc-power-limit
+160,180` sets 160 W on the first and 180 W on the second. A short list leaves the
+remaining cards untouched.
+
+A worked example — mine xelis with the cards capped at 160 W, a mild core offset,
+memory pushed harder, and the fans held at a temperature target:
+
+```bash
+./bzminer -a xelis -p stratum+ssl://us.vipor.net:5177 -w xel:YOUR_WALLET \
+  --oc-power-limit 160 --oc-core-clock-offset 150 --oc-memory-clock-offset 1000 \
+  --oc-fan-speed "t:60[25-75] tm:80[50-100]"
+```
+
+The same per card, in `config.txt`, where each entry is addressed by its
+enumeration index:
+
+```json
+{
+  "oc": { "power_limit": "160", "fan_speed": "t:60[25-75]" },
+  "devices": [
+    { "index": 0, "core_clock_offset": "150",  "memory_clock_offset": "1000" },
+    { "index": 1, "core_clock_offset": "-100", "power_limit": "130" },
+    { "index": 2, "lock_core_clock": "1600" }
+  ]
+}
+```
+
+A field left out of a `devices[]` entry falls back to the global `oc` block, so
+the above caps all three cards at 160 W and gives each its own clocks — except
+card 1, which asks for 130 W and gets it.
+
+The underscore spellings from bzminer 1.x (`--oc_power_limit`, `--oc_fan_speed`,
+`--oc_core_clock_offset`, …) are all accepted, so an old start script needs no
+editing.
+
+### Fan control
+
+Takes a fixed duty, or a temperature target with a range to move inside:
+
+```
+--oc-fan-speed 60                            just run at 60%
+--oc-fan-speed "t:60[25-75]"                 hold the CORE at 60C, using 25-75% fan
+--oc-fan-speed "th:70[30-90]"                the same, aimed at the HOTSPOT
+--oc-fan-speed "tm:80[50-100]"               the same, aimed at MEMORY temperature
+--oc-fan-speed "t:60[25-75] tm:80[50-100]"   both — whichever wants more fan wins
+```
+
+That last form is the one worth knowing: a card can sit at a perfectly comfortable
+core temperature while its memory cooks, and the second clause is what catches it.
+The fan moves gradually toward the target rather than jumping, and stays inside
+the range you gave.
+
+A card keeps a fan duty or a locked clock until something clears it, so a run that
+is **killed** rather than closed leaves them behind. `bzminer --oc-reset` on its
+own undoes them.
+
+### Live, from the console
+
+Press `c`, then:
+
+```
+oc                                  what is there, and what each card is set to
+oc 150 500                          +150 core, +500 memory on every card
+oc 0 core=+150 mem=+500             card 0 only
+oc all fan=70                       every card
+oc 1 power=300 clock=2600           card 1: 300 W limit, 2600 MHz locked core
+oc 2 mem=1200 fan=85                card 2: +1200 memory, fans at 85%
+oc 3 memclock=810                   card 3: memory locked to 810 MHz
+oc 0 fan=auto                       hand the fan back to the driver
+oc reset [dev|all]                  undo it
+```
+
+The settings are `core`, `mem`, `power`, `clock`, `memclock` and `fan`. `core` and
+`mem` are **offsets** in MHz; `power` is watts; `clock` and `memclock` lock the
+core and the memory to an absolute MHz, and `0` unlocks; `fan` is a duty
+percentage or `auto`. A device is named by its number, by its PCI address as the
+tables print it (`oc 29:0 fan=70`), or by `all`.
+
+A memory lock is only honoured at one of the clocks the board publishes as
+lockable — ask for anything else and the driver quietly runs the nearest one it
+does support, so bzminer reads the clock back and tells you what the card is
+actually doing. The [device page](#device--the-hardware-inspector) lists a card's
+lockable clocks, and so does `--gpu-info`.
+
+`fan=auto` is not `fan=0`. Zero means *stop the fan*.
+
+### With the hotkeys
+
+For nudging by feel while watching what a number does. They move **one card** —
+the one `n` (or the device page's `←`/`→`) is aimed at, marked `>` in the tables:
+
+| key | step |
+|---|---|
+| `g` / `G` | core clock **offset**, ±15 MHz |
+| `l` / `L` | core clock **lock**, ±15 MHz |
+| `m` / `M` | memory clock **offset**, ±50 MHz |
+| `k` / `K` | memory clock **lock**, to the card's next / previous supported state |
+| `w` / `W` | board power cap, ±5% of the card's range |
+
+An offset and a lock are separate settings on the same domain, which is why each
+gets its own key: a locked card can still carry an offset, and `l`/`L` is the only
+way to *set* a lock from the keyboard. Each press starts from what the card is
+actually running, read back per device, and the result line says which knob moved
+and where it landed.
+
+### What to reach for, per algorithm
+
+Starting points, not measured claims — every card is different, and the honest
+test is [`--benchmark`](#benchmarking-and-mining-without-a-pool) at a fixed
+difficulty, comparing accepted shares.
+
+| algorithm | bound by | what usually pays |
+|---|---|---|
+| `ergo` | memory bandwidth | memory offset first, then trim the power limit — the core has slack |
+| `ethash`, `etchash` | memory bandwidth, almost entirely | memory offset first, then take the power limit down hard — every hash is 8 KB of DAG reads, so the core spends most of its time waiting and the clock buys very little |
+| `kawpow` | memory, with a real core component | memory offset, and a core **lock** rather than a big offset: KawPow's power draw is spiky and boost wanders |
+| `xelis` | memory | memory offset, power limit down; the core buys little |
+| `pearl` | compute | core clock, and **headroom**: the prover is heavy, so do not starve it on power |
+| `warthog` | both halves at once | leave the GPU near stock and give the CPU room — the verus stage is what the tuner balances against, and a card pushed until it throttles drags the whole pair down |
+| `randomx`, `verus` | CPU cache and memory | nothing here applies; see [`--cpu_threads`](#how-much-of-the-cpu-mines) |
+
+Two rules that hold everywhere: **cap power before you raise clocks** — an
+efficiency gain is usually a watt saved, not a megahertz added — and **change one
+thing at a time**, because `poolhr` takes hours to mean anything and two changes
+at once cannot be told apart.
+
+## Safety limits
+
+Off by default. Turn on what you want and bzminer will park a card that misbehaves
+and bring it back when it recovers — **only the offending card stops, the rest of
+the rig keeps mining**.
+
+```bash
+--set safety.max_temp_c=85      # pause a GPU over 85 C
+--set safety.max_power_w=600    # ...or over 600 W board power
+--set safety.sustain_s=15       # only after 15s over the limit, not on a spike
+--set safety.resume_margin=5    # resume once it is 5 back under
+--set safety.resume_s=10        # ...and has stayed there 10s
+```
+
+Set the temperature limit first. It works on every card, and hardware in trouble —
+a failing 12VHPWR connector included — gets hot.
+
+There are 12VHPWR current limits too (`safety.max_current_a`, and per-pin
+`safety.max_pin_current_a` / `safety.max_pin_imbalance_a`), but they need sensors
+only some boards carry. `config.txt` says exactly which.
+
+## Benchmarking and mining without a pool
+
+Two ways to make the miner work without pointing it at anyone, answering two
 different questions. Neither needs a wallet, an internet connection or an account.
 
 **`--bench`** — mine a job made up locally. No sockets at all. This answers *"does
@@ -214,45 +968,88 @@ this machine mine this algorithm"*: it exercises the kernels and the CPU path an
 nothing else.
 
 ```bash
-./bzminer --bench -a ergo         # also: xelis, pearl, warthog, verus, sha256d
+./bzminer --bench -a ergo         # also: xelis, pearl, warthog, verus, randomx, kawpow, sha256d
 ```
 
-**`--benchmark [difficulty]`** — bzminer starts a **real stratum server inside
-itself**, on a local port, and then connects to it over TCP like any other pool.
-The whole client path runs: subscribe, authorize, `mining.notify`, share submit,
-the pool's verdict, the a/r/s counters and the pool-hashrate column. It is the
-honest way to measure a card, because a share only counts once the server has
-accepted it.
+**`--benchmark [difficulty]`** — the measurement tool. bzminer starts a **real
+stratum server inside itself**, on a local port, then connects to it over TCP like
+any other pool. The whole client path runs: subscribe, authorize, `mining.notify`,
+share submit, the pool's verdict, the a/r/s counters and the pool-hashrate column.
+It is the honest way to measure a card, because a share only counts once the server
+has accepted it.
 
 ```bash
 ./bzminer --benchmark -a warthog              # default difficulty 1000
 ./bzminer --benchmark 25000000000000 -a pearl # fixed difficulty 25T
 ```
 
-Pick the difficulty deliberately. Too low and a fast rig floods the local server
-with submissions and measures the plumbing instead of the kernel; too high and you
-will wait a long time for enough shares to mean anything. As a rule aim for a
-share every few seconds: Pearl on a big GPU wants `25000000000000` (25T), xelis
+**Pick the difficulty deliberately.** Too low and a fast rig floods the local
+server with submissions and measures the plumbing instead of the kernel; too high
+and you will wait a long time for enough shares to mean anything. As a rule aim for
+a share every few seconds: Pearl on a big GPU wants `25000000000000` (25T), xelis
 wants something in the thousands.
 
-The share count is what to trust. `shares × difficulty ÷ seconds` is a rate the
-miner cannot flatter — compare it against the displayed hashrate, and if the two
-disagree for long, one of them is lying.
+**The share count is what to trust.** `shares × difficulty ÷ seconds` is a rate
+the miner cannot flatter — compare it against the displayed hashrate, and if the
+two disagree for long, one of them is lying.
 
-Each benchmark job is held for ten minutes by default so that a memory-hard
-kernel is not thrown away mid-batch every time the job refreshes, which would
-make fixed-difficulty share accounting read low. `--benchmark-job-interval <ms>`
-changes that; set it to something short, say `4000`, if what you actually want
-to exercise is how the miner copes with jobs going stale.
+Each benchmark job is held for ten minutes by default so that a memory-hard kernel
+is not thrown away mid-batch every time the job refreshes, which would make
+fixed-difficulty share accounting read low. `--benchmark-job-interval <ms>` changes
+that; set it to something short, say `4000`, if what you actually want to exercise
+is how the miner copes with jobs going stale.
 
 Both modes honour everything else: `--nvidia` to test one vendor, `--oc-*` to
-measure at a given power limit, `-o log` for a scrolling log instead of the table.
+measure at a given power limit, `-o log` for a scrolling log instead of the
+dashboard. Some algorithms register a benchmark screen of their own (xelis does),
+and `--benchmark` opens it by default; `-o tui` overrides that.
+
+For measuring a *narrower* CPU path than the hardware has — to find out what an
+instruction set is actually worth on this rig — there are
+`--disable_sse`, `--disable_avx2`, `--disable_avx512`, `--disable_vaes`,
+`--disable_amx` and `--disable_huge_pages`.
+
+## Mining through a SOCKS5 proxy
+
+One flag, and it covers **every outbound connection** bzminer makes: your pools,
+the dev-fee pools, and plugin downloads alike.
+
+```bash
+./bzminer -a xelis -p stratum+ssl://us.vipor.net:5177 -w xel:YOUR_WALLET \
+  --proxy socks5://127.0.0.1:1080
+```
+
+With authentication (RFC 1929 user/pass):
+
+```bash
+--proxy socks5://user:password@proxy.example.net:1080
+```
+
+In `config.txt` it is `network.proxy`:
+
+```json
+{ "network": { "proxy": "socks5://user:password@proxy.example.net:1080" } }
+```
+
+The proxy is applied **before** the optional TLS wrap, so it covers plaintext
+`stratum+tcp://` and `stratum+ssl://` identically, and the *proxy* resolves the
+pool hostname — no DNS lookup for the pool leaves this machine. Empty (the
+default) is a direct connection.
+
+It does not touch the web dashboard, which is a listening socket rather than an
+outbound one; use `http_address` for that.
 
 ## Pools, backups and failover
 
 List as many pools as you like. The **first is primary and the rest are backups**:
 bzminer connects to the primary, and on a disconnect rotates through the others
 until one answers, then keeps mining there.
+
+**It comes home on its own.** A failed primary is re-probed every five minutes on
+a second, independent connection that does the real subscribe and authorize — so a
+pool whose TCP is up but whose stratum is broken is never switched to — and when
+it verifies, that already-live connection is promoted in place. No reconnect, no
+gap, and the backup keeps mining right up to the switch.
 
 ```bash
 ./bzminer -a xelis \
@@ -275,299 +1072,108 @@ The same thing in `config.txt`:
 }
 ```
 
-Backups must be the **same algorithm** as the primary. `"pool": 0` picks one entry
-out of the list; `"pool": [0, 2]` runs a chosen subset; omit it and you get all of
-them.
+Backups must be the **same algorithm** as the primary; one that is not is skipped
+with a warning saying so. `"pool": 0` picks one entry out of the list, `"pool":
+[0, 2]` runs a chosen subset, `"pool": []` is monitoring mode, and omitting it
+gives you all of them.
 
 Other pool options: `stratum+ssl://` for TLS (add `--ssl-verify` to check the
-certificate), `--pass <password>` where a pool wants one — note `-p` is the pool
-URL, not the password — and `--proxy socks5://host:port` to route every pool
-connection through a SOCKS5 proxy.
+certificate chain and hostname), `--pass <password>` where a pool wants one — note
+`-p` is the pool URL, not the password — and `--proxy` for
+[SOCKS5](#mining-through-a-socks5-proxy).
 
-## The console
+Press **`u`** in the console at any time to see every configured pool with its
+wallet, worker and password, in failover order.
 
-Three screens. Press **`o`** to cycle, or start on one with `-o <name>`
-(`--output` in full).
+## Mining several algorithms at once
 
-| screen | what it shows | when |
-|---|---|---|
-| `tui` | boxed dashboard — devices, shares, pool state, log pane. In `--dmon` it drops the mining boxes and shows a sensors table instead | **the default whenever there is a terminal**, mining or monitoring |
-| `monitor` | the same sensors, `nvidia-smi dmon` style: one dense table, no boxes | `--dmon`, when you want it plain |
-| `log` | plain scrolling log, with the device table reprinted every 30s | always; the default when output is redirected to a file |
+**One bzminer process mines one algorithm.** Additional pools with a *different*
+algorithm are skipped with a warning rather than mined concurrently. To run two
+algorithms on one machine, run **two bzminer instances**, each given its own
+devices, its own port and its own log.
 
-If you pipe or redirect bzminer's output, it stays on `log` on purpose — a
-full-screen dashboard sent to a file is just a file full of cursor codes. That is
-what mining OSes get.
+The pieces you need are all per-instance: `--nvidia` / `--amd` / `--intel` /
+`--cpu` divide by device type, `devices[].enabled` divides by individual card,
+`--set http_port=` keeps the two dashboards apart, and `--logfile` keeps the logs
+apart.
 
-How often each one refreshes is yours to set. These are separate from
-`--interval`, which is how often the engine *publishes* data (the web dashboard
-and the metric history want that fast) rather than how often a screen is redrawn:
-
-```bash
---log-table-interval 30000   # 'log': reprint the device table every 30s (0 = every snapshot)
---tui-interval 400           # 'tui': repaint the dashboard every 400ms
---interval 1000              # the underlying data rate for all of them, and the web UI
---hashrate-window 30         # seconds the reported hashrate averages over
-```
-
-`--hashrate-window` is a different thing from the three above it: they decide how
-often a number is *drawn*, it decides what the number *is*. A GPU's hash counter
-advances one batch at a time, so an un-averaged rate reads 0, 0, 0, BURST, 0 - the
-window is what makes it a rate. Raise it for a calmer number on a bursty rig, lower
-it to see an intensity or thread change take effect sooner. The `avg` figure is
-unaffected; that is always since start.
-
-The mining table's **`cfg`** column says how each device is *configured*, as
-opposed to what it is doing: `i64` is a GPU at intensity 64, `i0` a GPU on auto,
-and `t16` a CPU mining on 16 threads. It is the quickest way to confirm a setting
-actually took.
-
-Under the summary row's **`pool hr`** is that rate as a percentage of the miner's
-own: **100%** means the pool is crediting exactly what your rig reports, below
-means it is finding fewer shares than its hashrate implies, above means luck has
-run your way. It is the number to watch if a miner looks fast but pays badly.
-Expect it to swing over minutes and settle over hours - it is computed from
-accepted shares, so a short run says very little.
-
-### Hotkeys
-
-The same on every screen. `h` prints this list in the miner, with the current
-setting beside each key that has one.
-
-| key | |
-|---|---|
-| `o` | next screen |
-| `d` | device detail page |
-| `c` | open the command line |
-| `h` | this list |
-| `p` | pause / resume mining |
-| `q` | quit |
-| `+` / `-` | more / less log detail, live |
-| `i` / `I` | refresh faster / slower |
-| `t` / `T` | CPU mining threads, up / down |
-| `n` | aim the tuning keys at the next card |
-| `g` / `G` | core clock offset, ±15 MHz |
-| `l` / `L` | core clock lock, ±15 MHz |
-| `m` / `M` | memory clock offset, ±50 MHz |
-| `k` / `K` | memory clock lock, through the card's own steps |
-| `w` / `W` | board power cap, up / down |
-
-The tuning keys move **one card**, not the rig. `n` picks which, and its row is
-marked `>` in the device tables. A lock and an offset are separate settings and a
-card can carry both, which is why each has its own key. Every step starts from
-what the card is actually set to, read back per device, so a rig started with an
-offset in `config.txt` does not jump on the first press.
-
-The device page adds `a` (all metrics), `/` (filter), arrows and `Esc`.
-
-On the `tui` dashboard the log pane **scrolls**: the mouse wheel, `Up`/`Down`,
-`PageUp`/`PageDown`, `Home` and `End`. While you are scrolled up the pane holds
-still — new lines keep arriving behind it rather than dragging the text out from
-under you — and the bar says `held N up  [End] live` so a frozen pane is never
-mistaken for a stalled miner. `End` returns to following the newest line.
-
-**Selecting and copying text keeps working too.** Scrolling and selecting are
-separate actions, and where the terminal can serve both bzminer never takes the
-mouse: it asks the terminal to turn wheel ticks into key presses instead. That
-covers every Linux and macOS terminal, and on Windows every modern one — Windows
-Terminal, VS Code, ConEmu. Drag out a log line to paste into a bug report while the
-wheel still scrolls the pane.
-
-The old Windows console window (`conhost`, still the default on Windows 10) is the
-exception. It cannot translate wheel ticks, and it hands a program the wheel only
-with its own quick-edit selection switched off, so there the two really are
-exclusive — and the wheel wins. Set `BZ_MOUSE=0` to keep selection instead, or run
-bzminer under Windows Terminal and have both. (`BZ_MOUSE=1` goes the other way and
-takes the mouse everywhere, which adds click events at the cost of drag-selection —
-you should not need it.)
-
-### Commands
-
-Press `c`, type, press enter.
-
-| command | what it does |
-|---|---|
-| `help` | list the commands |
-| `pause` / `resume` | stop and restart mining without exiting |
-| `oc ...` | overclock — see below |
-| `intensity <n>` | mining intensity; `0` is auto |
-| `level <name>` | log level: `network`, `debug`, `info`, `warn`, `error` |
-| `output <name>` | switch screen by name |
-| `quit` | exit |
-
-`level network` prints the raw stratum traffic, which is the fastest way to settle
-an argument with a pool about what was actually sent.
-
-## Overclocking
-
-NVIDIA cards. Three routes — a start script, the console, or the web dashboard —
-all going through **one implementation**, so they cannot disagree with each other.
-Every refusal tells you *why* ("needs root/administrator", "the driver would not
-expose the clock-offset API for this device") instead of failing quietly.
-
-### From the command line (or `config.txt`)
-
-```
---oc-power-limit 160             board power cap, watts
---oc-core-clock-offset 150       core offset, MHz
---oc-memory-clock-offset 1000    memory offset, MHz
---oc-lock-core-clock 1600        pin the core clock; 0 unlocks
---oc-lock-memory-clock 810       pin the memory clock; 0 unlocks
---oc-fan-speed 60                fan duty, or a temperature target (below)
---oc-reset                       back to driver defaults
-```
-
-A worked example — mine xelis with the cards capped at 160 W, a mild core offset,
-memory pushed harder, and the fans held at a target temperature:
+**GPUs on one coin, the CPU on another** — the common case, since `verus` and
+`randomx` are CPU-only and `ergo` and `kawpow` are GPU-only:
 
 ```bash
-./bzminer -a xelis -p stratum+ssl://us.vipor.net:5177 -w xel:YOUR_WALLET \
-  --oc-power-limit 160 --oc-core-clock-offset 150 --oc-memory-clock-offset 1000 \
-  --oc-fan-speed "t:60[25-75] tm:80[50-100]"
+# terminal 1 — every GPU on Ergo, no CPU mining
+./bzminer -a ergo -p stratum+tcp://pool.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET \
+  --nvidia --amd --intel --logfile ergo.log
+
+# terminal 2 — the CPU on Monero, no GPU mining
+./bzminer -a randomx -p stratum+ssl://gulf.moneroocean.stream:20128 -w YOUR_XMR_WALLET \
+  --cpu --set http_port=4015 --logfile xmr.log
 ```
 
-Each takes one value for every card, or one per card: `--oc-power-limit 160,180`
-sets 160 W on the first and 180 W on the second. A short list leaves the remaining
-cards untouched.
+Naming device types like that is an **allowlist**: `--nvidia --amd --intel` mines
+on those and nothing else, and `--cpu` alone mines on the processor and no card.
+Leave the CPU some room — see [how much of the CPU
+mines](#how-much-of-the-cpu-mines) — because the GPU instance needs threads too.
 
-**Fan control** takes a fixed duty, or a temperature target with a range to move
-inside:
-
-```
---oc-fan-speed 60                        just run at 60%
---oc-fan-speed "t:60[25-75]"             hold the CORE at 60C, using 25-75% fan
---oc-fan-speed "tm:80[50-100]"           the same, aimed at MEMORY temperature
---oc-fan-speed "t:60[25-75] tm:80[50-100]"   both — whichever wants more fan wins
-```
-
-That last form is the one worth knowing: a card can sit at a perfectly comfortable
-core temperature while its memory cooks, and the second clause is what catches it.
-The fan moves gradually toward the target rather than jumping, and stays inside
-the range you gave.
-
-A card keeps a fan duty or a locked clock until something clears it, so a run that
-is **killed** rather than closed leaves them behind. `bzminer --oc-reset` on its
-own undoes them.
-
-Coming from bzminer 1.x? The underscore spellings (`--oc_power_limit`,
-`--oc_fan_speed`, …) all still work, so an old start script needs no editing.
-
-### Live, from the console
-
-Press `c`, then:
-
-```
-oc                                  what is there, and what each card is set to
-oc 150 500                          +150 core, +500 memory on every card
-oc 0 core=+150 mem=+500             card 0 only
-oc all fan=70                       every card
-oc 1 power=300 clock=2600           card 1: 300 W limit, 2600 MHz locked core
-oc 2 mem=1200 fan=85                card 2: +1200 memory, fans at 85%
-oc 3 memclock=810                   card 3: memory locked to 810 MHz
-oc 0 fan=auto                       hand the fan back to the driver
-oc reset [dev|all]                  undo it
-```
-
-The settings are `core`, `mem`, `power`, `clock`, `memclock` and `fan`. `core` and
-`mem` are **offsets** in MHz; `power` is watts; `clock` and `memclock` lock the
-core and the memory to an absolute MHz, and `0` unlocks; `fan` is a duty
-percentage or `auto`. A device is named by its number as shown in the table, or
-`all`.
-
-A memory lock is only honoured at one of the clocks the board publishes as
-lockable — ask for anything else and the driver quietly runs the nearest one it
-does support, so bzminer reads the clock back and tells you what the card is
-actually doing.
-
-`fan=auto` is not `fan=0`. Zero means *stop the fan*.
-
-On Linux, clock, power and fan changes need root. bzminer restores whatever it
-changed when it exits.
-
-## Safety limits
-
-Off by default. Turn on what you want and bzminer will park a card that misbehaves
-and bring it back when it recovers — **only the offending card stops, the rest of
-the rig keeps mining**.
+**Different cards on different coins** — `--devices` gives each instance its own
+cards. Run bzminer once to read the roster, then split it:
 
 ```bash
---set safety.max_temp_c=85      # pause a GPU over 85 C
---set safety.max_power_w=600    # ...or over 600 W board power
---set safety.sustain_s=15       # only after 15s over the limit, not on a spike
---set safety.resume_margin=5    # resume once it is 5 back under
+# cards 07:00 and 09:00 mine xelis
+./bzminer -a xelis -p stratum+ssl://us.vipor.net:5177 -w xel:YOUR_WALLET   --devices 07:00,09:00 --nvidia --logfile xelis.log &
+
+# card 03:00 mines ergo, on its own port
+./bzminer -a ergo -p stratum+tcp://pool.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET   --devices 03:00 --amd --set http_port=4015 --logfile ergo.log &
 ```
 
-Set the temperature limit first. It works on every card, and hardware in trouble —
-a failing 12VHPWR connector included — gets hot.
+`--nvidia` / `--amd` there is not redundant: `--devices` narrows the *cards*, and
+the type flag is what stops each instance also mining on the CPU. Addresses rather
+than numbers, because each instance should keep naming the same card if one is
+added or pulled.
 
-There are 12VHPWR current limits too (`safety.max_current_a`, and per-pin
-`safety.max_pin_current_a` / `safety.max_pin_imbalance_a`), but they need sensors
-only some boards carry. `config.txt` says exactly which.
+The same shape as two config files, one per instance, for a rig that starts
+unattended — `"device_select": "07:00,09:00"` beside `"http_port"` and
+`"log": { "file": ... }`, run with `--config rig-a.txt`.
 
-## The web dashboard
+Three caveats worth knowing before you split a rig this way. **Overclocking is
+rig-wide**, not per-instance: both processes talk to the same driver through the
+same implementation, so give each instance's cards their settings via
+`devices[]` and do not aim `--oc-*` globals at cards the other instance owns.
+**Each instance needs its own `http_port` and `--logfile`**, or the second one
+finds the port taken and the two interleave into one file. And **warthog wants
+the whole machine** — it plans CPU workers and GPU flow together — so it is a
+poor second instance.
 
-Served at **<http://127.0.0.1:4014/>**, and it is the same data the console shows:
-per-device hashrate, shares, pool state, every sensor, and the overclock controls.
-
-```bash
---set http_port=8080            # different port
---set http_address=0.0.0.0      # reachable from the rest of the LAN
---set http_enabled=false        # off
-```
-
-It binds to localhost by default. `0.0.0.0` exposes it to anything that can reach
-the machine — there is no password on it, so put it behind something you trust.
-
-JSON, for scripting or your own dashboard:
-
-| endpoint | |
-|---|---|
-| `/api/snapshot` | everything: devices, pools, hashrate, shares |
-| `/api/stream` | the same, pushed as it changes |
-| `/api/gpus`, `/api/metrics`, `/api/topology`, `/api/ram`, `/api/storage` | hardware detail |
-| `/api/oc` | read and apply overclocks |
-| `/status` | the shape other mining dashboards expect |
-| `/hive_status` | HiveOS |
-
-## Monitoring without mining
-
-```bash
-./bzminer --dmon
-```
-
-Telemetry and the web dashboard, no mining. Useful for watching a rig that is
-busy with something else, or for checking sensors before you commit a card to a
-job.
-
-`--metrics` picks the columns, on both monitoring screens (`tui` and `monitor`):
-
-```bash
-./bzminer --dmon --metrics temps,powers,clocks
-./bzminer --metrics ?            # every group and live metric on this machine
-```
-
-A group expands to every sensor of that kind the machine actually reports, so
-`temps` on a card with per-die sensors gives you all of them without naming one.
-Columns nothing reports are dropped rather than filled with dashes.
-
-Groups are `temps`, `clocks`, `powers`, `volts`, `currents`, `pcie`,
-`utilization`, `memory`, `timings`, `counters`, `performance`, `all`.
-
-One-shot inspection, no mining, no dashboard:
-
-```bash
-./bzminer --gpu-info       # NVIDIA devices as CUDA sees them
-./bzminer --cpu-info       # CPU topology and live metrics
-./bzminer --ram-info       # memory modules and SMBus temperatures
-./bzminer --list-metrics   # every sensor this machine exposes
-./bzminer --list-algos     # algorithms in this build, with their dev fees
-```
+**Two algorithms on the same device is not possible** and would not help: a GPU
+running two kernels gets each of them a fraction of the card. The one algorithm
+that genuinely uses two device classes at once is `warthog`, and it does so by
+design.
 
 ## Rigs with several GPUs — or several CPUs
 
-Every device mines by default — every GPU **and** the CPU. Two ways to narrow it.
+Every device mines by default — every GPU **and** the CPU. Three ways to narrow
+it: by type, by individual card, and permanently in the config.
 
-**By type**, on the command line:
+### Which devices are which
+
+Every run prints its roster, and each line carries **both** names a card answers
+to — its device number and its PCI address:
+
+```
+  device: [0] CPU (11 of 12 threads) [cpu]
+  device: [1] NVIDIA GeForce RTX 5060 Ti (0000:07:00) [cuda]
+  device: [2] NVIDIA GeForce RTX 3060 (0000:09:00) [cuda]
+  device: [3] gfx1100 (0000:03:00) [opencl]
+```
+
+The number counts **every** device enumerated, so turning one off does not
+renumber the rest. The address does not move at all — it survives a card being
+added, removed or re-slotted, which is why it is the better one to write into a
+config that has to keep working. Both are accepted everywhere below, and the PCI
+address may be given in full (`0000:09:00`) or in the short form the console
+tables print (`9:0`).
+
+### By type
 
 ```
 --nvidia --amd --intel --cpu
@@ -579,19 +1185,71 @@ instead to change one type and leave the rest alone — `--amd 0` stops AMD mini
 without touching anything else. The same lives under `device_types` in
 `config.txt`.
 
-**By single device**, for when four identical cards are fine and the fifth is
-doing something else. Devices are addressed by the number in the table
-(`0`, `1`, ...) — which is also what the `oc` command takes:
+### By individual card — `--devices`
+
+For when four identical cards are fine and the fifth is doing something else, or
+when you want one card and nothing more. A comma- or space-separated list of
+device numbers, PCI addresses, or a mix of the two:
+
+```bash
+./bzminer --devices 2          -a xelis -p ... -w ...   # ONLY device 2
+./bzminer --devices 09:00      -a xelis -p ... -w ...   # the same card, by address
+./bzminer --devices 1,2        -a xelis -p ... -w ...   # only those two
+./bzminer --devices 07:00,09:00 -a xelis -p ... -w ...  # the same two, by address
+./bzminer --devices !1         -a xelis -p ... -w ...   # every GPU EXCEPT device 1
+./bzminer --devices !09:00     -a xelis -p ... -w ...   # every GPU except that card
+```
+
+A bare list is an **allowlist** — only those cards mine. Entries prefixed `!` are
+a **denylist** — everything but those. The two cannot be mixed: `0,!1` reads
+equally well as "card 0, and also not card 1" and as "everything except 1, plus
+0", so bzminer says so and ignores the list rather than picking one meaning and
+mining the wrong cards.
+
+Every card the list excludes says so by name at startup, so a typo shows up as a
+missing card with a reason rather than as a rig that is quietly slower:
+
+```
+  device skipped (--devices 2): [1] NVIDIA GeForce RTX 5060 Ti (0000:07:00)
+  device: [2] NVIDIA GeForce RTX 3060 (0000:09:00) [cuda]
+```
+
+`--devices` covers **GPUs only**. The CPU is not a card and has `--cpu` and
+[`--cpu_threads`](#how-much-of-the-cpu-mines) of its own — so `--devices 2` picks
+one GPU without quietly stopping the CPU half of a Warthog rig. To mine on one
+card and nothing else at all, add `--nvidia` (or the matching type) to make the
+run GPU-only:
+
+```bash
+./bzminer --devices 09:00 --nvidia -a ergo -p ... -w ...
+```
+
+It is a setting too, so a mining OS that only lets you edit the config can say the
+same thing: `"device_select": "09:00"`.
+
+### Permanently, in `config.txt`
+
+`devices[]` is the per-card block, and it holds intensity and overclocks as well
+as the on/off switch. Address an entry by `index`, or — better — by `pci`, which
+wins where both are present and does not move when the rig changes:
 
 ```json
 {
   "devices": [
-    { "index": 0, "enabled": true,  "intensity": 0 },
-    { "index": 1, "enabled": false },
-    { "index": 2, "enabled": true,  "intensity": 20 }
+    { "pci": "0000:07:00", "enabled": true,  "intensity": 0 },
+    { "pci": "0000:09:00", "enabled": false },
+    { "index": 3,          "enabled": true,  "intensity": 20 }
   ]
 }
 ```
+
+bzminer writes `pci`, `name`, `architecture` and `pci_subsystem_id` into each
+entry on its first run, so the file ends up saying which card it means without the
+rig in front of you.
+
+`device_select` and `devices[].enabled` are **ANDed** — a card turned off in
+either place does not mine — so a config can hold the rig's permanent shape while
+a `--devices` on the command line narrows one run further.
 
 **Intensity** is how much work one GPU launch is asked for, in units of 65536
 nonces, from `1` to `4096`. `0` is auto and means `64` — a ~4M-nonce launch, which
@@ -599,8 +1257,8 @@ is what every card used before this was configurable, so leaving it alone change
 nothing. Raise it to keep a card busy for longer per launch; lower it to pick up a
 new job sooner, to keep a display responsive, or to shorten a launch that is
 tripping a driver watchdog. The current value is in the table's `cfg` column, and
-`intensity <n>` on the command line (`c`) changes every device live, with `0` to
-put them back on their configured values.
+`intensity <n>` on the console command line (`c`) changes every device live, with
+`0` to put them back on their configured values.
 
 The index counts **every** device enumerated, so disabling one does not renumber
 the others.
@@ -625,7 +1283,8 @@ benefit is a rig you can still log into.
 `--cpu_affinity` **takes precedence** over `--cpu_threads`: it names the
 processors outright, so a count alongside it could only disagree. Whatever is left
 over — the processors not mining — is where the miner's own threads are pinned.
-Both are also config settings (`cpu_threads`, `cpu_affinity`).
+Both are also config settings (`cpu_threads`, `cpu_affinity`), and `t` / `T` move
+the count live.
 
 If you want every thread mining, ask for it: `--cpu_threads <all of them>`.
 
@@ -633,12 +1292,6 @@ Multi-socket machines are detected properly: bzminer reads the real topology —
 packages, cores, threads, NUMA nodes and cache layout — and prints it at startup.
 CPU mining threads are placed with that layout in mind rather than scattered, so a
 dual-socket box does not spend its time moving work between NUMA nodes.
-
-Warthog goes further and plans the whole rig at once, because its two halves feed
-each other: it groups CPU workers by shared L3 cache and measures each GPU's PCIe
-bandwidth so it knows an x16 slot from an x1 riser, then sizes the candidate flow
-per card. `--no-bandwidth-test` skips that measurement if you would rather save
-the second per GPU at startup.
 
 ## Configuration
 
@@ -651,10 +1304,22 @@ Three ways to say the same thing. The command line always wins:
 ```
 
 A `config.txt` next to the binary is picked up automatically, and the log says
-which file it read. `bzminer --config-doc` prints a fully commented template of
-every setting — generated from the binary itself, so it can never describe an
-option your build does not have. `--save-config` writes the resolved settings,
-after all three layers, to `config.effective.json`.
+which file it read. Everything a rig owner can change is reachable from both the
+command line and the config file — there is nothing you need an environment
+variable for.
+
+`bzminer --config-doc` prints a fully commented template of every setting —
+generated from the binary itself, so it can never describe an option your build
+does not have. `--print-config` prints the resolved settings as JSON, and
+`--save-config` writes them, after all three layers, to `config.effective.json`.
+
+Anything bzminer does not recognise is reported rather than ignored, so a flag
+that has been renamed shows up as a warning at startup instead of silently doing
+nothing. bzminer 1.x's start scripts run as they are: `-p` is the pool URL as it
+always was, and the underscore spellings (`--oc_power_limit`, `--oc_fan_speed`,
+`--cpu_threads`, `--warthog_verus_hr_target`) are accepted and mapped. The one
+flag that changed meaning is **`-o`, which now selects the console screen** — a
+URL passed to it is still taken as a pool, with a warning saying so.
 
 ## Every command-line option
 
@@ -683,6 +1348,15 @@ Run modes:
   --bench, --test         Mine a local bench job (default sha256d; select with -a)
   --benchmark [diff]      Run a local stratum server and mine it over real TCP
                           (default algo xelis, difficulty 1000; e.g. --benchmark -a xelis)
+  --test-dev-fee <s>[:<s>]
+                          Dev-fee TEST CYCLE: mine for you <s> seconds, then for the
+                          algorithm's author, and repeat. `--test-dev-fee 30` is 30
+                          seconds each way; `30:10` sets the legs apart. The real
+                          schedule pays the fee as a time debt - first slice five
+                          minutes in, next an hour later - so this is how you watch a
+                          whole cycle without waiting out an afternoon. It only ever
+                          pays MORE than the declared fee: a split that would come to
+                          less has its dev leg raised until it does not
   --cpu-metrics <0|1>     Collect CPU telemetry (default 1; 0 skips the CPU sensors)
   --tui-width <n>         Console width in characters (0 = follow the terminal)
   --tui-height <n>        Console height in rows (0 = follow the terminal)
@@ -751,14 +1425,23 @@ Devices:
                           (`--nvidia --cpu` = NVIDIA and the CPU, nothing else). With a
                           value it sets just that type (`--amd 0` turns AMD off and
                           leaves the rest alone). No flags at all = mine everything
+  --devices <list>        Which GPUs mine, by device number or pci id (comma or space
+                          separated). Bare entries are an ALLOWLIST - only those mine -
+                          and '!' entries a DENYLIST; the two cannot be mixed:
+                            --devices 0,2       only devices 0 and 2
+                            --devices 29:0      only that card, by pci id
+                            --devices !1        every GPU except device 1
+                          The startup roster prints both ids for every device found.
+                          GPUs only - the CPU has --cpu / --cpu_threads of its own
   --bandwidth-test [arg]  Measure each GPU's host<->device PCIe bandwidth at startup and
                           publish it (pcie.h2d / pcie.d2h). on | off | <MiB buffer size>;
                           default on, 64 MiB. Algorithms that stream results off the GPU
                           (e.g. warthog) use it to tell an x16 slot from a x1 riser
   --no-bandwidth-test     Skip it (saves ~1s per GPU at startup)
-                          To turn off ONE device rather than a whole type, set
-                          devices[].enabled = false in config.txt (index counts every
-                          device enumerated, so disabling one does not renumber the rest)
+                          --devices above is the per-card form; devices[].enabled =
+                          false in config.txt does the same thing permanently (an index
+                          counts every device enumerated, so disabling one does not
+                          renumber the rest, and devices[].pci matches instead when set)
 
 Overclocking (NVIDIA; on Linux every knob is a privileged NVML write):
   --oc-power-limit <W>            Board power cap
@@ -882,11 +1565,14 @@ Settings (set in config.txt, or with --set <path>=<value>):
   disable_huge_pages         Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
   pool                       Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
   force_algo                 Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
+  device_select              Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. CLI: --devices
   intensity                  Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   cpu_threads                How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
   cpu_affinity               Which processors mine, as a list: "0-7,16,18". Takes PRECEDENCE over cpu_threads, since it names the processors outright. Everything not listed is left for the miner's management threads. CLI: --cpu_affinity
   bandwidth_test             Measure each GPU's host<->device PCIe bandwidth once at startup and publish it (pcie.h2d / pcie.d2h). Costs ~1s per GPU; algorithms that stream results off the GPU use it as a hard ceiling. CLI: --bandwidth-test
   bandwidth_test_mb          Per-copy buffer size for that measurement, in MiB. Large enough to measure throughput rather than launch latency
+  test_dev_fee_user_seconds  Dev-fee TEST CYCLE: mine for you this many seconds, then for the algorithm's author, and repeat. 0 = off, the normal schedule. The real one pays the fee as a time debt, so its first slice is five minutes into a run and its second an hour later - correct, and impossible to sit and watch. This makes the whole cycle visible in a minute: the switch, the dev pool's subscribe, the switch back, your own work resuming. A diagnostic, not a tuning knob - the cycle can only ever pay MORE than the declared fee, never less. CLI: --test-dev-fee <user_s>[:<dev_s>]
+  test_dev_fee_dev_seconds   How long each dev leg of that cycle runs. 0 = the same as test_dev_fee_user_seconds, so a bare `--test-dev-fee 30` is 30 seconds each way. Raised automatically if the split you asked for would come to less than the declared fee
   pools[].url                Pool URL (CLI: -p / --pool / --url; stratum+ssl:// for TLS). Repeat the flag for backups - the first is the primary and the rest are rotated through on disconnection
   pools[].wallet             Payout wallet address (CLI: -w / --wallet)
   pools[].worker             Worker / rig name; sent to the pool as wallet.worker (CLI: --worker)
@@ -1049,6 +1735,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "pool": [],
   // Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
   "force_algo": "",
+  // Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. CLI: --devices
+  "device_select": "",
   // Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   "intensity": 0,
   // How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
@@ -1059,6 +1747,10 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "bandwidth_test": true,
   // Per-copy buffer size for that measurement, in MiB. Large enough to measure throughput rather than launch latency
   "bandwidth_test_mb": 64,
+  // Dev-fee TEST CYCLE: mine for you this many seconds, then for the algorithm's author, and repeat. 0 = off, the normal schedule. The real one pays the fee as a time debt, so its first slice is five minutes into a run and its second an hour later - correct, and impossible to sit and watch. This makes the whole cycle visible in a minute: the switch, the dev pool's subscribe, the switch back, your own work resuming. A diagnostic, not a tuning knob - the cycle can only ever pay MORE than the declared fee, never less. CLI: --test-dev-fee <user_s>[:<dev_s>]
+  "test_dev_fee_user_seconds": 0,
+  // How long each dev leg of that cycle runs. 0 = the same as test_dev_fee_user_seconds, so a bare `--test-dev-fee 30` is 30 seconds each way. Raised automatically if the split you asked for would come to less than the declared fee
+  "test_dev_fee_dev_seconds": 0,
   "pools": [
     {
       // Pool URL (CLI: -p / --pool / --url; stratum+ssl:// for TLS). Repeat the flag for backups - the first is the primary and the rest are rotated through on disconnection
@@ -1136,59 +1828,6 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
 }
 ```
 
-## Environment variables
-
-A few knobs are deliberately environment-only: they are tuning and diagnostic
-settings rather than configuration, and giving each a flag would bury the options
-that matter. These are the ones worth knowing.
-
-| variable | what it does |
-|---|---|
-| `BZ_CPU_THREADS=<n>` | Cap CPU mining workers, for scripts that would rather set an environment variable than pass `--cpu_threads`. It caps what the thread plan already chose, so it cannot exceed it |
-| `BZ_XELIS_THREADS=<n>` | The GPU thread budget for xelis. It is chosen from the device — 128 threads per compute unit on Ada and older (floor 8192, ceiling 16384), 256 per unit and no ceiling on Blackwell, which needs the larger launch. Setting this by hand is for tuning experiments |
-| `BZ_XELIS_BLOCK=32\|64\|128\|256` | The xelis CUDA launch block. Default 64, or 256 on a recognised GA100 mining card |
-| `BZ_XELIS_STREAMS=1\|2` | Force one launch slot, or force the two-slot schedule measured on GA100, onto another NVIDIA card. A/B testing knob |
-| `BZ_ZK_THREADS=<n>` | Worker cap for Pearl's ZK prover |
-| `BZ_NO_CPU=1`, `BZ_NO_CUDA=1`, `BZ_NO_OPENCL=1` | Skip a whole compute backend. Blunter than `--nvidia`/`--amd`/`--cpu`, and useful for isolating one device while benchmarking. `BZ_NO_OPENCL=1` also stops the OpenCL loader being opened at all |
-| `BZ_MOUSE=1` | Take the mouse everywhere, by full mouse reporting. Adds click events, but the terminal loses click-and-drag text selection while it is on. The wheel already scrolls without it |
-| `BZ_MOUSE=0` | Never take the mouse. Only matters in the old Windows console window (`conhost`), which cannot give a program the wheel and keep its own text selection: this picks selection, and the wheel stops scrolling the pane |
-| `BZ_WARTHOG_SHAVERUS=<H/s>` | Pin the candidate rate each Warthog GPU is asked for instead of letting the tuner find it. This is the modern equivalent of bzminer 1.x's `--warthog_verus_hr_target`, which maps onto it automatically |
-| `BZ_WARTHOG_SHA_QUALITY=<pct>` | Nudge Warthog's balance point without pinning it |
-| `BZ_WARTHOG_AFFINITY=auto\|group\|none\|pu` | How Warthog's verus workers are pinned to cores |
-| `BZ_WARTHOG_INCLUDE_INTEGRATED=1` | Mine on an integrated GPU that shares system memory beside a discrete card. Off by default because on a Ryzen APU it took nearly half the CPU's verus rate to contribute almost no sha |
-| `BZ_ERGO_INCLUDE_INTEGRATED=1` | The same for Ergo, where an integrated GPU also cannot size the 2 GB table safely |
-| `BZ_PEARL_HIP=0\|opencl\|force` | Pearl's AMD path: `0`/`opencl` force portable OpenCL, `force` fails rather than silently falling back |
-| `BZ_POOL_PROBE_S=<n>` | Seconds between probes of a failed primary pool (minimum 5) |
-
-The full list, including the diagnostic ones, is in `docs/env-vars.txt` in the
-source repository.
-
-## What is in the binary
-
-Algorithms, hardware monitors, the console screens and the web dashboard are all
-plugins behind one C ABI, and this release has every one of them compiled in:
-
-- `ergo` — Autolykos v2. GPU only, and memory-hard: it builds a table of N 32-byte elements (about 2 GB) in VRAM, so a card needs the room for it. N grows with block height, and the table is rebuilt when it changes.
-- `kawpow` — KawPow on NVIDIA CUDA, AMD OpenCL, and Apple Metal GPUs. NVIDIA specializes the three-block random program through the driver's PTX JIT, with precompiled cubins as its fallback; AMD uses offline-native gfx code objects; Apple Silicon uses a portable offline metallib. No CUDA toolkit, NVRTC, ROCm compiler, OpenCL C source, Metal source, or external GPU compiler is required on the mining rig; the AMD and Apple paths do no runtime compilation. Answers to `kawpow` and to each KawPow coin by name (rvn, xna, neoxa, meowcoin, clore), which is also what selects the dev-fee destination.
-- `mon_amd` — AMD GPU sensors, via ADL and sysfs.
-- `mon_cpu` — CPU sensors: per-core temperature, frequency, package power.
-- `mon_intel` — Intel GPU sensors, via IGCL and sysfs.
-- `mon_nvidia` — NVIDIA sensors and overclocking, via NVML and NvAPI.
-- `mon_pawnio` — the PawnIO driver path for AMD Ryzen SMU tables.
-- `mon_priv_cpu` — CPU sensors that need elevated access (MSRs).
-- `out_device` — the device inspector - every GPU and the CPU, their identity, firmware and every sensor, on a scrollable page.
-- `out_log` — the plain scrolling console screen ('log'), with the device table reprinted on its own interval. The automatic choice when output is redirected to a file.
-- `out_monitor` — the dense sensors console screen ('monitor'), nvidia-smi dmon style: one in-place table whose columns are chosen with --metrics. The default screen in --dmon.
-- `out_tui` — the interactive console - live table, hotkeys, and the 'c' command menu.
-- `pearl` — a zk proof-of-work: each share is a STARK proof, so it is far heavier per hash than a normal algorithm. Also mines SOLO - point -p at your node's RPC URL instead of a pool.
-- `sha256d` — The open-source SDK example: a full algorithm plugin (CPU+GPU, pool stratum, bench job source). Copy plugins/public/sha256d as a template for your own.
-- `verus` — VerusHash v2.2 CPU mining.
-- `warthog` — janushash - the GPU filters sha256t and the CPU runs verushash, on the same nonces. Needs BOTH a GPU and the CPU; one without the other finds nothing.
-- `webui` — the web dashboard on http_port: live hashrate, shares, every hardware sensor, and overclocking. Also serves /status and /hive_status for mining OSes.
-- `xelis` — xelhash.
-
-`bzminer --list-plugins` prints what a binary actually loaded, and
-`bzminer --list-algos` what it can mine.
 
 ## If something goes wrong
 
@@ -1199,11 +1838,13 @@ device found and the pool being tried. Start there, then:
 |---|---|
 | no GPUs found | update the GPU driver; `--gpu-info` shows what bzminer can see |
 | a GPU is listed at startup but never mines | the log says why on its own line — no kernel for that architecture, a driver too old to load one, or not enough VRAM for the algorithm's table |
-| pool rejects shares | almost always the wallet — check it is for the right coin, and that the placeholder in the sample script was replaced |
-| overclock does nothing | on Linux these are privileged; run as root. The miner reports which knob the driver refused and why |
+| pool rejects shares | almost always the wallet — press `u` to see exactly what is being sent, and check it is an address for the coin you are mining |
+| overclock does nothing | on Linux these are privileged; run as root. On AMD only the fan is settable at all. The miner reports which knob the driver refused and why |
 | dashboard not reachable | it listens on `127.0.0.1` only unless you set `http_address` |
 | warthog finds nothing | it needs both a GPU and the CPU; check neither is disabled |
 | ergo skips a card | the ~2 GB table has to fit in VRAM alongside everything else on the card |
+| randomx is slow | it wants 2080 MB plus 2 MB per thread and huge pages; the startup line says which it got, and a CPU without AES runs it ~4x slower |
+| a second algorithm is not mining | one process mines one algorithm — see [mining several at once](#mining-several-algorithms-at-once) |
 | a message about MSR tweaks | CPU register tuning is an *optional* speed-up, not a requirement — mining carries on without it. On Windows it needs PawnIO (`scripts/install-pawnio.bat`); being an administrator is not by itself enough. On Linux it needs the `msr` module and access to `/dev/cpu/*/msr`. Run with `--log-level debug` to see which register was refused |
 | xelis hashrate lower than an older bzminer | xelis now publishes a rate it measures itself, where the older figure was derived and read high — the same card doing the *same* work reports a smaller number. Compare accepted shares over a fixed period instead; that is the same unit in both versions, and by that measure this build is faster |
 
@@ -1218,9 +1859,9 @@ problems, `--list-metrics` and `--gpu-info` output help.
 ## Dev fee
 
 Some algorithms mine to the developer for a small share of the time. Each declares
-its own, it is in the table above, and it is printed in the log at startup — so
-you can see it before committing a rig, not discover it later. `sha256d`, the
-open-source example, has none.
+its own, it is in [the table at the top](#algorithms-and-coins), and it is printed
+in the log at startup — so you can see it before committing a rig, not discover it
+later. `sha256d`, the open-source example, has none.
 
 Every line about it is tagged `[dev fee]`, and each slice announces both ends:
 
@@ -1230,17 +1871,47 @@ Every line about it is tagged `[dev fee]`, and each slice announces both ends:
 [dev fee] END - back to your pool stratum+ssl://us.vipor.net:5120 (paid 1.94% of this run so far, aiming for 2.00% -> 13 pools (split evenly))
 ```
 
+The fee is paid as a **time debt** rather than on a fixed clock: the first slice
+lands about five minutes into a run and the next an hour later, and the running
+total is what the schedule aims at. Dev-fee shares carry a worker name that says
+which rig paid them, and they stay out of your own share table.
+
 The fee is spread over several destinations rather than sent to one, so no single
 pool sees all of it. **You do not have to be able to reach them all.** A
 destination that will not connect is backed off, and after three failed attempts
 it is dropped for the rest of the run — the others carry its share and the fee is
 still paid in full. If you block some of these pools at your firewall, the miner
 notices once and stops trying; it will not warn you about a pool you blocked on
-purpose. The one case it does warn about is the fee having nowhere left to go:
+purpose.
+
+**The fee is owed in time, not in shares.** If *every* destination is
+unreachable, the slices still run — the rig keeps hashing and submits nothing for
+their duration, so the time is taken whether or not there is anywhere to spend
+it. Blocking the pools therefore costs you exactly what paying the fee costs you,
+and gains you nothing; unblocking any one of them turns that time back into
+shares for the developer instead of into nothing for anybody:
 
 ```
-[dev fee] none of the 13 destinations could be reached - the fee is not being paid. Mining continues on your pool.
+[dev fee] none of the 13 destinations could be reached. The fee is owed in time, not in
+shares, so each slice is now taken as idle mining: the rig keeps hashing and submits
+nothing for its duration. Unblocking any one of them pays it as shares instead.
 ```
+
+A destination that is merely *down* is a different case and is treated as one: it
+is backed off and retried, and until it retires the debt simply accrues and is
+paid in full later. Nothing goes idle for a pool that is coming back.
 
 None of this happens on the thread that reads your pool's jobs, so an unreachable
 dev pool costs your mining nothing — not a stale job, and not a reconnect.
+
+To watch a whole cycle without waiting out an afternoon:
+
+```bash
+./bzminer --test-dev-fee 30 -a xelis -p ... -w ...   # 30 seconds each way
+./bzminer --test-dev-fee 30:10 -a xelis -p ... -w ... # 30 for you, 10 for the dev
+```
+
+It makes the switch, the dev pool's subscribe, the switch back and your own work
+resuming all visible in a minute. It is a diagnostic, not a tuning knob: a split
+that would come to *less* than the declared fee has its dev leg raised until it
+does not, so the test cycle can only ever pay more.
