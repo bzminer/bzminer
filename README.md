@@ -3,14 +3,6 @@
 A high performance NVIDIA, AMD, Intel, Apple Silicon and CPU cryptocurrency miner
 and hardware monitor. Runs on Windows, Linux and macOS.
 
-Mines **Ergo**, **Ethereum Classic**, **EthereumPoW**, **Ravencoin**,
-**Neurai**, **Neoxa**, **Meowcoin**, **Clore**, **Pearl**, **Monero**,
-**VERUS**, **Warthog** and **XELIS**, and ships **sha256d** as the open-source
-SDK example.
-
-One binary, no installer. It writes nothing outside its own folder except the log
-file and the config you point it at.
-
 ## Algorithms and coins
 
 | `-a` name | coin | dev fee | devices | what it is |
@@ -24,7 +16,7 @@ file and the config you point it at.
 | `meowcoin` (or `kawpow`) | Meowcoin | 1% | NVIDIA · AMD · Intel · Apple | A community-run Ravencoin fork with the same asset layer. |
 | `clore` (or `kawpow`) | Clore | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork whose coin pays for time on a GPU-rental marketplace. |
 | `pearl` | Pearl | 1% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
-| `randomx`, `rx/0`, `xmr`, `monero` | Monero | 1% | CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
+| `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
 | `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `warthog` | Warthog | 2% | NVIDIA · AMD · Intel · Apple **and** CPU | A chain whose janushash proof-of-work is deliberately split across both processors: the GPU filters sha256t and the CPU runs VerusHash over the same nonces. Neither half finds anything alone. Wallet addresses are 48 hex characters. |
@@ -73,7 +65,12 @@ nothing else to download and no plugins folder to manage.
 | `bzminer_<ver>_macos.tar.gz` | macOS, Apple Silicon (arm64) |
 
 Inside: the binary, a launcher per algorithm (`start_xelis.sh` / `.bat` and so
-on), a fully commented `config.txt`, and `readme.txt`.
+on), `start_multi_algo` for mining two at once in one miner (Pearl on the GPUs,
+RandomX on the CPU: `-a pearl,randomx --p1 ... --p2 ...`), `start_proxy_*` /
+`start_worker_*` for a farm on one pool connection (one box holds the pool
+connection with `--proxy_port 4100`, every other rig mines through it with
+`-p bzproxy://<proxy>:4100`, and each rig is a light-blue row in the proxy's
+tables and dashboard), a fully commented `config.txt`, and `readme.txt`.
 
 There is also a **lite** build and a separate **plugins** archive. The lite binary
 has nothing compiled in and loads everything from a `plugins/` folder beside it;
@@ -363,7 +360,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.10**, the version on this page, so they can be
+Both scripts fetch **v100.11**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -372,7 +369,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.10"
+export version="v100.11"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -387,7 +384,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.10
+version=v100.11
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1383,7 +1380,7 @@ Run modes:
                           --cpu_threads; the rest run the miner's own threads
   --benchmark-job-interval <ms>  Keep each deterministic benchmark job this long
                           (default 600000; use 4000 to stress stale-job handling)
-  --no-watchdog           Run the worker in-process (no supervisor; debugging)
+  --no-watchdog           Disable watchdog supervision/restarts (debugging)
   -h, --help              Show this help, then exit
   -V, --version           Print version, then exit
 
@@ -1431,6 +1428,7 @@ Devices:
                             --devices 0,2       only devices 0 and 2
                             --devices 29:0      only that card, by pci id
                             --devices !1        every GPU except device 1
+                            --devices none      no GPU at all (a proxy-only rig)
                           The startup roster prints both ids for every device found.
                           GPUs only - the CPU has --cpu / --cpu_threads of its own
   --bandwidth-test [arg]  Measure each GPU's host<->device PCIe bandwidth at startup and
@@ -1496,24 +1494,55 @@ Configuration:
   --set <path>=<value>    Override any setting below (e.g. --set http_port=8080)
   --<path> <value>        Same as --set, as a flag (dashes map to '_')
   --save-config           Write the resolved config to config.effective.json
-  -p, --pool, --url <url> Add a pool (starts a new pool entry). Repeat for backups:
-                          the first is the primary, the rest are rotated through
-                          on disconnection
-  -w, --wallet <addr>     Payout wallet for the current pool
+  -a, --algo <algo>[,..]  The algorithm(s) to mine. A comma list mines them ALL AT
+                          ONCE, each on its own devices: the first is algorithm 1,
+                          the second 2, and so on (--a1/--a2 name them singly)
+  -p, --pool, --url <url> Add a pool for algorithm 1. Repeat for backups: the first
+                          is the primary, the rest are rotated through on
+                          disconnection. --p2 <url> is algorithm 2's pool list
+  -w, --wallet <addr>     Payout wallet (--w2 for algorithm 2)
   --worker <name>         Worker/rig name (login sent to the pool: wallet.worker)
   -u, --user <user>       LEGACY combined login (use --wallet/--worker instead)
-  --pass <pass>           Password for the current pool (NOTE: -p is the pool URL)
-  -a, --algo <algo>       Algorithm for the current pool
-  --ssl-verify            Verify the current pool's TLS cert (stratum+ssl; default off)
+  --pass <pass>           Pool password (NOTE: -p is the pool URL)
+  --ssl-verify            Verify the pool's TLS cert (stratum+ssl; default off)
+  --devices<N> <list>     Which devices mine algorithm N: numbers, pci ids, or the
+                          types cpu, gpu, nvidia, amd, intel (--devices2 cpu). Unset,
+                          the GPUs are dealt out among the algorithms that can use
+                          them and the CPU is shared by every one that can
+  --cpu_threads<N> <n>    Algorithm N's share of the CPU when it is shared; unset =
+                          an even split of the rig's --cpu_threads budget. Placed on
+                          unused processors first, overlapping only once they run out
+  --cpu_affinity<N> <l>   ...or algorithm N's processors, named outright
+  --proxy_port<N> <port>  Be the farm's PROXY for algorithm N: keep the one pool
+                          connection and serve its work to other bzminer instances
+                          started with `-p bzproxy://<this host>:<port>`. Their shares
+                          go upstream from here and each instance is a light-blue row
+                          in the tables here. The port is TLS. Each rig keeps its own
+                          dev fee and pays it through a tunnel this proxy opens to the
+                          fee pools, so the rigs need no internet of their own. Mine on
+                          this rig's own devices too, or on none (--devices none)
+  Every flag above takes the same <N> suffix: no suffix means algorithm 1, so a
+  one-algorithm command line is unchanged. WHERE a flag sits on the line means
+  nothing - only its number does. bzminer 1.x's --a1/--p1/--w1/--r1/
+  --pool_password1/--pool_devices1 are the same flags.
   --proxy <url>           Route all pools through a SOCKS5 proxy: socks5://[user:pass@]host:port
+  --proxy_bind <addr>     Address the --proxy_port listener binds (default 0.0.0.0)
+  --proxy_pass <pass>     Password instances must give to connect to this proxy (their
+                          --pass); empty = any instance that can reach the port
+  --disable_udp           Stop announcing this rig on UDP 4014 and stop listening for
+                          other bzminers. That announce is what fills the web UI's farm
+                          view: every instance on the network, their combined hashrate
+                          and power, and a link to each one's dashboard
   --plugin-update <mode>  Auto-download/update plugins: on | off | auto (lite=on, full=off)
   --plugin-manifest <url> Override the plugin manifest URL (beta channel / testing)
   --pool <index|[0,2]>    ...or, given a number instead of a URL, which configured
                           pool(s) to activate; [] = monitoring mode
   --force_algo <algos>    Override the pools' algorithms, whatever wrote them: one
-                          name for pool 0, or a comma-separated list for one pool
-                          each. Also a top-level config.txt option, which is where a
-                          mining OS whose UI lacks the algorithm wants it
+                          name for pool 0, or a list - pearl,randomx or [pearl,randomx]
+                          or two words - for one pool each, in order. Also a
+                          top-level config.txt option (a string or a JSON array),
+                          which is where a mining OS whose UI lacks the algorithm
+                          wants it
   --cu-kernel [algo=]<f>  Override with an offline-compiled CUDA .cubin
   --cl-kernel [algo=]<f>  Override with an OpenCL .spv or native .bin
                           (source/PTX overrides are not accepted)
@@ -1543,6 +1572,9 @@ Settings (set in config.txt, or with --set <path>=<value>):
   http_enabled               Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
   http_address               Web server bind address ("0.0.0.0" allows LAN access)
   http_port                  Web server TCP port
+  disable_udp                Stop this rig announcing itself on UDP 4014 and stop it listening for other bzminers. That announce is what fills the web UI's farm view - every instance on the network, their combined hashrate and power, and a link to each one's dashboard. It carries the rig name, web port, version and this rig's totals, and nothing else; turn it off on a network you do not control. CLI: --disable_udp
+  proxy_bind                 Address the proxy listener (pools[].proxy_port) binds: "0.0.0.0" for every interface, or one interface's address. Rig-wide - a farm has one network. CLI: --proxy_bind
+  proxy_pass                 Password every instance connecting to this proxy must present (its --pass). Empty accepts any instance that can reach the port - fine on a private LAN, not elsewhere. CLI: --proxy_pass
   save_effective             On startup, write the resolved config to config.effective.json
   benchmark_diff             Run a local stratum server at this fixed share difficulty and mine against it - no pool, no wallet. 0 = off. The CLI form is --benchmark [difficulty]
   benchmark_job_interval_ms  How long --benchmark keeps one deterministic job, in ms. A persistent job makes fixed-difficulty share accounting honest for memory-hard kernels. CLI: --benchmark-job-interval
@@ -1552,6 +1584,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   mining_columns             Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   cpu_metrics                Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
+  cache_qos                  Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +4.7% on a Threadripper PRO 9955WX. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
   superio_fans               Read the motherboard's sensor chip directly for fan speeds when no kernel driver publishes them (Linux, x86, and only as root). Many boards - mini-PCs especially - carry an ITE or Nuvoton chip that Linux has no driver for, and then nothing reports a CPU fan at all. Reads only, and never runs where hwmon already has fans. Set false to leave that chip alone. CLI: --superio-fans 0
   tui_width                  Console width in characters. 0 = use the terminal's own width and follow a resize, which is the default and is what you want. Set it to pin the width - for a terminal that misreports, or output being captured with no tty to ask. Pinning it LARGER than the real window makes every row wrap and the dashboard scroll, so measure before setting it. CLI: --tui-width
   tui_height                 Console height in rows. 0 = use the terminal's own height and follow a resize. Independent of tui_width: pinning one leaves the other tracking the window, and where there is no window to ask the unpinned one falls back to 80x25 rather than discarding both. CLI: --tui-height
@@ -1577,9 +1610,13 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pools[].wallet             Payout wallet address (CLI: -w / --wallet)
   pools[].worker             Worker / rig name; sent to the pool as wallet.worker (CLI: --worker)
   pools[].pass               Password (CLI: --pass; note -p is the POOL URL, as in bzminer 1.x)
-  pools[].algo               Algorithm (CLI: -a / --algo)
+  pools[].algo               Algorithm (CLI: -a / --algo). Active pools are grouped by algorithm and every algorithm mines AT ONCE, each on its own devices: entries sharing an algorithm are one group, primary first, the rest its failovers
   pools[].ssl_verify         stratum+ssl: verify the pool's TLS certificate chain + hostname (CLI: --ssl-verify)
   pools[].user               LEGACY combined login, sent verbatim instead of wallet.worker. Only for a pool that wants something other than that shape - set wallet and worker instead (CLI: -u / --user)
+  pools[].devices            WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>)
+  pools[].cpu_threads        How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
+  pools[].cpu_affinity       ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
+  pools[].proxy_port         Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
   devices[].index            Device index - counts EVERY device enumerated, so disabling one does not renumber the others
   devices[].intensity        Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
   devices[].enabled          Whether to mine on this device. To turn off a whole vendor or the CPU instead, use device_types below
@@ -1691,6 +1728,12 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "http_address": "127.0.0.1",
   // Web server TCP port
   "http_port": 4014,
+  // Stop this rig announcing itself on UDP 4014 and stop it listening for other bzminers. That announce is what fills the web UI's farm view - every instance on the network, their combined hashrate and power, and a link to each one's dashboard. It carries the rig name, web port, version and this rig's totals, and nothing else; turn it off on a network you do not control. CLI: --disable_udp
+  "disable_udp": false,
+  // Address the proxy listener (pools[].proxy_port) binds: "0.0.0.0" for every interface, or one interface's address. Rig-wide - a farm has one network. CLI: --proxy_bind
+  "proxy_bind": "0.0.0.0",
+  // Password every instance connecting to this proxy must present (its --pass). Empty accepts any instance that can reach the port - fine on a private LAN, not elsewhere. CLI: --proxy_pass
+  "proxy_pass": "",
   // On startup, write the resolved config to config.effective.json
   "save_effective": false,
   // Run a local stratum server at this fixed share difficulty and mine against it - no pool, no wallet. 0 = off. The CLI form is --benchmark [difficulty]
@@ -1709,6 +1752,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "mining_columns": "",
   // Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
   "cpu_metrics": true,
+  // Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +4.7% on a Threadripper PRO 9955WX. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
+  "cache_qos": true,
   // Read the motherboard's sensor chip directly for fan speeds when no kernel driver publishes them (Linux, x86, and only as root). Many boards - mini-PCs especially - carry an ITE or Nuvoton chip that Linux has no driver for, and then nothing reports a CPU fan at all. Reads only, and never runs where hwmon already has fans. Set false to leave that chip alone. CLI: --superio-fans 0
   "superio_fans": true,
   // Console width in characters. 0 = use the terminal's own width and follow a resize, which is the default and is what you want. Set it to pin the width - for a terminal that misreports, or output being captured with no tty to ask. Pinning it LARGER than the real window makes every row wrap and the dashboard scroll, so measure before setting it. CLI: --tui-width
@@ -1761,12 +1806,20 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "worker": "rig",
       // Password (CLI: --pass; note -p is the POOL URL, as in bzminer 1.x)
       "pass": "x",
-      // Algorithm (CLI: -a / --algo)
+      // Algorithm (CLI: -a / --algo). Active pools are grouped by algorithm and every algorithm mines AT ONCE, each on its own devices: entries sharing an algorithm are one group, primary first, the rest its failovers
       "algo": "pearl",
       // stratum+ssl: verify the pool's TLS certificate chain + hostname (CLI: --ssl-verify)
       "ssl_verify": false,
       // LEGACY combined login, sent verbatim instead of wallet.worker. Only for a pool that wants something other than that shape - set wallet and worker instead (CLI: -u / --user)
-      "user": ""
+      "user": "",
+      // WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>)
+      "devices": "",
+      // How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
+      "cpu_threads": 0,
+      // ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
+      "cpu_affinity": "",
+      // Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
+      "proxy_port": 0
     }
   ],
   "devices": [
