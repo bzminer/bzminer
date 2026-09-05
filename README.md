@@ -179,7 +179,7 @@ less VRAM than the table needs are reported and skipped rather than quietly
 producing nothing.
 
 ```bash
-./bzminer -a ergo -p stratum+tcp://pool.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET --worker rig1
+./bzminer -a ergo -p stratum+tcp://pool.us.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET --worker rig1
 ```
 
 On an **Apple Silicon** Mac the table comes out of unified memory, sized against
@@ -187,7 +187,7 @@ what Metal says it may use rather than against installed RAM. 2 GB fits an 8 GB
 M2 with room to spare — but it is the machine's memory, so leave the Mac something
 to live in.
 
-Pools: `stratum+tcp://pool.woolypooly.com:3100`. MoneroOcean mines Autolykos2 and
+Pools: `stratum+tcp://pool.us.woolypooly.com:3100`. MoneroOcean mines Autolykos2 and
 pays in XMR — point `-w` at a Monero address and pin the algorithm in the
 password:
 
@@ -1086,67 +1086,95 @@ wallet, worker and password, in failover order.
 
 ## Mining several algorithms at once
 
-**One bzminer process mines one algorithm.** Additional pools with a *different*
-algorithm are skipped with a warning rather than mined concurrently. To run two
-algorithms on one machine, run **two bzminer instances**, each given its own
-devices, its own port and its own log.
+**One bzminer process mines every algorithm you give it**, each on its own
+devices. `-a` takes a list, and a flag's *position in that list* is the number it
+carries:
 
-The pieces you need are all per-instance: `--nvidia` / `--amd` / `--intel` /
-`--cpu` divide by device type, `devices[].enabled` divides by individual card,
-`--set http_port=` keeps the two dashboards apart, and `--logfile` keeps the logs
-apart.
+```bash
+./bzminer -a pearl,randomx --p1 <pool> --w1 <wallet> --p2 <pool> --w2 <wallet>
+```
+
+| flag | algorithm |
+|---|---|
+| `--p1` `--w1` `--worker1` `--pass1` `--devices1` `--cpu_threads1` | algorithm 1 (`pearl`) |
+| `--p2` `--w2` `--worker2` `--pass2` `--devices2` `--cpu_threads2` | algorithm 2 (`randomx`) |
+
+No suffix means algorithm 1, so a one-algorithm command line is unchanged. **Where
+a flag sits on the line means nothing — only its number does.** A second `--p1` is
+a *failover* pool for algorithm 1, not a second algorithm. `start_multi_algo` in
+your download is this, filled in.
 
 **GPUs on one coin, the CPU on another** — the common case, since `verus` and
 `randomx` are CPU-only and `ergo` and `kawpow` are GPU-only:
 
 ```bash
-# terminal 1 — every GPU on Ergo, no CPU mining
-./bzminer -a ergo -p stratum+tcp://pool.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET \
-  --nvidia --amd --intel --logfile ergo.log
-
-# terminal 2 — the CPU on Monero, no GPU mining
-./bzminer -a randomx -p stratum+ssl://gulf.moneroocean.stream:20128 -w YOUR_XMR_WALLET \
-  --cpu --set http_port=4015 --logfile xmr.log
+./bzminer -a ergo,randomx \
+  --p1 stratum+tcp://pool.us.woolypooly.com:3100 --w1 9YOUR_ERGO_WALLET \
+  --p2 stratum+ssl://gulf.moneroocean.stream:20128 --w2 YOUR_XMR_WALLET
 ```
 
-Naming device types like that is an **allowlist**: `--nvidia --amd --intel` mines
-on those and nothing else, and `--cpu` alone mines on the processor and no card.
-Leave the CPU some room — see [how much of the CPU
-mines](#how-much-of-the-cpu-mines) — because the GPU instance needs threads too.
-
-**Different cards on different coins** — `--devices` gives each instance its own
-cards. Run bzminer once to read the roster, then split it:
+Left unset, the cards are dealt out among the algorithms that can use them and the
+CPU's threads are split evenly between the algorithms that mine it, on separate
+processors. To place them yourself, `--devices<N>` names each algorithm's cards
+and `--cpu_threads<N>` its share of the processor:
 
 ```bash
-# cards 07:00 and 09:00 mine xelis
-./bzminer -a xelis -p stratum+ssl://us.vipor.net:5177 -w xel:YOUR_WALLET   --devices 07:00,09:00 --nvidia --logfile xelis.log &
-
-# card 03:00 mines ergo, on its own port
-./bzminer -a ergo -p stratum+tcp://pool.woolypooly.com:3100 -w 9YOUR_ERGO_WALLET   --devices 03:00 --amd --set http_port=4015 --logfile ergo.log &
+./bzminer -a xelis,ergo \
+  --p1 stratum+ssl://us.vipor.net:5177 --w1 xel:YOUR_WALLET --devices1 07:00,09:00 \
+  --p2 stratum+tcp://pool.us.woolypooly.com:3100 --w2 9YOUR_ERGO_WALLET --devices2 03:00
 ```
 
-`--nvidia` / `--amd` there is not redundant: `--devices` narrows the *cards*, and
-the type flag is what stops each instance also mining on the CPU. Addresses rather
-than numbers, because each instance should keep naming the same card if one is
-added or pulled.
+Addresses rather than numbers, because a card should keep its assignment if
+another is added or pulled. **A GPU belongs to one algorithm**; two entries of the
+same algorithm naming *different* devices are two groups.
 
-The same shape as two config files, one per instance, for a rig that starts
-unattended — `"device_select": "07:00,09:00"` beside `"http_port"` and
-`"log": { "file": ... }`, run with `--config rig-a.txt`.
-
-Three caveats worth knowing before you split a rig this way. **Overclocking is
-rig-wide**, not per-instance: both processes talk to the same driver through the
-same implementation, so give each instance's cards their settings via
-`devices[]` and do not aim `--oc-*` globals at cards the other instance owns.
-**Each instance needs its own `http_port` and `--logfile`**, or the second one
-finds the port taken and the two interleave into one file. And **warthog wants
-the whole machine** — it plans CPU workers and GPU flow together — so it is a
-poor second instance.
-
-**Two algorithms on the same device is not possible** and would not help: a GPU
+**Two algorithms on the same card is not possible** and would not help: a GPU
 running two kernels gets each of them a fraction of the card. The one algorithm
 that genuinely uses two device classes at once is `warthog`, and it does so by
-design.
+design — it plans CPU workers and GPU flow together, so it wants the whole
+machine and shares a rig poorly.
+
+## A farm on one pool connection
+
+One bzminer holds the pool connection for an algorithm and serves the work to
+every other bzminer on your network — so a farm shows the pool **one** worker,
+and the rigs need no route to the internet of their own:
+
+```bash
+# the proxy — mines too, and serves port 4100
+./bzminer -a cn -p <pool> -w <wallet> --proxy_port 4100
+
+# every other rig
+./bzminer -a cn -p bzproxy://<proxy ip>:4100 --worker rig1
+```
+
+`start_proxy_<algo>` and `start_worker_<algo>` in your download are those two
+lines, filled in.
+
+Each rig is a **light-blue row** in the proxy's tables and dashboard, named by its
+`--worker`, with its own hashrate, power, hottest card and shares; the device page
+(`[d]`) and the dashboard open a rig's row to show its individual cards. The proxy
+can mine on its own devices as well, or on none at all — add `--devices none` for
+a box that only proxies.
+
+**Each rig still pays its own dev fee**, and pays it *through* the proxy: the fee
+connection is tunnelled out from the rig, which is why a rig with no internet of
+its own still works. The proxy signals when its own slice starts so the whole farm
+pays in one window rather than each rig at its own hour.
+
+**Keep a real pool behind the proxy on every rig** (a second `-p`): if the proxy
+goes away the rig fails over to it and mines it directly, and comes back when the
+proxy returns.
+
+The listener is TLS, with a certificate made fresh at every start that the rigs
+pin through their handshake — so a rig will not mine through something that is not
+really your proxy. On anything but a private LAN, also set `--proxy_pass <secret>`
+on the proxy and `--pass <secret>` on each rig. Run the same bzminer version
+everywhere: the job format a proxy serves is versioned, and a mismatched rig is
+refused rather than fed work it would search wrongly.
+
+The price of the arrangement is that the pool sees one worker for the whole farm,
+so **per-rig statistics live in the proxy, not at the pool**.
 
 ## Rigs with several GPUs — or several CPUs
 
