@@ -1134,11 +1134,11 @@ that genuinely uses two device classes at once is `warthog`, and it does so by
 design — it plans CPU workers and GPU flow together, so it wants the whole
 machine and shares a rig poorly.
 
-## A farm on one pool connection
+## Farm on one pool connection (bzproxy)
 
 One bzminer holds the pool connection for an algorithm and serves the work to
-every other bzminer on your network — so a farm shows the pool **one** worker,
-and the rigs need no route to the internet of their own:
+every other bzminer on your network — so a farm shows the pool **one** worker, and
+the rigs need no route to the internet of their own:
 
 ```bash
 # the proxy — mines too, and serves port 4100
