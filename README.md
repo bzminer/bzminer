@@ -7,6 +7,8 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 
 | `-a` name | coin | dev fee | devices | what it is |
 |---|---|---|---|---|
+| `cn/gpu` (or `cn`) | Conceal | 1% | NVIDIA · AMD · Intel · Apple · CPU | A privacy chain with on-chain deposits and interest, on CryptoNight-GPU since its 2021 fork. |
+| `cn/gpu` (or `cn`) | Ryo | 1% | NVIDIA · AMD · Intel · Apple · CPU | The chain CryptoNight-GPU was written for; mined here through MoneroOcean. |
 | `ergo` | Ergo | 1% | NVIDIA · AMD · Intel · Apple | A smart-contract proof-of-work chain built on an extended UTXO model. Autolykos v2 is memory-hard: it builds a ~2 GB table in VRAM before it can mine, so a card needs the room for it. Wallet addresses start with '9'. |
 | `etchash`, `etc` | Ethereum Classic | 0.50% | NVIDIA · AMD · Apple | The original Ethereum chain, still proof-of-work; ECIP-1099 halved its epoch, so its DAG is about half ETHW's at a comparable height. |
 | `ethash`, `ethw`, `ethereumpow` | EthereumPoW | 0.50% | NVIDIA · AMD · Apple | The proof-of-work fork kept alive after Ethereum moved to proof-of-stake. |
@@ -360,7 +362,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.11**, the version on this page, so they can be
+Both scripts fetch **v100.13**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -369,7 +371,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.11"
+export version="v100.13"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -384,7 +386,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.11
+version=v100.13
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
