@@ -18,7 +18,7 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 | `meowcoin` (or `kawpow`) | Meowcoin | 1% | NVIDIA · AMD · Intel · Apple | A community-run Ravencoin fork with the same asset layer. |
 | `clore` (or `kawpow`) | Clore | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork whose coin pays for time on a GPU-rental marketplace. |
 | `pearl` | Pearl | 1% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
-| `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
+| `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | NVIDIA · AMD · CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile; it runs on a GPU too, but slower than the CPU beside it. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
 | `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `warthog` | Warthog | 2% | NVIDIA · AMD · Intel · Apple **and** CPU | A chain whose janushash proof-of-work is deliberately split across both processors: the GPU filters sha256t and the CPU runs VerusHash over the same nonces. Neither half finds anything alone. Wallet addresses are 48 hex characters. |
@@ -362,7 +362,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.13**, the version on this page, so they can be
+Both scripts fetch **v100.15**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -371,7 +371,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.13"
+export version="v100.15"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -386,7 +386,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.13
+version=v100.15
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1446,6 +1446,9 @@ Display:
   --color / --no-color    Force ANSI color on/off (default: auto-detect a terminal)
 
 Devices:
+  Every flag here is RIG-WIDE: it takes the device away from every algorithm
+  the rig mines. To take it away from ONE algorithm of several, put the
+  algorithm's number on the flag (--cpu2 0, --devices2 !1) - see Configuration.
   --nvidia / --amd / --intel / --cpu [0|1]
                           Which device TYPES may mine. With no value the flag is an
                           ALLOWLIST: naming any type means only the named types mine
@@ -1536,9 +1539,22 @@ Configuration:
   --pass <pass>           Pool password (NOTE: -p is the pool URL)
   --ssl-verify            Verify the pool's TLS cert (stratum+ssl; default off)
   --devices<N> <list>     Which devices mine algorithm N: numbers, pci ids, or the
-                          types cpu, gpu, nvidia, amd, intel (--devices2 cpu). Unset,
-                          the GPUs are dealt out among the algorithms that can use
-                          them and the CPU is shared by every one that can
+                          types cpu, gpu, nvidia, amd, intel - bare = only those,
+                          '!' = all but those, none = nothing (a proxy-only algorithm):
+                            --devices2 !cpu     algorithm 2 stays off the CPU; the
+                                                other algorithms keep it
+                            --devices2 nvidia   algorithm 2 mines on the NVIDIA cards only
+                            --devices2 !1       ...on everything but device 1
+                            --devices2 none     ...on nothing here (proxy it, or park it)
+                          Unset, the GPUs are dealt out among the algorithms that can
+                          use them and the CPU is shared by every one that can. A GPU
+                          mines ONE algorithm; the CPU can be named by several
+  --cpu<N> / --nvidia<N> / --amd<N> / --intel<N> [0|1]
+                          The same, as the Devices flags above with a number: --cpu2 0
+                          keeps algorithm 2 off the CPU (= --devices2 !cpu), --nvidia2
+                          --cpu2 = only those types for algorithm 2. Without the number
+                          they are rig-wide, and --cpu 0 stops the CPU for EVERY
+                          algorithm - which is the usual mistake
   --cpu_threads<N> <n>    Algorithm N's share of the CPU when it is shared; unset =
                           an even split of the rig's --cpu_threads budget. Placed on
                           unused processors first, overlapping only once they run out
@@ -1628,7 +1644,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   disable_huge_pages         Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
   pool                       Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
   force_algo                 Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
-  device_select              Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. CLI: --devices
+  device_select              Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. RIG-WIDE - to keep a card out of ONE algorithm of several, name it in that algorithm's pools[].devices ("!1") instead. CLI: --devices
   intensity                  Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   cpu_threads                How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
   cpu_affinity               Which processors mine, as a list: "0-7,16,18". Takes PRECEDENCE over cpu_threads, since it names the processors outright. Everything not listed is left for the miner's management threads. CLI: --cpu_affinity
@@ -1643,7 +1659,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pools[].algo               Algorithm (CLI: -a / --algo). Active pools are grouped by algorithm and every algorithm mines AT ONCE, each on its own devices: entries sharing an algorithm are one group, primary first, the rest its failovers
   pools[].ssl_verify         stratum+ssl: verify the pool's TLS certificate chain + hostname (CLI: --ssl-verify)
   pools[].user               LEGACY combined login, sent verbatim instead of wallet.worker. Only for a pool that wants something other than that shape - set wallet and worker instead (CLI: -u / --user)
-  pools[].devices            WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>)
+  pools[].devices            WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel, none. Bare entries = only those ("nvidia", "0,2"), '!' entries = everything but those ("!cpu" = this algorithm stays off the CPU and the others keep it; "!1" = all but device 1), "none" = nothing on this rig (an algorithm this rig only PROXIES). This is the per-algorithm form of device_types / device_select, which are rig-wide. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>, or --cpu<N> 0 / --nvidia<N> 0 / --amd<N> 0 / --intel<N> 0 for one type)
   pools[].cpu_threads        How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
   pools[].cpu_affinity       ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
   pools[].proxy_port         Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
@@ -1660,10 +1676,10 @@ Settings (set in config.txt, or with --set <path>=<value>):
   devices[].lock_core_clock  Pin THIS card's core clock in MHz (0 = unlock). Empty = use the global oc.lock_core_clock. A lock pins the clock where an offset shifts the curve and still lets it boost - a card can carry both
   devices[].lock_memory_clock Pin THIS card's memory clock in MHz (0 = unlock). Empty = use the global oc.lock_memory_clock. Only accepted at one of the board's own supported clocks; bzminer says which one you will get if you ask for another
   devices[].fan_speed        This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
-  device_types.nvidia        Mine on NVIDIA devices (CLI: --nvidia)
-  device_types.amd           Mine on AMD devices (CLI: --amd)
-  device_types.intel         Mine on Intel devices (CLI: --intel)
-  device_types.cpu           Mine on the CPU (CLI: --cpu)
+  device_types.nvidia        Mine on NVIDIA devices. RIG-WIDE: false keeps them out of EVERY algorithm the rig mines; to keep them out of one algorithm of several, put "!nvidia" in that algorithm's pools[].devices (CLI: --nvidia, or --nvidia2 0 for algorithm 2 alone)
+  device_types.amd           Mine on AMD devices. Rig-wide, as above: "!amd" in pools[].devices is the per-algorithm form (CLI: --amd, or --amd2 0)
+  device_types.intel         Mine on Intel devices. Rig-wide, as above: "!intel" in pools[].devices is the per-algorithm form (CLI: --intel, or --intel2 0)
+  device_types.cpu           Mine on the CPU. RIG-WIDE: false takes the CPU away from EVERY algorithm. A rig mining two algorithms that wants the CPU on only one of them leaves this true and puts "!cpu" in the OTHER algorithm's pools[].devices (CLI: --cpu, or --cpu2 0 for algorithm 2 alone)
   oc.power_limit             Board power cap in watts. One value for every card, or a per-device list ("160,180"). NVIDIA only (CLI: --oc-power-limit)
   oc.core_clock_offset       Core VF-curve offset in MHz (CLI: --oc-core-clock-offset)
   oc.memory_clock_offset     Memory VF-curve offset in MHz (CLI: --oc-memory-clock-offset)
@@ -1810,7 +1826,7 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "pool": [],
   // Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
   "force_algo": "",
-  // Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. CLI: --devices
+  // Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. RIG-WIDE - to keep a card out of ONE algorithm of several, name it in that algorithm's pools[].devices ("!1") instead. CLI: --devices
   "device_select": "",
   // Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   "intensity": 0,
@@ -1842,7 +1858,7 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "ssl_verify": false,
       // LEGACY combined login, sent verbatim instead of wallet.worker. Only for a pool that wants something other than that shape - set wallet and worker instead (CLI: -u / --user)
       "user": "",
-      // WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>)
+      // WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel, none. Bare entries = only those ("nvidia", "0,2"), '!' entries = everything but those ("!cpu" = this algorithm stays off the CPU and the others keep it; "!1" = all but device 1), "none" = nothing on this rig (an algorithm this rig only PROXIES). This is the per-algorithm form of device_types / device_select, which are rig-wide. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>, or --cpu<N> 0 / --nvidia<N> 0 / --amd<N> 0 / --intel<N> 0 for one type)
       "devices": "",
       // How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
       "cpu_threads": 0,
@@ -1883,13 +1899,13 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     }
   ],
   "device_types": {
-    // Mine on NVIDIA devices (CLI: --nvidia)
+    // Mine on NVIDIA devices. RIG-WIDE: false keeps them out of EVERY algorithm the rig mines; to keep them out of one algorithm of several, put "!nvidia" in that algorithm's pools[].devices (CLI: --nvidia, or --nvidia2 0 for algorithm 2 alone)
     "nvidia": true,
-    // Mine on AMD devices (CLI: --amd)
+    // Mine on AMD devices. Rig-wide, as above: "!amd" in pools[].devices is the per-algorithm form (CLI: --amd, or --amd2 0)
     "amd": true,
-    // Mine on Intel devices (CLI: --intel)
+    // Mine on Intel devices. Rig-wide, as above: "!intel" in pools[].devices is the per-algorithm form (CLI: --intel, or --intel2 0)
     "intel": true,
-    // Mine on the CPU (CLI: --cpu)
+    // Mine on the CPU. RIG-WIDE: false takes the CPU away from EVERY algorithm. A rig mining two algorithms that wants the CPU on only one of them leaves this true and puts "!cpu" in the OTHER algorithm's pools[].devices (CLI: --cpu, or --cpu2 0 for algorithm 2 alone)
     "cpu": true
   },
   "oc": {
