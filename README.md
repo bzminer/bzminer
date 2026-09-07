@@ -362,7 +362,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.15**, the version on this page, so they can be
+Both scripts fetch **v100.16**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -371,7 +371,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.15"
+export version="v100.16"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -386,7 +386,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.15
+version=v100.16
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1225,6 +1225,9 @@ device numbers, PCI addresses, or a mix of the two:
 ./bzminer --devices 07:00,09:00 -a xelis -p ... -w ...  # the same two, by address
 ./bzminer --devices !1         -a xelis -p ... -w ...   # every GPU EXCEPT device 1
 ./bzminer --devices !09:00     -a xelis -p ... -w ...   # every GPU except that card
+./bzminer --devices nvidia     -a xelis -p ... -w ...   # only the NVIDIA cards
+./bzminer --devices !amd       -a xelis -p ... -w ...   # every GPU except the AMD ones
+./bzminer --devices none       -a xelis -p ... -w ...   # no GPU at all (a proxy-only box)
 ```
 
 A bare list is an **allowlist** — only those cards mine. Entries prefixed `!` are
@@ -1232,6 +1235,17 @@ a **denylist** — everything but those. The two cannot be mixed: `0,!1` reads
 equally well as "card 0, and also not card 1" and as "everything except 1, plus
 0", so bzminer says so and ignores the list rather than picking one meaning and
 mining the wrong cards.
+
+The list takes **types** as well as cards, in either form: `cpu`, `gpu`,
+`nvidia`, `amd`, `intel`, plus `all` and `none`. So `--devices nvidia` and
+`--devices !amd` are lists like any other, and `cpu` and `!cpu` are spelled the
+same way — but read the next paragraph before reaching for those two.
+
+> **`--devices` never turns the CPU off.** It picks among GPUs, so `--devices !cpu`
+> does nothing at all: every GPU is already "not the CPU", so every GPU passes and
+> the CPU keeps mining. `--devices cpu` is not much better — it excludes every GPU
+> and leaves the CPU exactly as it was. To stop the CPU, use `--cpu 0` for the whole
+> rig or `--cpu<N> 0` for one algorithm; both are below.
 
 Every card the list excludes says so by name at startup, so a typo shows up as a
 missing card with a reason rather than as a rig that is quietly slower:
@@ -1253,6 +1267,58 @@ run GPU-only:
 
 It is a setting too, so a mining OS that only lets you edit the config can say the
 same thing: `"device_select": "09:00"`.
+
+### For one algorithm only — put its number on the flag
+
+Everything above is **rig-wide**: it takes a device away from every algorithm the
+rig mines. On a `-a pearl,randomx` rig that is usually not what you want — `--cpu 0`
+there does not free the CPU for RandomX, it stops RandomX dead, which is the
+mistake people actually make.
+
+Put the algorithm's number on the flag to change one algorithm instead. The number
+is its position in `-a`: the first is 1, and no number means 1, so a
+one-algorithm command line never changes.
+
+```bash
+./bzminer -a pearl,randomx ... --cpu1 0          # pearl off the CPU; randomx keeps it
+./bzminer -a pearl,randomx ... --devices1 !cpu   # the same thing, spelled as a list
+./bzminer -a pearl,randomx ... --nvidia2 0       # randomx off the NVIDIA cards
+./bzminer -a pearl,randomx ... --devices2 1,2    # randomx on devices 1 and 2 only
+./bzminer -a pearl,randomx ... --devices2 none   # randomx mines nowhere here (proxy it)
+```
+
+| | whole rig | algorithm 2 only |
+|---|---|---|
+| Keep it off the CPU | `--cpu 0` | `--cpu2 0` (= `--devices2 !cpu`) |
+| Keep it off NVIDIA | `--nvidia 0` | `--nvidia2 0` |
+| Keep it off AMD | `--amd 0` | `--amd2 0` |
+| Keep it off Intel | `--intel 0` | `--intel2 0` |
+| Only these types | `--nvidia --cpu` | `--nvidia2 --cpu2` |
+| Not this one card | `--devices !1` | `--devices2 !1` |
+| Only these cards | `--devices 0,2` | `--devices2 0,2` |
+| Mine it nowhere here | `--devices none --cpu 0` | `--devices2 none` |
+
+`--cpu<N>`, `--nvidia<N>`, `--amd<N>` and `--intel<N>` are shorthand for that
+algorithm's `--devices<N>` list, so the two spellings mix freely and the list
+vocabulary is the same one as above. Unlike the rig-wide `--devices`, the
+per-algorithm list **does** cover the CPU: `--devices2 !cpu` and `--cpu2 0` are
+the same instruction.
+
+Rig-wide and per-algorithm are ANDed. A card switched off rig-wide is gone
+whatever an algorithm's list says.
+
+In `config.txt` the per-algorithm form is the `devices` field on that algorithm's
+`pools[]` entry:
+
+```json
+"pools": [
+  { "url": "stratum+tcp://pearl-pool:3333",  "wallet": "...", "algo": "pearl",   "devices": "!cpu" },
+  { "url": "stratum+tcp://monero-pool:3333", "wallet": "...", "algo": "randomx" }
+]
+```
+
+In an interactive shell, quote a `!` entry (`'!cpu'`) or the shell reads it as a
+history reference. Start scripts and Windows need nothing.
 
 ### Permanently, in `config.txt`
 
