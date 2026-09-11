@@ -7,6 +7,7 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 
 | `-a` name | coin | dev fee | devices | what it is |
 |---|---|---|---|---|
+| `c29` | Tari | 1% | NVIDIA | Tari Cuckaroo29: 29-bit graph, chained SipHash block64, 42-edge cycles. Requires approximately 10 GiB free VRAM. Automatic optimization and measured performance qualification are RTX 3090-specific; other supported NVIDIA devices retain reference settings. AMD, Intel and CPU mining are not implemented. Not interchangeable with C29AE, C29D, C29Z or C29S. |
 | `cn/gpu` (or `cn`) | Conceal | 1% | NVIDIA · AMD · Intel · Apple · CPU | A privacy chain with on-chain deposits and interest, on CryptoNight-GPU since its 2021 fork. |
 | `cn/gpu` (or `cn`) | Ryo | 1% | NVIDIA · AMD · Intel · Apple · CPU | The chain CryptoNight-GPU was written for; mined here through MoneroOcean. |
 | `ergo` | Ergo | 1% | NVIDIA · AMD · Intel · Apple | A smart-contract proof-of-work chain built on an extended UTXO model. Autolykos v2 is memory-hard: it builds a ~2 GB table in VRAM before it can mine, so a card needs the room for it. Wallet addresses start with '9'. |
@@ -17,7 +18,9 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 | `neoxa` (or `kawpow`) | Neoxa | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork built around gaming and in-game reward tokens. |
 | `meowcoin` (or `kawpow`) | Meowcoin | 1% | NVIDIA · AMD · Intel · Apple | A community-run Ravencoin fork with the same asset layer. |
 | `clore` (or `kawpow`) | Clore | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork whose coin pays for time on a GPU-rental marketplace. |
+| `nexa` | — | 2% | — | — |
 | `pearl` | Pearl | 1% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
+| `quantus` | Quantus | 2% | NVIDIA · AMD · CPU | A post-quantum proof-of-work chain. Its hash is Poseidon2 over the 64-bit Goldilocks field, which is arithmetic rather than memory work, so it runs on the GPU and the CPU alike. Also mines solo against your own node. Wallet addresses start with 'q' and are 49 characters long. |
 | `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | NVIDIA · AMD · CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile; it runs on a GPU too, but slower than the CPU beside it. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
 | `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
@@ -362,7 +365,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.16**, the version on this page, so they can be
+Both scripts fetch **v100.20**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -371,7 +374,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.16"
+export version="v100.20"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -386,7 +389,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.16
+version=v100.20
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1467,6 +1470,10 @@ Run modes:
   --bc250-gpu-clock <mhz> AMD BC-250: forced shader clock (default 1800)
   --disable_huge_pages    Allocate with ordinary pages, to measure what huge pages
                           are actually worth on this rig
+  --duplicate-devices <n> Additional instances of each CPU/GPU (0..63; default 0).
+                          Per-device override: devices[].duplicates (-1 = inherit).
+  --duplicate-device <id>=<n> Override one physical device; repeat for more devices.
+                          Example: --duplicate-device 33:0=1 --duplicate-device 255:0=0
   --intensity <n>         GPU mining intensity for every device that does not set its
                           own devices[].intensity (0 = auto). Units of 65536 nonces
                           per launch; shown as i<n> in the mining table's cfg column
@@ -1711,6 +1718,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pool                       Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
   force_algo                 Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
   device_select              Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. RIG-WIDE - to keep a card out of ONE algorithm of several, name it in that algorithm's pools[].devices ("!1") instead. CLI: --devices
+  duplicate_devices          Additional independent mining instances per CPU/GPU (0..63). 0 means no copies; 1 means two instances. devices[].duplicates overrides this per physical device. CLI: --duplicate-devices
   intensity                  Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   cpu_threads                How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
   cpu_affinity               Which processors mine, as a list: "0-7,16,18". Takes PRECEDENCE over cpu_threads, since it names the processors outright. Everything not listed is left for the miner's management threads. CLI: --cpu_affinity
@@ -1731,6 +1739,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pools[].proxy_port         Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
   devices[].index            Device index - counts EVERY device enumerated, so disabling one does not renumber the others
   devices[].intensity        Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
+  devices[].duplicates       Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
   devices[].enabled          Whether to mine on this device. To turn off a whole vendor or the CPU instead, use device_types below
   devices[].pci              WHICH card this entry is, as "domain:bus:device" - written by bzminer on first run, and the field entries are matched on. Preferred over index, which moves when a card is added or removed
   devices[].name             The card's name, written by bzminer so the file says what it means without the rig in front of you. Not read back - pci is the key
@@ -1894,6 +1903,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "force_algo": "",
   // Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. RIG-WIDE - to keep a card out of ONE algorithm of several, name it in that algorithm's pools[].devices ("!1") instead. CLI: --devices
   "device_select": "",
+  // Additional independent mining instances per CPU/GPU (0..63). 0 means no copies; 1 means two instances. devices[].duplicates overrides this per physical device. CLI: --duplicate-devices
+  "duplicate_devices": 0,
   // Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   "intensity": 0,
   // How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
@@ -1940,6 +1951,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "index": 0,
       // Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
       "intensity": 0,
+      // Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
+      "duplicates": -1,
       // Whether to mine on this device. To turn off a whole vendor or the CPU instead, use device_types below
       "enabled": true,
       // WHICH card this entry is, as "domain:bus:device" - written by bzminer on first run, and the field entries are matched on. Preferred over index, which moves when a card is added or removed
