@@ -365,7 +365,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.21**, the version on this page, so they can be
+Both scripts fetch **v100.22**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -374,7 +374,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.21"
+export version="v100.22"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -389,7 +389,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.21
+version=v100.22
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -404,6 +404,187 @@ Both mining OSes rewrite the pool block from their own algorithm list, so an
 algorithm bzminer gained after that front-end shipped cannot be picked in their
 UI. `--force_algo <name>` (or `force_algo` in `config.txt`) overrides it whatever
 wrote it — that is what it is for.
+
+## LLM inference
+
+bzminer can serve a **large language model** — a chat page in your browser and an
+OpenAI-compatible API — on the same machine, and on the same graphics card, that
+is mining. It is not an algorithm: no pool, no wallet, no shares. It is a third
+way to run bzminer, beside mining and [monitoring](#monitoring-without-mining).
+
+```bash
+# serve a model, mine nothing
+./bzminer --dmon --llm_model pearl-ai/Llama-3.1-8B-Instruct-pearl
+
+# mine Pearl AND serve the model, on the same card
+./bzminer -a pearl -p stratum+tcp://us.pearl.herominers.com:1200 -w prl1YOUR_WALLET \
+          --llm_model pearl-ai/Llama-3.1-8B-Instruct-pearl
+
+# open the page with no model chosen, and pick or download one there
+./bzminer --dmon --llm_enabled
+```
+
+Then open **<http://127.0.0.1:4020/>**. A model you name but do not have is
+downloaded on first use, into `models/` beside the binary. The log prints the
+address as it starts:
+
+```
+inference page + OpenAI API: http://127.0.0.1:4020  (models in models)
+```
+
+**You need an NVIDIA card of compute capability 8.0 or better** — RTX 30-series
+or newer, or the datacentre equivalents — and enough free VRAM for the model. A
+CPU path exists (`--llm_device cpu`) and works, but it is slow enough that it is
+for trying things out rather than serving anybody.
+
+### Which models
+
+Models come from **Hugging Face**, named `owner/repo`, and two are offered on the
+page itself:
+
+| model | size | needs |
+|---|---|---|
+| `pearl-ai/Llama-3.1-8B-Instruct-pearl` | ~9 GB | a 12 GB card |
+| `pearl-ai/Llama-3.3-70B-Instruct-pearl` | ~72 GB | 80+ GB of VRAM |
+
+Any other Hugging Face repo can be typed in, and it loads if it is a **safetensors**
+checkpoint with a `tokenizer.json`, a `llama` or `qwen2` architecture, and weights
+quantised as compressed-tensors int7/int8 per channel or fp8. Unquantised bf16
+weights run on the CPU path only. GGUF, CTranslate2 and AWQ files are **not** read
+— a `.gguf` download will not work here. Gated repositories need a token, either
+in the page's token box or with `--llm_hf_token`.
+
+The `pearl-ai` models are the ones that **also mine while they answer** — see
+below. Any other checkpoint serves inference perfectly well and simply adds
+nothing to the hashrate.
+
+### The chat page
+
+Everything is on one screen at <http://127.0.0.1:4020/>:
+
+- **Model** — a dropdown of what is in your models folder, **Load** and
+  **Unload**, and a readout of the state, which device it is on, whether it is
+  mining, and the context length.
+- **Download** — the two models above in a list, or any Hugging Face repo id typed
+  in, with a box for a token if the repo is gated. It shows progress per file and
+  **Cancel** stops it. A download resumes where it left off if it is interrupted.
+- **Chat** — a system prompt, a temperature and a max-tokens box, and the answer
+  streams in as it is written. Beside them it counts requests served and shows the
+  live prompt and generation speed in tokens a second.
+
+This is a **separate page from the mining dashboard** on port 4014 — the dashboard
+shows your rig, this shows your model. Both can be open at once.
+
+By default the page listens on `127.0.0.1`, so only that machine can reach it. To
+open it to your network use `--llm_bind 0.0.0.0`, and be aware that anyone who can
+reach the port can use the model and download models onto your rig — there is no
+password on it.
+
+### The API
+
+The same port speaks the **OpenAI API**, so any tool or library that talks to
+OpenAI can point at bzminer unchanged:
+
+| endpoint | |
+|---|---|
+| `POST /v1/chat/completions` | a conversation in, a reply out |
+| `POST /v1/completions` | raw text in, a continuation out |
+| `GET /v1/models` | what is loaded right now |
+
+Send `"stream": true` to have it stream back token by token. Set the base URL to
+`http://YOUR_RIG:4020/v1` and the API key to **anything at all** — it is not
+checked.
+
+```bash
+curl http://127.0.0.1:4020/v1/chat/completions -H "Content-Type: application/json" \
+  -d '{"messages":[{"role":"user","content":"hello"}]}'
+```
+
+**Serving several people at once** is `BZ_LLM_SLOTS`, an environment variable:
+
+```bash
+BZ_LLM_SLOTS=16 ./bzminer --dmon --llm_model pearl-ai/Llama-3.1-8B-Instruct-pearl
+```
+
+It is worth more than it looks. Answering one token means reading every weight in
+the model, so sixteen conversations answered together read them once for sixteen
+tokens instead of sixteen times. The default is 1.
+
+### Mining Pearl at the same time
+
+A card can mine Pearl and serve a model at once, and **it needs no configuration**
+— run both and bzminer handles it. Pearl mines on the whole card between requests
+and stands down for the moment each request is being answered, so answers stay
+fast and the card earns whenever nobody is asking it anything.
+
+What that costs depends entirely on how busy the model is. Measured on one card
+(an RTX PRO 6000, Llama-3.1-8B, against 419.64 TH/s for Pearl alone):
+
+| how busy the model is | hashrate | of Pearl alone |
+|---|---|---|
+| model loaded, nobody using it | 416.26 TH/s | 99.2% |
+| a few conversations, pauses between turns | 248.87 TH/s | 59.3% |
+| busy — two dozen conversations | 160.26 TH/s | 38.2% |
+| saturated, never idle | 0 H/s | 0% |
+
+Zero at saturation is expected rather than broken: there are no gaps left to mine
+in. A rig that wants hashes regardless can keep mining through requests with
+`BZ_PEARL_GEMM_NO_BUSY_GATE=1`, at the cost of slower answers, and
+`BZ_LLM_SM_PARTITION=<n>` splits the card instead — `n` of its multiprocessors to
+the model, the rest to Pearl, so both run continuously.
+
+`--llm_mine true` is a different and more experimental thing: it mines the model's
+own arithmetic while it is inferring. It is **off by default and should stay off**
+— it earns very little and costs tokens, and on a lightly loaded rig it mines
+nothing at all. The behaviour described above is what earns, and it is on either
+way.
+
+### From the console
+
+The model is **not a device**, so it has no row on the dashboard, no hashrate and
+no sensor column. It reports itself as log lines instead, and every
+[console output mode](#console-output-modes) shows them — `tui`, `log`, `monitor`
+and `device` all work the same way here. `--dmon` is simply the mode that mines
+nothing, which is what you want on a machine that only serves.
+
+While the model is being used it prints one line every five seconds, and nothing
+at all while it is idle:
+
+```
+2 running, 1 queued | prompt 15.4k tok/s, gen 340 tok/s | KV 18% of 3072 pages
+```
+
+That is how many conversations are being answered and how many are waiting, how
+fast it is reading prompts and writing replies, and how full the context cache is.
+When traffic stops it prints one more line with the number of requests served.
+
+### Every LLM option
+
+| option | what it does |
+|---|---|
+| `--llm_model <x>` | the model to load: a folder in the models dir, a path, or a Hugging Face repo id. Naming one turns the server on |
+| `--llm_enabled` | turn the server on with no model chosen |
+| `--llm_models_dir <dir>` | where models are kept (default `models`) |
+| `--llm_port <n>` | the page and API port (default `4020`) |
+| `--llm_bind <addr>` | the address to listen on (default `127.0.0.1`) |
+| `--llm_device auto\|cpu\|<n>` | which card to use. `auto` picks the first that can. `0,1` splits one model across two cards, which is how a model too big for either one runs |
+| `--llm_ctx <n>` | how much conversation the model can see, in tokens (default `4096`) |
+| `--llm_threads <n>` | CPU threads, for `--llm_device cpu` |
+| `--llm_hf_token <t>` | a Hugging Face token, for gated repositories |
+| `--llm_mine <bool>` | mine the model's own arithmetic while inferring (default `false`; leave it) |
+
+All of them work in `config.txt` too, written at the top level:
+
+```json
+{
+  "llm_model": "pearl-ai/Llama-3.1-8B-Instruct-pearl",
+  "llm_models_dir": "D:/models",
+  "llm_device": "0",
+  "llm_ctx": 8192
+}
+```
+
+A flag on the command line beats the same key in the file.
 
 ## Console output modes
 
@@ -1597,6 +1778,7 @@ Logging:
 
 Configuration:
   --config <path>         Config file to load (default: config.txt)
+  --auto-update <value>   Signed executable update: off, latest, or version tag
   --set <path>=<value>    Override any setting below (e.g. --set http_port=8080)
   --<path> <value>        Same as --set, as a flag (dashes map to '_')
   --save-config           Write the resolved config to config.effective.json
@@ -1687,6 +1869,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   safety.sustain_s           How long a card must stay over a limit before it is paused, in seconds (rejects transient spikes)
   safety.resume_margin       Resume only once the value drops to (limit - this), in the tripped limit's unit (C/W/A) - hysteresis so it does not flap
   safety.resume_s            And stayed under the resume point this long, in seconds
+  auto-update                Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
   dmon                       Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
   http_enabled               Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
   http_address               Web server bind address ("0.0.0.0" allows LAN access)
@@ -1737,7 +1920,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pools[].cpu_threads        How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
   pools[].cpu_affinity       ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
   pools[].proxy_port         Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
-  devices[].index            Device index - counts EVERY device enumerated, so disabling one does not renumber the others
+  devices[].index            WITHOUT pci: the enumeration ordinal this entry configures (counts EVERY device enumerated, so disabling one does not renumber the others). WITH pci: the device NUMBER that card is given - what --devices and pools[].devices select it by, and the order the mining table lists devices in; cards not renumbered keep enumeration order and fill the numbers left over. Omitted (-1) = this entry addresses whatever pci says and nothing else, so an entry that only names a card cannot also configure device 0
   devices[].intensity        Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
   devices[].duplicates       Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
   devices[].enabled          Whether to mine on this device. To turn off a whole vendor or the CPU instead, use device_types below
@@ -1841,6 +2024,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     // And stayed under the resume point this long, in seconds
     "resume_s": 5
   },
+  // Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
+  "auto-update": "off",
   // Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
   "dmon": false,
   // Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
@@ -1947,8 +2132,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   ],
   "devices": [
     {
-      // Device index - counts EVERY device enumerated, so disabling one does not renumber the others
-      "index": 0,
+      // WITHOUT pci: the enumeration ordinal this entry configures (counts EVERY device enumerated, so disabling one does not renumber the others). WITH pci: the device NUMBER that card is given - what --devices and pools[].devices select it by, and the order the mining table lists devices in; cards not renumbered keep enumeration order and fill the numbers left over. Omitted (-1) = this entry addresses whatever pci says and nothing else, so an entry that only names a card cannot also configure device 0
+      "index": -1,
       // Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
       "intensity": 0,
       // Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
@@ -2022,6 +2207,7 @@ device found and the pool being tried. Start there, then:
 | warthog finds nothing | it needs both a GPU and the CPU; check neither is disabled |
 | ergo skips a card | the ~2 GB table has to fit in VRAM alongside everything else on the card |
 | randomx is slow | it wants 2080 MB plus 2 MB per thread and huge pages; the startup line says which it got, and a CPU without AES runs it ~4x slower |
+| randomx caps at a different hashrate on every restart | it is not on huge pages. The startup line says so and why: on Windows grant "Lock pages in memory" (secpol.msc) to the account and log out and back in; on Linux run as root so bzminer can grow the hugepage pool, or reserve it first. Huge pages come from memory that fragments while the machine runs, so a rig that gets them sometimes and not others lands on a different figure each time and holds it |
 | a second algorithm is not mining | one process mines one algorithm — see [mining several at once](#mining-several-algorithms-at-once) |
 | a message about MSR tweaks | CPU register tuning is an *optional* speed-up, not a requirement — mining carries on without it. On Windows it needs PawnIO (`scripts/install-pawnio.bat`); being an administrator is not by itself enough. On Linux it needs the `msr` module and access to `/dev/cpu/*/msr`. Run with `--log-level debug` to see which register was refused |
 | xelis hashrate lower than an older bzminer | xelis now publishes a rate it measures itself, where the older figure was derived and read high — the same card doing the *same* work reports a smaller number. Compare accepted shares over a fixed period instead; that is the same unit in both versions, and by that measure this build is faster |
