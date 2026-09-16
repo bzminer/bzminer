@@ -365,7 +365,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.22**, the version on this page, so they can be
+Both scripts fetch **v100.23**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -374,7 +374,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.22"
+export version="v100.23"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -389,7 +389,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.22
+version=v100.23
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -517,15 +517,17 @@ A card can mine Pearl and serve a model at once, and **it needs no configuration
 and stands down for the moment each request is being answered, so answers stay
 fast and the card earns whenever nobody is asking it anything.
 
-What that costs depends entirely on how busy the model is. Measured on one card
-(an RTX PRO 6000, Llama-3.1-8B, against 419.64 TH/s for Pearl alone):
+What that costs depends entirely on how busy the model is. Roughly, against what
+the same card mines with no model on it:
 
-| how busy the model is | hashrate | of Pearl alone |
-|---|---|---|
-| model loaded, nobody using it | 416.26 TH/s | 99.2% |
-| a few conversations, pauses between turns | 248.87 TH/s | 59.3% |
-| busy — two dozen conversations | 160.26 TH/s | 38.2% |
-| saturated, never idle | 0 H/s | 0% |
+| how busy the model is | hashrate you keep |
+|---|---|
+| model loaded, nobody using it | very nearly all of it |
+| a few conversations, pauses between turns | around three fifths |
+| busy — two dozen conversations | around a third |
+| saturated, never idle | none |
+
+Your own numbers will depend on the card, the model and how long the answers are.
 
 Zero at saturation is expected rather than broken: there are no gaps left to mine
 in. A rig that wants hashes regardless can keep mining through requests with
