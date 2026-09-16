@@ -19,7 +19,7 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 | `meowcoin` (or `kawpow`) | Meowcoin | 1% | NVIDIA · AMD · Intel · Apple | A community-run Ravencoin fork with the same asset layer. |
 | `clore` (or `kawpow`) | Clore | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork whose coin pays for time on a GPU-rental marketplace. |
 | `nexa` | — | 2% | — | — |
-| `pearl`, `pearlhash` | Pearl | 2% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
+| `pearl`, `pearlhash` | Pearl | 1% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
 | `quantus` | Quantus | 2% | NVIDIA · AMD · CPU | A post-quantum proof-of-work chain. Its hash is Poseidon2 over the 64-bit Goldilocks field, which is arithmetic rather than memory work, so it runs on the GPU and the CPU alike. Also mines solo against your own node. Wallet addresses start with 'q' and are 49 characters long. |
 | `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | NVIDIA · AMD · CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile; it runs on a GPU too, but slower than the CPU beside it. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
@@ -365,7 +365,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.23**, the version on this page, so they can be
+Both scripts fetch **v100.21**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -374,7 +374,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.23"
+export version="v100.21"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -389,7 +389,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.23
+version=v100.21
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1597,7 +1597,6 @@ Logging:
 
 Configuration:
   --config <path>         Config file to load (default: config.txt)
-  --auto-update <value>   Signed executable update: off, latest, or version tag
   --set <path>=<value>    Override any setting below (e.g. --set http_port=8080)
   --<path> <value>        Same as --set, as a flag (dashes map to '_')
   --save-config           Write the resolved config to config.effective.json
@@ -1688,7 +1687,6 @@ Settings (set in config.txt, or with --set <path>=<value>):
   safety.sustain_s           How long a card must stay over a limit before it is paused, in seconds (rejects transient spikes)
   safety.resume_margin       Resume only once the value drops to (limit - this), in the tripped limit's unit (C/W/A) - hysteresis so it does not flap
   safety.resume_s            And stayed under the resume point this long, in seconds
-  auto-update                Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
   dmon                       Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
   http_enabled               Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
   http_address               Web server bind address ("0.0.0.0" allows LAN access)
@@ -1739,7 +1737,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pools[].cpu_threads        How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
   pools[].cpu_affinity       ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
   pools[].proxy_port         Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
-  devices[].index            WITHOUT pci: the enumeration ordinal this entry configures (counts EVERY device enumerated, so disabling one does not renumber the others). WITH pci: the device NUMBER that card is given - what --devices and pools[].devices select it by, and the order the mining table lists devices in; cards not renumbered keep enumeration order and fill the numbers left over. Omitted (-1) = this entry addresses whatever pci says and nothing else, so an entry that only names a card cannot also configure device 0
+  devices[].index            Device index - counts EVERY device enumerated, so disabling one does not renumber the others
   devices[].intensity        Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
   devices[].duplicates       Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
   devices[].enabled          Whether to mine on this device. To turn off a whole vendor or the CPU instead, use device_types below
@@ -1843,8 +1841,6 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     // And stayed under the resume point this long, in seconds
     "resume_s": 5
   },
-  // Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
-  "auto-update": "off",
   // Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
   "dmon": false,
   // Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
@@ -1951,8 +1947,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   ],
   "devices": [
     {
-      // WITHOUT pci: the enumeration ordinal this entry configures (counts EVERY device enumerated, so disabling one does not renumber the others). WITH pci: the device NUMBER that card is given - what --devices and pools[].devices select it by, and the order the mining table lists devices in; cards not renumbered keep enumeration order and fill the numbers left over. Omitted (-1) = this entry addresses whatever pci says and nothing else, so an entry that only names a card cannot also configure device 0
-      "index": -1,
+      // Device index - counts EVERY device enumerated, so disabling one does not renumber the others
+      "index": 0,
       // Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
       "intensity": 0,
       // Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
@@ -2026,7 +2022,6 @@ device found and the pool being tried. Start there, then:
 | warthog finds nothing | it needs both a GPU and the CPU; check neither is disabled |
 | ergo skips a card | the ~2 GB table has to fit in VRAM alongside everything else on the card |
 | randomx is slow | it wants 2080 MB plus 2 MB per thread and huge pages; the startup line says which it got, and a CPU without AES runs it ~4x slower |
-| randomx caps at a different hashrate on every restart | it is not on huge pages. The startup line says so and why: on Windows grant "Lock pages in memory" (secpol.msc) to the account and log out and back in; on Linux run as root so bzminer can grow the hugepage pool, or reserve it first. Huge pages come from memory that fragments while the machine runs, so a rig that gets them sometimes and not others lands on a different figure each time and holds it |
 | a second algorithm is not mining | one process mines one algorithm — see [mining several at once](#mining-several-algorithms-at-once) |
 | a message about MSR tweaks | CPU register tuning is an *optional* speed-up, not a requirement — mining carries on without it. On Windows it needs PawnIO (`scripts/install-pawnio.bat`); being an administrator is not by itself enough. On Linux it needs the `msr` module and access to `/dev/cpu/*/msr`. Run with `--log-level debug` to see which register was refused |
 | xelis hashrate lower than an older bzminer | xelis now publishes a rate it measures itself, where the older figure was derived and read high — the same card doing the *same* work reports a smaller number. Compare accepted shares over a fixed period instead; that is the same unit in both versions, and by that measure this build is faster |
