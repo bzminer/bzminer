@@ -365,7 +365,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.23**, the version on this page, so they can be
+Both scripts fetch **v100.25**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -374,7 +374,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.23"
+export version="v100.25"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -389,7 +389,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.23
+version=v100.25
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -448,11 +448,28 @@ page itself:
 | `pearl-ai/Llama-3.3-70B-Instruct-pearl` | ~72 GB | 80+ GB of VRAM |
 
 Any other Hugging Face repo can be typed in, and it loads if it is a **safetensors**
-checkpoint with a `tokenizer.json`, a `llama` or `qwen2` architecture, and weights
-quantised as compressed-tensors int7/int8 per channel or fp8. Unquantised bf16
-weights run on the CPU path only. GGUF, CTranslate2 and AWQ files are **not** read
-— a `.gguf` download will not work here. Gated repositories need a token, either
-in the page's token box or with `--llm_hf_token`.
+checkpoint with a `tokenizer.json`, a `llama`, `qwen2`, `qwen3` or `gemma3_text`
+architecture, and weights quantised as compressed-tensors int7/int8 per channel or
+fp8. Unquantised bf16 weights run on the CPU path only. GGUF, CTranslate2 and AWQ
+files are **not** read — a `.gguf` download will not work here. Gated repositories
+need a token, either in the page's token box or with `--llm_hf_token`.
+
+The four architectures are the same block with additions: `qwen2` puts a bias on
+q, k and v; `qwen3` adds a per-head RMSNorm on q and k before RoPE; `gemma3_text`
+adds that norm plus a norm on each side of the MLP and alternating sliding-window
+layers. A checkpoint whose weights disagree with its own `model_type` is refused
+rather than run — a `qwen3` without `q_norm`/`k_norm`, or a non-`qwen3` that has
+them, is a mismatch worth stopping for.
+
+| model | `model_type` | |
+|---|---|---|
+| Llama 3.x | `llama` | works |
+| Qwen2 / Qwen2.5 | `qwen2` | works |
+| Qwen3 0.6B – 32B, fp8 or w8a8 | `qwen3` | works |
+| Gemma 3, text-only | `gemma3_text` | works |
+| Qwen3-30B-A3B and other Qwen3 MoE | `qwen3_moe` | refused — no expert routing |
+| Qwen3-Next (80B-A3B and kin) | `qwen3_next` | refused — MoE *and* hybrid linear attention |
+| Gemma 3, multimodal | `gemma3` | refused — use the text-only build |
 
 The `pearl-ai` models are the ones that **also mine while they answer** — see
 below. Any other checkpoint serves inference perfectly well and simply adds
