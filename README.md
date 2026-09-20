@@ -365,7 +365,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.25**, the version on this page, so they can be
+Both scripts fetch **v100.31**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -374,7 +374,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.25"
+export version="v100.31"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -389,7 +389,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.25
+version=v100.31
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -908,6 +908,24 @@ Two tabs, with a poll-interval selector (0.5s / 1s / 2s / 5s / off):
 Overclocking from the dashboard goes through the same implementation as the
 console and the command line, so the three cannot disagree.
 
+**Start, pause and stop the miner over HTTP** — `POST /api/mining` with
+`{"action":"start"}`, `"pause"` or `"stop"`.
+
+- **pause** parks the mining threads and keeps everything else: device memory,
+  the pool connection, the dev-fee clock. Starting again picks up the next job
+  with nothing to rebuild. It is the same state the `p` hotkey toggles.
+- **stop** tears the session down — threads joined, device memory handed back,
+  pools disconnected — and the rig stays up serving telemetry and this API.
+  Starting from stopped rebuilds it, and costs whatever a cold start costs on
+  that algorithm; a DAG is minutes.
+- `GET /api/mining` reads the state back (`mining` / `paused` / `stopped`).
+
+Asking for the state a rig is already in is a success, so a farm controller can
+stop twenty rigs without tracking which were already stopped. Share counters and
+uptime survive both. **There is no password on this** — the same exposure as
+`/api/oc`, so keep the port bound to localhost unless something in front of it
+authenticates.
+
 JSON, for scripting or your own dashboard:
 
 | endpoint | |
@@ -916,6 +934,7 @@ JSON, for scripting or your own dashboard:
 | `/api/stream` | the same, pushed as it changes (WebSocket) |
 | `/api/gpus`, `/api/metrics`, `/api/topology`, `/api/ram`, `/api/storage` | hardware detail |
 | `/api/oc` | read and apply overclocks |
+| `/api/mining` | read the mining state, or start / pause / stop it |
 | `/status` | the shape other mining dashboards expect |
 | `/hive_status` | HiveOS |
 
@@ -1877,9 +1896,24 @@ Settings (set in config.txt, or with --set <path>=<value>):
   log.wire_max               Longest single field kept in a `network`-level wire log line, in characters. Anything longer becomes "<elided, N chars>" and runs of unprintable bytes become "<binary, N bytes>" - the rest of the frame is logged exactly as it went over the wire, so a Pearl share's ~140 KB proof no longer buries the frames either side of it. 0 prints raw frames with nothing removed. CLI: --log-wire-max
   network.timeout_ms         Pool / network socket timeout, in milliseconds
   network.reconnect_ms       Delay before reconnecting after a disconnect, in milliseconds
+  network.primary_probe_s    Seconds between primary-pool probes while using a fallback pool; values below 5 use 300
   network.proxy              Route all pool connections through a SOCKS5 proxy: socks5://[user:pass@]host:port (empty = direct). CLI: --proxy
   plugins.update             Auto-download/update plugins from the manifest: auto|on|off (auto = on for the lite build, off for the full build). CLI: --plugin-update
   plugins.manifest_url       Override the plugin manifest URL (empty = built-in GitHub default + bzminer.com fallback). CLI: --plugin-manifest
+  backends.cpu               Enable the CPU compute backend
+  backends.cuda              Enable the CUDA compute backend
+  backends.opencl            Enable the OpenCL compute backend, including legacy AMD GPUs with compatible kernels
+  backends.metal             Enable the Metal compute backend
+  backends.opencl_include_owned_devices Expose OpenCL devices normally owned by CUDA or Metal; disable the other backend to avoid mining a GPU twice
+  quantus.cuda_batch         CUDA hashes per launch; null selects the device default
+  quantus.cuda_block         CUDA block size; null selects the kernel default
+  quantus.cuda_affine        Custom CUDA kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
+  quantus.opencl_affine      Custom OpenCL kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
+  quantus.double_buffer      Enable the experimental CUDA double-buffered pipeline
+  quantus.auth_token_file    QUIC authentication token file; takes precedence over auth_token
+  quantus.auth_token         QUIC authentication token; empty uses the configured wallet
+  quantus.tls_pin_file       QUIC server certificate SHA-256 pin file; takes precedence over tls_pin
+  quantus.tls_pin            QUIC server certificate SHA-256 pin in hex
   safety.max_temp_c          Pause a GPU (mining stops on that card only, auto-resumes when it cools) when its core or hotspot temp exceeds this, in C. 0 = off
   safety.max_power_w         Pause a GPU when its board power exceeds this, in W. 0 = off
   safety.max_current_a       Pause a GPU when its 12VHPWR CONNECTOR current (aggregate of all pins, not per-pin) exceeds this, in A. NVIDIA Blackwell on Windows only. 0 = off
@@ -1905,7 +1939,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   mining_columns             Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   cpu_metrics                Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
-  cache_qos                  Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +4.7% on a Threadripper PRO 9955WX. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
+  cache_qos                  Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +1.15% on a Threadripper PRO 9955WX (Zen 5), and -0.86% on Zen 4 - which is why it is only applied on Zen 5. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
   superio_fans               Read the motherboard's sensor chip directly for fan speeds when no kernel driver publishes them (Linux, x86, and only as root). Many boards - mini-PCs especially - carry an ITE or Nuvoton chip that Linux has no driver for, and then nothing reports a CPU fan at all. Reads only, and never runs where hwmon already has fans. Set false to leave that chip alone. CLI: --superio-fans 0
   tui_width                  Console width in characters. 0 = use the terminal's own width and follow a resize, which is the default and is what you want. Set it to pin the width - for a terminal that misreports, or output being captured with no tty to ask. Pinning it LARGER than the real window makes every row wrap and the dashboard scroll, so measure before setting it. CLI: --tui-width
   tui_height                 Console height in rows. 0 = use the terminal's own height and follow a resize. Independent of tui_width: pinning one leaves the other tracking the window, and where there is no window to ask the unpinned one falls back to 80x25 rather than discarding both. CLI: --tui-height
@@ -1916,6 +1950,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   disable_vaes               Behave as if there were no VAES/VPCLMULQDQ. CLI: --disable_vaes
   disable_amx                Behave as if there were no AMX. CLI: --disable_amx
   bc250                      AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. CLI: --no-bc250-gpu / --no-bc250-cpu / --bc250-gpu-clock
+  disable_1gb_huge_pages     Disable 1 GB huge pages while retaining smaller huge pages
   disable_huge_pages         Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
   pool                       Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
   force_algo                 Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
@@ -1974,9 +2009,10 @@ Examples:
   bzminer --oc-reset              (undo overclock settings a killed run left behind)
   bzminer --set http_address=0.0.0.0 --set http_port=8080
 
-Environment:
-  Some tuning and diagnostic settings have no flag - e.g. BZ_CPU_THREADS and
-  BZ_ZK_THREADS cap worker counts. See docs/env-vars.txt.
+Runtime options:
+  Backend and Quantus controls use --backends.<key> and --quantus.<key>,
+  or the matching objects in config.txt. Legacy AMD GPUs need no opt-in.
+  Remaining experimental controls are documented in docs/env-vars.txt.
 ```
 
 ## Every setting
@@ -2016,6 +2052,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "timeout_ms": 30000,
     // Delay before reconnecting after a disconnect, in milliseconds
     "reconnect_ms": 5000,
+    // Seconds between primary-pool probes while using a fallback pool; values below 5 use 300
+    "primary_probe_s": 300,
     // Route all pool connections through a SOCKS5 proxy: socks5://[user:pass@]host:port (empty = direct). CLI: --proxy
     "proxy": ""
   },
@@ -2024,6 +2062,38 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "update": "auto",
     // Override the plugin manifest URL (empty = built-in GitHub default + bzminer.com fallback). CLI: --plugin-manifest
     "manifest_url": ""
+  },
+  "backends": {
+    // Enable the CPU compute backend
+    "cpu": true,
+    // Enable the CUDA compute backend
+    "cuda": true,
+    // Enable the OpenCL compute backend, including legacy AMD GPUs with compatible kernels
+    "opencl": true,
+    // Enable the Metal compute backend
+    "metal": true,
+    // Expose OpenCL devices normally owned by CUDA or Metal; disable the other backend to avoid mining a GPU twice
+    "opencl_include_owned_devices": false
+  },
+  "quantus": {
+    // CUDA hashes per launch; null selects the device default
+    "cuda_batch": null,
+    // CUDA block size; null selects the kernel default
+    "cuda_block": null,
+    // Custom CUDA kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
+    "cuda_affine": null,
+    // Custom OpenCL kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
+    "opencl_affine": null,
+    // Enable the experimental CUDA double-buffered pipeline
+    "double_buffer": false,
+    // QUIC authentication token file; takes precedence over auth_token
+    "auth_token_file": "",
+    // QUIC authentication token; empty uses the configured wallet
+    "auth_token": "",
+    // QUIC server certificate SHA-256 pin file; takes precedence over tls_pin
+    "tls_pin_file": "",
+    // QUIC server certificate SHA-256 pin in hex
+    "tls_pin": ""
   },
   "safety": {
     // Pause a GPU (mining stops on that card only, auto-resumes when it cools) when its core or hotspot temp exceeds this, in C. 0 = off
@@ -2077,7 +2147,7 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "mining_columns": "",
   // Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
   "cpu_metrics": true,
-  // Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +4.7% on a Threadripper PRO 9955WX. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
+  // Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +1.15% on a Threadripper PRO 9955WX (Zen 5), and -0.86% on Zen 4 - which is why it is only applied on Zen 5. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
   "cache_qos": true,
   // Read the motherboard's sensor chip directly for fan speeds when no kernel driver publishes them (Linux, x86, and only as root). Many boards - mini-PCs especially - carry an ITE or Nuvoton chip that Linux has no driver for, and then nothing reports a CPU fan at all. Reads only, and never runs where hwmon already has fans. Set false to leave that chip alone. CLI: --superio-fans 0
   "superio_fans": true,
@@ -2099,6 +2169,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "disable_amx": false,
   // AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. CLI: --no-bc250-gpu / --no-bc250-cpu / --bc250-gpu-clock
   "bc250": {"gpu": true, "cpu": true, "gpu_mhz": 1800, "gpu_mv": 0},
+  // Disable 1 GB huge pages while retaining smaller huge pages
+  "disable_1gb_huge_pages": false,
   // Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
   "disable_huge_pages": false,
   // Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
