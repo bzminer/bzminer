@@ -89,6 +89,82 @@ quarantine flag once, in the unpacked folder:
 xattr -dr com.apple.quarantine .
 ```
 
+### Or run it in Docker
+
+On Linux there is nothing to unpack. The image carries the miner **and the GPU
+userspace it needs**, so a rig needs a kernel driver and Docker and nothing else
+— no ROCm install, no libc++, no hunting for an OpenCL ICD loader.
+
+```bash
+docker run --rm -it --gpus all \
+    bzminer/bzminer -a pearl -o stratum+tcp://pool:port -w <wallet>
+```
+
+Arguments are passed straight through, so anything on this page works unchanged.
+With no arguments it runs `/data/config.txt`, which is the working directory —
+mount a folder there to keep your config, the log and any `plugins/` on your own
+disk:
+
+```bash
+docker run --rm -it --gpus all -v /opt/bzminer:/data bzminer/bzminer
+```
+
+`--gpus all` is NVIDIA, and needs the NVIDIA Container Toolkit on the host. AMD
+and Intel are passed by device instead:
+
+```bash
+# AMD: /dev/kfd is the compute interface, /dev/dri the render nodes
+docker run --rm -it --device /dev/kfd --device /dev/dri \
+    --group-add video --group-add render bzminer/bzminer -a pearl ...
+
+# Intel
+docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
+```
+
+Without those groups every `open()` is `EACCES` and the cards simply do not
+appear. A commented `docker-compose.yml` covering all three, plus what
+overclocking and the MSR profiles additionally need, is in
+`bzminer_v100.36_docker.tar.gz` below.
+
+### Or build the image yourself
+
+`bzminer_v100.36_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+compose file the published image is built from, plus a `build.sh` that assembles
+it from the Linux download:
+
+```bash
+tar xzf bzminer_v100.36_docker.tar.gz && cd bzminer_v100.36_docker
+curl -LO .../bzminer_v100.36_linux.tar.gz
+./build.sh
+```
+
+Nothing is compiled — it packages the released binary as published, so the
+SHA-256 inside the image you build matches the table below. Useful for an
+air-gapped rig, a private registry, or your own Docker Hub namespace:
+
+```bash
+docker login
+./build.sh --tag docker.io/<youruser>/bzminer:v100.36 --push
+```
+
+`BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
+and what is in the image and why.
+
+Tags are `bzminer/bzminer:<version>` (an exact release, never moves) and
+`bzminer/bzminer:latest` (the current public release — a beta or release
+candidate is published under its own version tag only, so `latest` never points
+at a pre-release). The same image is on GitHub as `ghcr.io/bzminer/bzminer`,
+pushed from the same build, so the two registries are interchangeable — use
+ghcr.io if Docker Hub's rate limits are in your way.
+
+The binary in the image is the one in `bzminer_<version>_linux.tar.gz`, byte for
+byte: the image packages it as built rather than recompiling, so its SHA-256
+matches the download and its integrity seal is the one verified at release time.
+
+NVIDIA is the one thing not baked in, and cannot be: `libcuda.so.1` is versioned
+against the host's kernel module, so the Container Toolkit injects the host's own
+copy at `--gpus all` time. A pinned copy would break on the next driver update.
+
 ## Monitoring without mining
 
 bzminer can run as a **hardware monitor with no mining at all**: every sensor it can
@@ -365,7 +441,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.31**, the version on this page, so they can be
+Both scripts fetch **v100.36**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -374,7 +450,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.31"
+export version="v100.36"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -389,7 +465,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.31
+version=v100.36
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1741,12 +1817,13 @@ Devices:
   Every flag here is RIG-WIDE: it takes the device away from every algorithm
   the rig mines. To take it away from ONE algorithm of several, put the
   algorithm's number on the flag (--cpu2 0, --devices2 !1) - see Configuration.
-  --nvidia / --amd / --intel / --cpu [0|1]
-                          Which device TYPES may mine. With no value the flag is an
-                          ALLOWLIST: naming any type means only the named types mine
-                          (`--nvidia --cpu` = NVIDIA and the CPU, nothing else). With a
-                          value it sets just that type (`--amd 0` turns AMD off and
-                          leaves the rest alone). No flags at all = mine everything
+  --nvidia / --amd / --intel / --cpu [0]
+                          Which device TYPES may mine. NAMING a type is an ALLOWLIST:
+                          only the named types mine (`--nvidia --cpu` = NVIDIA and the
+                          CPU, nothing else; `--amd` = AMD only, so the CPU stops). A
+                          value of 1 changes nothing - `--amd 1` is `--amd`. Only 0
+                          DENIES: `--amd 0` turns AMD off and leaves the rest alone.
+                          No flags at all = mine everything
   --devices <list>        Which GPUs mine, by device number or pci id (comma or space
                           separated). Bare entries are an ALLOWLIST - only those mine -
                           and '!' entries a DENYLIST; the two cannot be mixed:
@@ -1842,7 +1919,7 @@ Configuration:
                           Unset, the GPUs are dealt out among the algorithms that can
                           use them and the CPU is shared by every one that can. A GPU
                           mines ONE algorithm; the CPU can be named by several
-  --cpu<N> / --nvidia<N> / --amd<N> / --intel<N> [0|1]
+  --cpu<N> / --nvidia<N> / --amd<N> / --intel<N> [0]
                           The same, as the Devices flags above with a number: --cpu2 0
                           keeps algorithm 2 off the CPU (= --devices2 !cpu), --nvidia2
                           --cpu2 = only those types for algorithm 2. Without the number
@@ -1922,6 +1999,13 @@ Settings (set in config.txt, or with --set <path>=<value>):
   safety.sustain_s           How long a card must stay over a limit before it is paused, in seconds (rejects transient spikes)
   safety.resume_margin       Resume only once the value drops to (limit - this), in the tripped limit's unit (C/W/A) - hysteresis so it does not flap
   safety.resume_s            And stayed under the resume point this long, in seconds
+  stall_guard.enabled        Restart mining (device implementations rebuilt, pools reconnected) when the rig is connected and reporting a hashrate but the pool credits no shares. false = off
+  stall_guard.min_idle_s     Never act before this long without an accepted share, in seconds
+  stall_guard.gap_multiple   Nor before this many times how long a share SHOULD take here - the measured mean interval between this algorithm's shares, or what the difficulty predicts (the est. tbs under the table) until two shares exist to measure one - whichever wait is longer. Shares are Poisson-distributed, so a genuine gap this long has probability e^-20. Lower it to detect a stall sooner on a rig whose shares are hours apart, at the cost of restarting a merely unlucky one
+  stall_guard.cooldown_s     Minimum seconds between two recoveries
+  stall_guard.max_ineffective Give up after this many recoveries in a row that produced no accepted share - a restart loop mines less than a stall. 0 = never give up
+  stall_guard.worker_hang_s  The OTHER signal: a device thread that has stopped hashing at all (no completed batch, so not one hash added) while the rig is mining and that card is not parked. Try a restart after this many seconds. Must clear the longest legitimate silence a device can have, which is a BUILD - a DAG, a kernel load, a PCIe probe - not a search. 0 = off
+  stall_guard.worker_kill_s  And if that did not help, or did not finish - a thread wedged inside a driver call cannot be joined, so the restart itself blocks on it - stop answering the process watchdog after this many seconds so it kills and restarts the miner. That is the only thing that clears such a thread. 0 = off
   auto-update                Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
   dmon                       Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
   http_enabled               Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
@@ -1936,7 +2020,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   log_table_interval         How often the 'log' output reprints the device/pool table, in ms. Separate from --interval, which is how often the engine PUBLISHES a snapshot (the web UI and metrics want that fast). 0 = print on every snapshot. CLI: --log-table-interval
   tui_interval               How often the 'tui' dashboard redraws, in ms. A keypress redraws immediately regardless. CLI: --tui-interval
   metrics                    Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
-  device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
+  device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp,memtemp - memtemp is dropped automatically on cards with no memory sensor. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   mining_columns             Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   cpu_metrics                Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
   cache_qos                  Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +1.15% on a Threadripper PRO 9955WX (Zen 5), and -0.86% on Zen 4 - which is why it is only applied on Zen 5. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
@@ -2113,6 +2197,22 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     // And stayed under the resume point this long, in seconds
     "resume_s": 5
   },
+  "stall_guard": {
+    // Restart mining (device implementations rebuilt, pools reconnected) when the rig is connected and reporting a hashrate but the pool credits no shares. false = off
+    "enabled": true,
+    // Never act before this long without an accepted share, in seconds
+    "min_idle_s": 900,
+    // Nor before this many times how long a share SHOULD take here - the measured mean interval between this algorithm's shares, or what the difficulty predicts (the est. tbs under the table) until two shares exist to measure one - whichever wait is longer. Shares are Poisson-distributed, so a genuine gap this long has probability e^-20. Lower it to detect a stall sooner on a rig whose shares are hours apart, at the cost of restarting a merely unlucky one
+    "gap_multiple": 20,
+    // Minimum seconds between two recoveries
+    "cooldown_s": 1800,
+    // Give up after this many recoveries in a row that produced no accepted share - a restart loop mines less than a stall. 0 = never give up
+    "max_ineffective": 3,
+    // The OTHER signal: a device thread that has stopped hashing at all (no completed batch, so not one hash added) while the rig is mining and that card is not parked. Try a restart after this many seconds. Must clear the longest legitimate silence a device can have, which is a BUILD - a DAG, a kernel load, a PCIe probe - not a search. 0 = off
+    "worker_hang_s": 300,
+    // And if that did not help, or did not finish - a thread wedged inside a driver call cannot be joined, so the restart itself blocks on it - stop answering the process watchdog after this many seconds so it kills and restarts the miner. That is the only thing that clears such a thread. 0 = off
+    "worker_kill_s": 900
+  },
   // Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
   "auto-update": "off",
   // Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
@@ -2141,7 +2241,7 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "tui_interval": 400,
   // Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
   "metrics": "",
-  // Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
+  // Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp,memtemp - memtemp is dropped automatically on cards with no memory sensor. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   "device_columns": "",
   // Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   "mining_columns": "",
