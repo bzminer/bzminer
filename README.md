@@ -7,7 +7,7 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 
 | `-a` name | coin | dev fee | devices | what it is |
 |---|---|---|---|---|
-| `c29` | Tari | 1% | NVIDIA | Tari Cuckaroo29: 29-bit graph, chained SipHash block64, 42-edge cycles. Requires approximately 10 GiB free VRAM. Automatic optimization and measured performance qualification are RTX 3090-specific; other supported NVIDIA devices retain reference settings. AMD, Intel and CPU mining are not implemented. Not interchangeable with C29AE, C29D, C29Z or C29S. |
+| `c29` | Tari | 1% | NVIDIA, Intel Arc Battlemage, AMD | Tari Cuckaroo29: 29-bit graph, chained SipHash block64, 42-edge cycles. Requires approximately 10 GiB free VRAM. Automatic optimization and measured performance qualification are RTX 3090-specific; other supported NVIDIA devices retain reference settings. CPU mining is not implemented. Not interchangeable with C29AE, C29D, C29Z or C29S. |
 | `cn/gpu` (or `cn`) | Conceal | 1% | NVIDIA · AMD · Intel · Apple · CPU | A privacy chain with on-chain deposits and interest, on CryptoNight-GPU since its 2021 fork. |
 | `cn/gpu` (or `cn`) | Ryo | 1% | NVIDIA · AMD · Intel · Apple · CPU | The chain CryptoNight-GPU was written for; mined here through MoneroOcean. |
 | `ergo` | Ergo | 1% | NVIDIA · AMD · Intel · Apple | A smart-contract proof-of-work chain built on an extended UTXO model. Autolykos v2 is memory-hard: it builds a ~2 GB table in VRAM before it can mine, so a card needs the room for it. Wallet addresses start with '9'. |
@@ -20,7 +20,7 @@ and hardware monitor. Runs on Windows, Linux and macOS.
 | `clore` (or `kawpow`) | Clore | 1% | NVIDIA · AMD · Intel · Apple | A Ravencoin fork whose coin pays for time on a GPU-rental marketplace. |
 | `nexa` | — | 2% | — | — |
 | `pearl`, `pearlhash` | Pearl | 2% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
-| `quantus` | Quantus | 2% | NVIDIA · AMD · CPU | A post-quantum proof-of-work chain. Its hash is Poseidon2 over the 64-bit Goldilocks field, which is arithmetic rather than memory work, so it runs on the GPU and the CPU alike. Also mines solo against your own node. Wallet addresses start with 'q' and are 49 characters long. |
+| `quantus` | Quantus | 2% | NVIDIA · AMD · Intel Battlemage · CPU | A post-quantum proof-of-work chain. Its hash is Poseidon2 over the 64-bit Goldilocks field, which is arithmetic rather than memory work, so it runs on the GPU and the CPU alike. Also mines solo against your own node. Wallet addresses start with 'q' and are 49 characters long. |
 | `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | NVIDIA · AMD · CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile; it runs on a GPU too, but slower than the CPU beside it. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
 | `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
@@ -124,17 +124,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.36_docker.tar.gz` below.
+`bzminer_v100.45_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.36_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.45_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.36_docker.tar.gz && cd bzminer_v100.36_docker
-curl -LO .../bzminer_v100.36_linux.tar.gz
+tar xzf bzminer_v100.45_docker.tar.gz && cd bzminer_v100.45_docker
+curl -LO .../bzminer_v100.45_linux.tar.gz
 ./build.sh
 ```
 
@@ -144,7 +144,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.36 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.45 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -441,7 +441,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.36**, the version on this page, so they can be
+Both scripts fetch **v100.45**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -450,7 +450,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.36"
+export version="v100.45"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -465,7 +465,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.36
+version=v100.45
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1762,9 +1762,13 @@ Run modes:
   --disable_amx           ... no AMX
   --no-bc250-gpu          AMD BC-250: leave the shader clock at its stock 1500 MHz
   --no-bc250-cpu          AMD BC-250: leave 2 of the 8 CPU cores switched off
+  --no-bc250-cu           AMD BC-250: leave 16 of the 40 compute units switched off
   --bc250-gpu-clock <mhz> AMD BC-250: forced shader clock (default 1800)
   --disable_huge_pages    Allocate with ordinary pages, to measure what huge pages
                           are actually worth on this rig
+  --watchdog-restarts <n> Restarts of a crashing worker before the watchdog gives up
+                          (default 5; 0 = never). A worker that ran 10 minutes or
+                          more resets the count.
   --duplicate-devices <n> Additional instances of each CPU/GPU (0..63; default 0).
                           Per-device override: devices[].duplicates (-1 = inherit).
   --duplicate-device <id>=<n> Override one physical device; repeat for more devices.
@@ -1808,8 +1812,8 @@ Display:
                           (default id,cfg,tbs,shares,eff,poolhr,hr,status)
   --list-columns          List every column name the three tables accept here, then exit
   --unlock-bc250-cu       AMD BC-250: enable all 40 CUs (24 by default), then exit.
-                          Needs root, and an amdgpu module reload afterwards -
-                          the command explains exactly what to do.
+                          Needs root; live, no reboot or reload. A normal run does
+                          this by itself unless --no-bc250-cu is given.
   --restore-bc250-cu      AMD BC-250: put the factory 24 CUs back, then exit
   --color / --no-color    Force ANSI color on/off (default: auto-detect a terminal)
 
@@ -1824,7 +1828,11 @@ Devices:
                           value of 1 changes nothing - `--amd 1` is `--amd`. Only 0
                           DENIES: `--amd 0` turns AMD off and leaves the rest alone.
                           No flags at all = mine everything
-  --devices <list>        Which GPUs mine, by device number or pci id (comma or space
+  --igpu [0]              Integrated GPUs (a CPU's built-in graphics). A filter across
+                          the vendors: `--igpu 0` (or `--devices !igpu`) keeps them out
+                          and leaves every discrete card alone. Bare `--igpu` mines on
+                          the integrated GPUs only
+  --devices <list>       Which GPUs mine, by device number or pci id (comma or space
                           separated). Bare entries are an ALLOWLIST - only those mine -
                           and '!' entries a DENYLIST; the two cannot be mixed:
                             --devices 0,2       only devices 0 and 2
@@ -1843,13 +1851,18 @@ Devices:
                           counts every device enumerated, so disabling one does not
                           renumber the rest, and devices[].pci matches instead when set)
 
-Overclocking (NVIDIA; on Linux every knob is a privileged NVML write):
-  --oc-power-limit <W>            Board power cap
+Overclocking (NVIDIA; every knob needs administrator on Windows, root on Linux):
+  --oc-power-limit <W>            Board power cap. Outside the card's range it is set
+                                  to the card's minimum or maximum, and the log says so
   --oc-core-clock-offset <MHz>    Persistent VF-curve offset for the core
   --oc-memory-clock-offset <MHz>  Same for memory
   --oc-lock-core-clock <MHz>      Pin the core clock instead of letting boost wander
                                   (0 = unlock)
   --oc-lock-memory-clock <MHz>    Pin the memory clock (0 = unlock)
+  --oc-lock-core-voltage <mV>     Run the locked core clock at this voltage (needs
+                                  --oc-lock-core-clock; Windows. NVIDIA: sets the core offset. Intel
+                                  Arc: rewrites the card's voltage curve, and needs
+                                  --oc-accept-intel-waiver; console: oc clock=2400 voltage=800)
   --oc-fan-speed <spec>           Either a fixed duty ('60') or a temperature curve:
                                     t:<target>[<min>-<max>]   keep the CORE at <target> C,
                                                               fan within <min>..<max> %
@@ -1857,6 +1870,10 @@ Overclocking (NVIDIA; on Linux every knob is a privileged NVML write):
                                     tm:<target>[<min>-<max>]  the same for MEMORY temp
                                   Both may be given - whichever wants more fan wins:
                                     --oc-fan-speed "t:60[25-75] tm:80[50-100]"
+  --oc-accept-intel-waiver        Intel Arc: you accept Intel's overclock waiver (a shorter life for
+                                  the card), which Intel requires before any voltage change
+  --oc-delay-ms <ms>              Apply the overclock <ms> after the pool connects, not at
+                                  startup (0 = at startup)
   --oc-reset                      Put every card back to driver defaults FIRST (offsets
                                   cleared, clocks unlocked, power default, fan automatic).
                                   Use alone to undo settings a killed run left behind
@@ -1919,7 +1936,7 @@ Configuration:
                           Unset, the GPUs are dealt out among the algorithms that can
                           use them and the CPU is shared by every one that can. A GPU
                           mines ONE algorithm; the CPU can be named by several
-  --cpu<N> / --nvidia<N> / --amd<N> / --intel<N> [0]
+  --cpu<N> / --nvidia<N> / --amd<N> / --intel<N> / --igpu<N> [0]
                           The same, as the Devices flags above with a number: --cpu2 0
                           keeps algorithm 2 off the CPU (= --devices2 !cpu), --nvidia2
                           --cpu2 = only those types for algorithm 2. Without the number
@@ -2033,12 +2050,13 @@ Settings (set in config.txt, or with --set <path>=<value>):
   disable_avx512             Behave as if there were no AVX-512. AMX goes with it, riding on the same register state. CLI: --disable_avx512
   disable_vaes               Behave as if there were no VAES/VPCLMULQDQ. CLI: --disable_vaes
   disable_amx                Behave as if there were no AMX. CLI: --disable_amx
-  bc250                      AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. CLI: --no-bc250-gpu / --no-bc250-cpu / --bc250-gpu-clock
+  bc250                      AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. `cu` enables all 40 compute units (24 ship enabled), LIVE at startup with no reboot or driver reload - Pearl measured 2.105 -> 3.451 T MAC/s - and needs root. The 16 extra CUs were switched off at the factory and a few boards have defective ones, so stress test a new board. CLI: --no-bc250-gpu / --no-bc250-cpu / --no-bc250-cu / --bc250-gpu-clock
   disable_1gb_huge_pages     Disable 1 GB huge pages while retaining smaller huge pages
   disable_huge_pages         Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
   pool                       Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
   force_algo                 Override the algorithm on the configured pools, whatever wrote them. One algorithm ("warthog") sets pool 0; a list sets one pool each, in order - either JSON (["warthog", "xelis"]) or comma separated ("warthog,xelis"). It is TOP-LEVEL, not a field inside pools[], because a mining OS rewrites the pool block from its own algorithm list - so an algorithm bzminer gained after that front-end shipped cannot be selected in its UI, and an override placed inside pools[] would be overwritten by it. CLI: --force_algo
   device_select              Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. RIG-WIDE - to keep a card out of ONE algorithm of several, name it in that algorithm's pools[].devices ("!1") instead. CLI: --devices
+  watchdog_restarts          How many times the watchdog restarts a crashed or hung worker before giving up. Counts only crashes that come close together: a worker that ran for 10 minutes or more resets the count, so a rig that crashes once in a while keeps being restarted. 0 = never give up. CLI: --watchdog-restarts
   duplicate_devices          Additional independent mining instances per CPU/GPU (0..63). 0 means no copies; 1 means two instances. devices[].duplicates overrides this per physical device. CLI: --duplicate-devices
   intensity                  Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   cpu_threads                How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
@@ -2068,21 +2086,27 @@ Settings (set in config.txt, or with --set <path>=<value>):
   devices[].pci_subsystem_id The board's PCI subsystem pair, "vendor:device" - written by bzminer. The device id alone names the CHIP, which is the same on a reference card and a partner's; this names the board. Not read back
   devices[].core_clock_offset This card's core VF-curve offset in MHz. Empty = use the global oc.core_clock_offset
   devices[].memory_clock_offset This card's memory VF-curve offset in MHz. Empty = use the global oc.memory_clock_offset
-  devices[].power_limit      This card's board power cap in watts. Empty = use the global oc.power_limit
+  devices[].power_limit      This card's board power cap in watts. Empty = use the global oc.power_limit. Outside the card's own range it is set to the card's minimum or maximum, and the log says which
   devices[].lock_core_clock  Pin THIS card's core clock in MHz (0 = unlock). Empty = use the global oc.lock_core_clock. A lock pins the clock where an offset shifts the curve and still lets it boost - a card can carry both
   devices[].lock_memory_clock Pin THIS card's memory clock in MHz (0 = unlock). Empty = use the global oc.lock_memory_clock. Only accepted at one of the board's own supported clocks; bzminer says which one you will get if you ask for another
+  devices[].lock_core_voltage Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
   devices[].fan_speed        This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
   device_types.nvidia        Mine on NVIDIA devices. RIG-WIDE: false keeps them out of EVERY algorithm the rig mines; to keep them out of one algorithm of several, put "!nvidia" in that algorithm's pools[].devices (CLI: --nvidia, or --nvidia2 0 for algorithm 2 alone)
   device_types.amd           Mine on AMD devices. Rig-wide, as above: "!amd" in pools[].devices is the per-algorithm form (CLI: --amd, or --amd2 0)
   device_types.intel         Mine on Intel devices. Rig-wide, as above: "!intel" in pools[].devices is the per-algorithm form (CLI: --intel, or --intel2 0)
+  device_types.igpu          Mine on integrated GPUs (a CPU's built-in graphics). A filter across the vendors, not a vendor: false keeps every integrated GPU out and leaves the discrete cards alone; "!igpu" in pools[].devices is the per-algorithm form (CLI: --igpu 0, --igpu2 0, or --devices !igpu). Naming it on the command line (--igpu) mines on the integrated GPUs only
+  device_types.igpu_named    Written by the command line's bare --igpu: integrated GPUs mine whatever their vendor flag says. Leave it alone in a config file unless you mean it
   device_types.cpu           Mine on the CPU. RIG-WIDE: false takes the CPU away from EVERY algorithm. A rig mining two algorithms that wants the CPU on only one of them leaves this true and puts "!cpu" in the OTHER algorithm's pools[].devices (CLI: --cpu, or --cpu2 0 for algorithm 2 alone)
-  oc.power_limit             Board power cap in watts. One value for every card, or a per-device list ("160,180"). NVIDIA only (CLI: --oc-power-limit)
+  oc.power_limit             Board power cap in watts. One value for every card, or a per-device list ("160,180"). A value outside a card's own range is set to that card's minimum or maximum rather than ignored, and the log says so. NVIDIA only. Like every setting in this block it needs bzminer running as administrator (Windows) or root (Linux); without that each one is refused, with a warning (CLI: --oc-power-limit)
   oc.core_clock_offset       Core VF-curve offset in MHz (CLI: --oc-core-clock-offset)
   oc.memory_clock_offset     Memory VF-curve offset in MHz (CLI: --oc-memory-clock-offset)
   oc.lock_core_clock         Pin the core clock in MHz instead of letting boost wander; 0 = unlock (CLI: --oc-lock-core-clock)
   oc.lock_memory_clock       Pin the memory clock in MHz; 0 = unlock (CLI: --oc-lock-memory-clock)
+  oc.lock_core_voltage       Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
   oc.fan_speed               Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
+  oc.delay_ms                Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
   oc.reset                   Put every card back to driver defaults before applying anything above (CLI: --oc-reset)
+  oc.accept_intel_waiver     Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
 
 Examples:
   bzminer -p stratum+tcp://pool:3333 -w <wallet> --worker rig --pass x -a sha256d
@@ -2267,8 +2291,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "disable_vaes": false,
   // Behave as if there were no AMX. CLI: --disable_amx
   "disable_amx": false,
-  // AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. CLI: --no-bc250-gpu / --no-bc250-cpu / --bc250-gpu-clock
-  "bc250": {"gpu": true, "cpu": true, "gpu_mhz": 1800, "gpu_mv": 0},
+  // AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. `cu` enables all 40 compute units (24 ship enabled), LIVE at startup with no reboot or driver reload - Pearl measured 2.105 -> 3.451 T MAC/s - and needs root. The 16 extra CUs were switched off at the factory and a few boards have defective ones, so stress test a new board. CLI: --no-bc250-gpu / --no-bc250-cpu / --no-bc250-cu / --bc250-gpu-clock
+  "bc250": {"gpu": true, "cpu": true, "cu": true, "gpu_mhz": 1800, "gpu_mv": 0},
   // Disable 1 GB huge pages while retaining smaller huge pages
   "disable_1gb_huge_pages": false,
   // Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
@@ -2279,6 +2303,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "force_algo": "",
   // Which GPUs mine, as a comma- or space-separated list of device numbers and/or pci ids ("0,2", "29:0", "0000:29:00"). Bare entries are an ALLOWLIST - only those cards mine - and entries prefixed '!' a DENYLIST ("!1" = every GPU but device 1). The two cannot be mixed, since "0,!1" has two readings and neither is obviously right. Empty = every GPU mines. This is the one-line form of devices[].enabled and the two are ANDed, so a card disabled in either place does not mine. GPUs only: the CPU is governed by device_types.cpu / cpu_threads. RIG-WIDE - to keep a card out of ONE algorithm of several, name it in that algorithm's pools[].devices ("!1") instead. CLI: --devices
   "device_select": "",
+  // How many times the watchdog restarts a crashed or hung worker before giving up. Counts only crashes that come close together: a worker that ran for 10 minutes or more resets the count, so a rig that crashes once in a while keeps being restarted. 0 = never give up. CLI: --watchdog-restarts
+  "watchdog_restarts": 5,
   // Additional independent mining instances per CPU/GPU (0..63). 0 means no copies; 1 means two instances. devices[].duplicates overrides this per physical device. CLI: --duplicate-devices
   "duplicate_devices": 0,
   // Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
@@ -2343,12 +2369,14 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "core_clock_offset": "",
       // This card's memory VF-curve offset in MHz. Empty = use the global oc.memory_clock_offset
       "memory_clock_offset": "",
-      // This card's board power cap in watts. Empty = use the global oc.power_limit
+      // This card's board power cap in watts. Empty = use the global oc.power_limit. Outside the card's own range it is set to the card's minimum or maximum, and the log says which
       "power_limit": "",
       // Pin THIS card's core clock in MHz (0 = unlock). Empty = use the global oc.lock_core_clock. A lock pins the clock where an offset shifts the curve and still lets it boost - a card can carry both
       "lock_core_clock": "",
       // Pin THIS card's memory clock in MHz (0 = unlock). Empty = use the global oc.lock_memory_clock. Only accepted at one of the board's own supported clocks; bzminer says which one you will get if you ask for another
       "lock_memory_clock": "",
+      // Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
+      "lock_core_voltage": "",
       // This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
       "fan_speed": ""
     }
@@ -2360,11 +2388,15 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "amd": true,
     // Mine on Intel devices. Rig-wide, as above: "!intel" in pools[].devices is the per-algorithm form (CLI: --intel, or --intel2 0)
     "intel": true,
+    // Mine on integrated GPUs (a CPU's built-in graphics). A filter across the vendors, not a vendor: false keeps every integrated GPU out and leaves the discrete cards alone; "!igpu" in pools[].devices is the per-algorithm form (CLI: --igpu 0, --igpu2 0, or --devices !igpu). Naming it on the command line (--igpu) mines on the integrated GPUs only
+    "igpu": true,
+    // Written by the command line's bare --igpu: integrated GPUs mine whatever their vendor flag says. Leave it alone in a config file unless you mean it
+    "igpu_named": false,
     // Mine on the CPU. RIG-WIDE: false takes the CPU away from EVERY algorithm. A rig mining two algorithms that wants the CPU on only one of them leaves this true and puts "!cpu" in the OTHER algorithm's pools[].devices (CLI: --cpu, or --cpu2 0 for algorithm 2 alone)
     "cpu": true
   },
   "oc": {
-    // Board power cap in watts. One value for every card, or a per-device list ("160,180"). NVIDIA only (CLI: --oc-power-limit)
+    // Board power cap in watts. One value for every card, or a per-device list ("160,180"). A value outside a card's own range is set to that card's minimum or maximum rather than ignored, and the log says so. NVIDIA only. Like every setting in this block it needs bzminer running as administrator (Windows) or root (Linux); without that each one is refused, with a warning (CLI: --oc-power-limit)
     "power_limit": "",
     // Core VF-curve offset in MHz (CLI: --oc-core-clock-offset)
     "core_clock_offset": "",
@@ -2374,10 +2406,16 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "lock_core_clock": "",
     // Pin the memory clock in MHz; 0 = unlock (CLI: --oc-lock-memory-clock)
     "lock_memory_clock": "",
+    // Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
+    "lock_core_voltage": "",
     // Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
     "fan_speed": "",
+    // Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
+    "delay_ms": 0,
     // Put every card back to driver defaults before applying anything above (CLI: --oc-reset)
-    "reset": false
+    "reset": false,
+    // Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
+    "accept_intel_waiver": false
   }
 }
 ```
