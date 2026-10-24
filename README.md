@@ -71,7 +71,8 @@ nothing else to download and no plugins folder to manage.
 
 Inside: the binary, a launcher per algorithm (`start_xelis.sh` / `.bat` and so
 on), `start_multi_algo` for mining two at once in one miner (Pearl on the GPUs,
-RandomX on the CPU: `-a pearl,randomx --p1 ... --p2 ...`), `start_proxy_*` /
+RandomX on the CPU: `-a pearl,randomx --p1 ... --p2 ...`), `start_pearl_c29` for
+the automatic NVIDIA shared-GPU route using MoneroOcean, `start_proxy_*` /
 `start_worker_*` for a farm on one pool connection (one box holds the pool
 connection with `--proxy_port 4100`, every other rig mines through it with
 `-p bzproxy://<proxy>:4100`, and each rig is a light-blue row in the proxy's
@@ -124,17 +125,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.45_docker.tar.gz` below.
+`bzminer_v100.51_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.45_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.51_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.45_docker.tar.gz && cd bzminer_v100.45_docker
-curl -LO .../bzminer_v100.45_linux.tar.gz
+tar xzf bzminer_v100.51_docker.tar.gz && cd bzminer_v100.51_docker
+curl -LO .../bzminer_v100.51_linux.tar.gz
 ./build.sh
 ```
 
@@ -144,7 +145,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.45 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.51 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -441,7 +442,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.45**, the version on this page, so they can be
+Both scripts fetch **v100.51**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -450,7 +451,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.45"
+export version="v100.51"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -465,7 +466,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.45
+version=v100.51
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1423,14 +1424,40 @@ and `--cpu_threads<N>` its share of the processor:
 ```
 
 Addresses rather than numbers, because a card should keep its assignment if
-another is added or pulled. **A GPU belongs to one algorithm**; two entries of the
+another is added or pulled. Normally a GPU is assigned to one algorithm; two entries of the
 same algorithm naming *different* devices are two groups.
 
-**Two algorithms on the same card is not possible** and would not help: a GPU
-running two kernels gets each of them a fraction of the card. The one algorithm
-that genuinely uses two device classes at once is `warthog`, and it does so by
-design — it plans CPU workers and GPU flow together, so it wants the whole
-machine and shares a rig poorly.
+Compatible NVIDIA GPUs can share Pearl+C29 through a registered native dual
+route. Other pairs and unsupported devices retain ordinary device assignment.
+
+### Pearl + C29 dual mining on MoneroOcean
+
+Use `start_pearl_c29.bat` (Windows) or `start_pearl_c29.sh` (Linux). Replace both
+wallet placeholders with your XMR payout address; the same address can receive
+both payouts. Keep it bare, with worker names in the passwords:
+
+```sh
+./bzminer -a pearl,c29 --nvidia 1 --cpu 0 \
+  --p1 stratum+tcp://gulf.moneroocean.stream:10128 --w1 4YOUR_MONERO_WALLET_HERE --worker1 "" --pass1 rig1-pearl~pearl \
+  --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET_HERE --worker2 "" --pass2 rig1-c29~c29
+```
+
+The batch file uses `bzminer.exe` on one line. Allow several minutes for startup
+calibration. The shared route remains enabled only at or above 100% combined
+solo throughput; otherwise the GPU returns to ordinary assignment. No duplicate
+device or kernel-selection flags are needed. AMD has no registered shared route.
+The macOS example explains that C29 has no Apple GPU backend and exits.
+
+**HiveOS:** select `pearl` (or `pearlhash`) as the main hash algorithm. Use an
+XMR wallet, pool `gulf.moneroocean.stream:10128`, password `rig1-pearl~pearl`.
+Add this in **Extra config arguments**, replacing the second wallet too:
+
+```text
+--a2 c29 --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET_HERE --worker2 "" --pass2 rig1-c29~c29 --nvidia 1 --cpu 0
+```
+
+`--a2` adds C29 without replacing the main algorithm selected in HiveOS.
+`--worker2 ""` keeps the XMR login bare. This example mines on NVIDIA GPUs only.
 
 ## Farm on one pool connection (bzproxy)
 
@@ -1760,10 +1787,18 @@ Run modes:
   --disable_avx512        ... no AVX-512, and no AMX with it
   --disable_vaes          ... no VAES/VPCLMULQDQ
   --disable_amx           ... no AMX
-  --no-bc250-gpu          AMD BC-250: leave the shader clock at its stock 1500 MHz
+  --no-bc250-gpu          AMD BC-250: release any forced shader clock and leave the stock 1500 MHz
   --no-bc250-cpu          AMD BC-250: leave 2 of the 8 CPU cores switched off
-  --no-bc250-cu           AMD BC-250: leave 16 of the 40 compute units switched off
-  --bc250-gpu-clock <mhz> AMD BC-250: forced shader clock (default 1800)
+  --bc250-cu              AMD BC-250: enable all 40 compute units (24 ship enabled), live at
+                          startup, root only. Off by default: the 16 extra CUs are defective
+                          on some boards and fault only under load - stress test before trusting
+  --bc250-gpu-clock <mhz> AMD BC-250: pin the shader clock, 500-2000 MHz (stock 1500). Without it
+                          the clock is left to the OS: an mmpOS/HiveOS overclock or a governor
+                          applies as set. 1800 measured +6.8 0x0.07e49b2186ef1p-1022nus for +100000003E351FE888ower; 2000 +3.4
+                          more for +34; below 1500 buys heat and power back on a packed chassis
+  --bc250-gpu-mv <mv>     AMD BC-250: forced GPU core voltage, 700-1000 mV. Default: derived
+                          from the clock (900 mV at 2000 MHz, ~855 at 1800), which measured
+                          the same hashrate as 1000 mV for 49 W less; 800 hung the board
   --disable_huge_pages    Allocate with ordinary pages, to measure what huge pages
                           are actually worth on this rig
   --watchdog-restarts <n> Restarts of a crashing worker before the watchdog gives up
@@ -1813,7 +1848,7 @@ Display:
   --list-columns          List every column name the three tables accept here, then exit
   --unlock-bc250-cu       AMD BC-250: enable all 40 CUs (24 by default), then exit.
                           Needs root; live, no reboot or reload. A normal run does
-                          this by itself unless --no-bc250-cu is given.
+                          the same when started with --bc250-cu.
   --restore-bc250-cu      AMD BC-250: put the factory 24 CUs back, then exit
   --color / --no-color    Force ANSI color on/off (default: auto-detect a terminal)
 
@@ -1822,12 +1857,14 @@ Devices:
   the rig mines. To take it away from ONE algorithm of several, put the
   algorithm's number on the flag (--cpu2 0, --devices2 !1) - see Configuration.
   --nvidia / --amd / --intel / --cpu [0]
-                          Which device TYPES may mine. NAMING a type is an ALLOWLIST:
+                          Which device TYPES may mine. NAMING a GPU type is an ALLOWLIST:
                           only the named types mine (`--nvidia --cpu` = NVIDIA and the
                           CPU, nothing else; `--amd` = AMD only, so the CPU stops). A
                           value of 1 changes nothing - `--amd 1` is `--amd`. Only 0
                           DENIES: `--amd 0` turns AMD off and leaves the rest alone.
-                          No flags at all = mine everything
+                          `--cpu` on its own ADDS the CPU and never removes a GPU (the
+                          1.x meaning, which mining OS profiles still use); `--cpu 0`
+                          stops it. No flags at all = mine everything
   --igpu [0]              Integrated GPUs (a CPU's built-in graphics). A filter across
                           the vendors: `--igpu 0` (or `--devices !igpu`) keeps them out
                           and leaves every discrete card alone. Bare `--igpu` mines on
@@ -2003,7 +2040,9 @@ Settings (set in config.txt, or with --set <path>=<value>):
   quantus.cuda_block         CUDA block size; null selects the kernel default
   quantus.cuda_affine        Custom CUDA kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
   quantus.opencl_affine      Custom OpenCL kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
-  quantus.double_buffer      Enable the experimental CUDA double-buffered pipeline
+  quantus.double_buffer      CUDA double buffering; null selects the qualified RTX 4090 default
+  quantus.cancel_speculative CUDA speculative cancellation; null selects the qualified RTX 4090 default
+  quantus.cancel_current     CUDA current-work cancellation; null selects the qualified RTX 4090 default
   quantus.auth_token_file    QUIC authentication token file; takes precedence over auth_token
   quantus.auth_token         QUIC authentication token; empty uses the configured wallet
   quantus.tls_pin_file       QUIC server certificate SHA-256 pin file; takes precedence over tls_pin
@@ -2036,8 +2075,8 @@ Settings (set in config.txt, or with --set <path>=<value>):
   benchmark_job_interval_ms  How long --benchmark keeps one deterministic job, in ms. A persistent job makes fixed-difficulty share accounting honest for memory-hard kernels. CLI: --benchmark-job-interval
   log_table_interval         How often the 'log' output reprints the device/pool table, in ms. Separate from --interval, which is how often the engine PUBLISHES a snapshot (the web UI and metrics want that fast). 0 = print on every snapshot. CLI: --log-table-interval
   tui_interval               How often the 'tui' dashboard redraws, in ms. A keypress redraws immediately regardless. CLI: --tui-interval
-  metrics                    Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
-  device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp,memtemp - memtemp is dropped automatically on cards with no memory sensor. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
+  metrics                    Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, toptemps, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
+  device_columns             Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,toptemps - toptemps is the two hottest of core/hotspot/memory on each card, each tagged with its sensor ("78C hot, 70C mem"). Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   mining_columns             Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   cpu_metrics                Collect CPU telemetry (per-core clocks, temperatures, usage, CCD sensors). Set false on a GPU rig that does not want them, or where the reads need a privileged driver - GPU metrics are unaffected. CLI: --cpu-metrics 0
   cache_qos                  Reserve a private slice of the last-level cache for each CPU mining thread (Linux, root, and a CPU with cache allocation - AMD Zen 2 and newer, or Intel with RDT). RandomX's 2 MiB scratchpads add up to exactly the L3 on a typical rig, so left alone they evict one another; fencing them off measured +1.15% on a Threadripper PRO 9955WX (Zen 5), and -0.86% on Zen 4 - which is why it is only applied on Zen 5. Machine-wide while mining and restored on exit. CLI: --cache-qos 0
@@ -2050,7 +2089,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   disable_avx512             Behave as if there were no AVX-512. AMX goes with it, riding on the same register state. CLI: --disable_avx512
   disable_vaes               Behave as if there were no VAES/VPCLMULQDQ. CLI: --disable_vaes
   disable_amx                Behave as if there were no AMX. CLI: --disable_amx
-  bc250                      AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. `cu` enables all 40 compute units (24 ship enabled), LIVE at startup with no reboot or driver reload - Pearl measured 2.105 -> 3.451 T MAC/s - and needs root. The 16 extra CUs were switched off at the factory and a few boards have defective ones, so stress test a new board. CLI: --no-bc250-gpu / --no-bc250-cpu / --no-bc250-cu / --bc250-gpu-clock
+  bc250                      AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, 2 of its 8 CPU cores and 16 of its 40 compute units switched off - and none of it is a fuse. `gpu` lets bzminer manage the shader clock: with `gpu_mhz` 0 the clock is left to the OS (an mmpOS/HiveOS overclock or a governor applies as set) and only a clock a previous bzminer run left forced is released; a value 500-2000 pins that clock, below stock included, with `gpu_mv` (700-1000) overriding the voltage the curve would give it. Measured on a BC-250 at 1800, warthog's janus score gains 6.8% for 10% more power, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. `cu` is OPT-IN: it enables all 40 compute units LIVE at startup with no reboot or driver reload - Pearl measured 2.105 -> 3.451 T MAC/s - and needs root. It is off by default because the 16 extra CUs were switched off at the factory and on some boards they are defective, faulting only under load; stress test a board before trusting it. All of it is volatile - a cold power cycle restores the factory setup. CLI: --no-bc250-gpu / --no-bc250-cpu / --bc250-cu / --bc250-gpu-clock / --bc250-gpu-mv
   disable_1gb_huge_pages     Disable 1 GB huge pages while retaining smaller huge pages
   disable_huge_pages         Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
   pool                       Active pool(s) from pools[]: an index (0 or "0"), an array ([0, 2] = multiple pools), or [] for monitoring mode. Omit = all pools (first primary, rest failover). CLI: --pool
@@ -2192,8 +2231,12 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "cuda_affine": null,
     // Custom OpenCL kernel layout (0 generic, 1 affine, 2 prepared affine); use null for bundled images
     "opencl_affine": null,
-    // Enable the experimental CUDA double-buffered pipeline
-    "double_buffer": false,
+    // CUDA double buffering; null selects the qualified RTX 4090 default
+    "double_buffer": null,
+    // CUDA speculative cancellation; null selects the qualified RTX 4090 default
+    "cancel_speculative": null,
+    // CUDA current-work cancellation; null selects the qualified RTX 4090 default
+    "cancel_current": null,
     // QUIC authentication token file; takes precedence over auth_token
     "auth_token_file": "",
     // QUIC authentication token; empty uses the configured wallet
@@ -2263,9 +2306,9 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "log_table_interval": 30000,
   // How often the 'tui' dashboard redraws, in ms. A keypress redraws immediately regardless. CLI: --tui-interval
   "tui_interval": 400,
-  // Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
+  // Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, toptemps, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
   "metrics": "",
-  // Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,temp,memtemp - memtemp is dropped automatically on cards with no memory sensor. Run 'bzminer --list-columns' for the full list. CLI: --device-columns
+  // Columns on the mining screen's DEVICE table (the hardware box above the algorithm box). Same vocabulary as metrics above. Empty = memfree,memtotal,core,mem,fan,power,toptemps - toptemps is the two hottest of core/hotspot/memory on each card, each tagged with its sensor ("78C hot, 70C mem"). Run 'bzminer --list-columns' for the full list. CLI: --device-columns
   "device_columns": "",
   // Columns on the MINING table (the algorithm box: shares, hashrate, pool). Its own vocabulary - id, name, cfg, shares, accepted, rejected, pending, stale, errors, eff, poolhr, hr, avghr, power, temp, fan, core, mem, tbs, status, poolinfo. Empty = id,cfg,tbs,shares,eff,poolhr,hr,status,poolinfo. `tbs` is the MEASURED average time between shares found - what a device delivers, as opposed to the `est. tbs` its difficulty predicts. `poolinfo` is the pool's own column - height, difficulty, est. tbs and latency, one per row. Warthog leaves it out by default, because its status column carries the rig summary and wants the width; name it explicitly to get it there too. Drop it and those four pack into 'status' instead. Drop 'status' as well and the per-device status text goes with them - nothing is left wide enough to hold it. Run 'bzminer --list-columns' for the full list. CLI: --mining-columns
   "mining_columns": "",
@@ -2291,8 +2334,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "disable_vaes": false,
   // Behave as if there were no AMX. CLI: --disable_amx
   "disable_amx": false,
-  // AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, and 2 of its 8 CPU cores switched off - and neither is a fuse, so both are undone at startup. `gpu` forces the shader clock: measured on a BC-250, warthog's sha side gains 32% and its janus score 12%, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. Both are volatile - a cold power cycle restores the factory setup. `cu` enables all 40 compute units (24 ship enabled), LIVE at startup with no reboot or driver reload - Pearl measured 2.105 -> 3.451 T MAC/s - and needs root. The 16 extra CUs were switched off at the factory and a few boards have defective ones, so stress test a new board. CLI: --no-bc250-gpu / --no-bc250-cpu / --no-bc250-cu / --bc250-gpu-clock
-  "bc250": {"gpu": true, "cpu": true, "cu": true, "gpu_mhz": 1800, "gpu_mv": 0},
+  // AMD BC-250 only; ignored on every other machine. The board ships deliberately cut down - the shader array locked to 1500 MHz, 2 of its 8 CPU cores and 16 of its 40 compute units switched off - and none of it is a fuse. `gpu` lets bzminer manage the shader clock: with `gpu_mhz` 0 the clock is left to the OS (an mmpOS/HiveOS overclock or a governor applies as set) and only a clock a previous bzminer run left forced is released; a value 500-2000 pins that clock, below stock included, with `gpu_mv` (700-1000) overriding the voltage the curve would give it. Measured on a BC-250 at 1800, warthog's janus score gains 6.8% for 10% more power, while xelis gains nothing, being bound by memory rather than compute. `cpu` enables all 8 cores and takes effect on the NEXT boot, the core mask being read when the OS enumerates CPUs. `cu` is OPT-IN: it enables all 40 compute units LIVE at startup with no reboot or driver reload - Pearl measured 2.105 -> 3.451 T MAC/s - and needs root. It is off by default because the 16 extra CUs were switched off at the factory and on some boards they are defective, faulting only under load; stress test a board before trusting it. All of it is volatile - a cold power cycle restores the factory setup. CLI: --no-bc250-gpu / --no-bc250-cpu / --bc250-cu / --bc250-gpu-clock / --bc250-gpu-mv
+  "bc250": {"gpu": true, "cpu": true, "cu": false, "gpu_mhz": 0, "gpu_mv": 0},
   // Disable 1 GB huge pages while retaining smaller huge pages
   "disable_1gb_huge_pages": false,
   // Allocate with ordinary pages rather than huge ones. Huge pages are meant to help - a large ring is far fewer TLB entries at 2 MB than at 4 KB - but on a working set that already fits the TLB they buy nothing while still needing privileges. This is how a rig owner finds out which case theirs is. CLI: --disable_huge_pages
