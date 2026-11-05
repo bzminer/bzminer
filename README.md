@@ -125,17 +125,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.51_docker.tar.gz` below.
+`bzminer_v100.70_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.51_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.70_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.51_docker.tar.gz && cd bzminer_v100.51_docker
-curl -LO .../bzminer_v100.51_linux.tar.gz
+tar xzf bzminer_v100.70_docker.tar.gz && cd bzminer_v100.70_docker
+curl -LO .../bzminer_v100.70_linux.tar.gz
 ./build.sh
 ```
 
@@ -145,7 +145,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.51 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.70 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -442,7 +442,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.51**, the version on this page, so they can be
+Both scripts fetch **v100.70**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -451,7 +451,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.51"
+export version="v100.70"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -466,7 +466,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.51
+version=v100.70
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1383,6 +1383,201 @@ certificate chain and hostname), `--pass <password>` where a pool wants one — 
 Press **`u`** in the console at any time to see every configured pool with its
 wallet, worker and password, in failover order.
 
+## Profit switching
+
+`-a mo` (or `moneroocean`) is one pool connection. The login advertises the
+algorithms this rig can mine and a hashrate for each; every job the pool sends
+names the algorithm it currently considers most profitable, and bzminer follows.
+That is the same login [MoneroOcean's profit switcher](https://github.com/MoneroOcean/multi-miner)
+and their XMRig build use. It is not a local price calculator, and it is not
+the Pearl+C29 dual route below, which mines two algorithms at the same time.
+
+The default set is kawpow, ergo, etchash, cn/gpu, pearl and c29. randomx is
+left out (its dataset is large, and the pool may then park the GPUs); add it
+with `--mo-algos` if you want it offered. The first run measures each algorithm
+that has no cached rate (`mo-perf.json`, keyed by PCI id) and then logs in.
+Later runs reuse the cache when the requested OC settings still match.
+Changing a selected OC profile remeasures the affected card/algorithm.
+`--mo-benchmark-seconds 0` skips measuring and offers only matching cached rates.
+
+```sh
+./bzminer -a mo -p stratum+tcp://gulf.moneroocean.stream:10128 -w 4YOUR_MONERO_WALLET --pass rig1-gpu --devices1 gpu --mo-algos1 pearl,cn/gpu,c29
+```
+
+This GPU-only example offers Pearl, CryptoNight-GPU and C29. For CPU-only mining
+through the same switching protocol, give the CPU its own list:
+
+```sh
+./bzminer -a mo -p stratum+tcp://gulf.moneroocean.stream:10128 -w 4YOUR_MONERO_WALLET --pass rig1-cpu --devices1 cpu --mo-algos1 randomx
+```
+
+With only `randomx` offered, the CPU stays on RandomX. To mine both at once,
+use separate connections so a GPU algorithm choice cannot park the CPU:
+
+```sh
+./bzminer -a mo,mo --p1 stratum+tcp://gulf.moneroocean.stream:10128 --w1 4YOUR_MONERO_WALLET --pass1 rig1-gpu --devices1 gpu --mo-algos1 pearl,cn/gpu,c29 --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET --pass2 rig1-cpu --devices2 cpu --mo-algos2 randomx
+```
+
+### Different algorithm lists for different GPUs
+
+Use one `mo` connection per GPU or group of GPUs that should switch independently.
+For example, GPU 0 can offer `pearl,cn/gpu,c29`, GPU 1 can offer only
+`pearl,cn/gpu`, and the CPU can offer only `randomx`. The pool chooses separately
+for each connection. Only include algorithms supported by the selected cards,
+their available memory and the installed plugins; the list does not add hardware
+support. In particular, put C29 only on a GPU with enough available VRAM for it.
+Replace the example PCI IDs below with those shown in your miner's device table.
+
+Save this complete example as `config.txt`, then run `bzminer --config config.txt`.
+The OC numbers illustrate per-card profiles for NVIDIA GPUs; replace them with
+settings supported and tested on your cards.
+
+```json
+{
+  "pools": [
+    {"algo":"mo","url":"stratum+tcp://gulf.moneroocean.stream:10128","wallet":"4YOUR_MONERO_WALLET_HERE","worker":"","pass":"rig1-gpu0","devices":"0000:23:00","mo_algos":"pearl,cn/gpu,c29"},
+    {"algo":"mo","url":"stratum+tcp://gulf.moneroocean.stream:10128","wallet":"4YOUR_MONERO_WALLET_HERE","worker":"","pass":"rig1-gpu1","devices":"0000:25:00","mo_algos":"pearl,cn/gpu"},
+    {"algo":"mo","url":"stratum+tcp://gulf.moneroocean.stream:10128","wallet":"4YOUR_MONERO_WALLET_HERE","worker":"","pass":"rig1-cpu","devices":"cpu","mo_algos":"randomx"}
+  ],
+  "oc_profiles": {
+    "gpu0": {
+      "oc": {"power_limit":"150"},
+      "oc_algos": {
+        "pearl":  {"lock_core_clock":"1200","lock_memory_clock":"810"},
+        "cn/gpu": {"lock_core_clock":"1050"},
+        "c29":    {"lock_core_clock":"1200"}
+      }
+    },
+    "gpu1": {
+      "oc": {"power_limit":"140"},
+      "oc_algos": {
+        "pearl":  {"lock_core_clock":"1350","lock_memory_clock":"810"},
+        "cn/gpu": {"lock_core_clock":"1100"}
+      }
+    }
+  },
+  "devices": [
+    {"pci":"0000:23:00","oc_profile":"gpu0"},
+    {"pci":"0000:25:00","oc_profile":"gpu1"}
+  ]
+}
+```
+
+For the equivalent CLI, save just the `oc_profiles` object in a separate file
+named `independent-oc-profiles.txt`, wrapped in an outer JSON object:
+`{"oc_profiles": {"gpu0": {...}, "gpu1": {...}}}`. Copy the complete profile
+definitions above in place of the ellipses, then run:
+
+```sh
+./bzminer --config independent-oc-profiles.txt -a mo,mo,mo --p1 stratum+tcp://gulf.moneroocean.stream:10128 --w1 4YOUR_MONERO_WALLET_HERE --pass1 rig1-gpu0 --devices1 0000:23:00 --mo-algos1 pearl,cn/gpu,c29 --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET_HERE --pass2 rig1-gpu1 --devices2 0000:25:00 --mo-algos2 pearl,cn/gpu --p3 stratum+tcp://gulf.moneroocean.stream:10128 --w3 4YOUR_MONERO_WALLET_HERE --pass3 rig1-cpu --devices3 cpu --mo-algos3 randomx --oc-profile 0000:23:00=gpu0 --oc-profile 0000:25:00=gpu1
+```
+
+Commands are single lines so they can also be pasted into Windows PowerShell
+or Command Prompt: use `bzminer.exe` there, and `./bzminer` on Linux/macOS.
+For one GPU, remove pool 2 and its `devices` entry; for GPU-only
+mining, remove the CPU pool. For CPU-only config, keep just the CPU pool and
+omit `oc_profiles` and `devices`.
+
+### OC profiles and algorithm changes
+
+Clocks follow the algorithm. `oc` is the base, and `oc_algos.<algo>` replaces
+any field you set, applied when that algorithm starts (and during its
+benchmark, so the cached rate matches the clocks the pool will see):
+
+```json
+"oc": { "power_limit": "200" },
+"oc_algos": { "kawpow": { "power_limit": "280" }, "etchash": { "power_limit": "250" } }
+```
+
+`--mo-min-time 120` is sent as `algo-min-time` (seconds the pool should wait
+before switching again). TLS is `stratum+ssl://gulf.moneroocean.stream:20128`.
+A normal algorithm can mine beside `-a mo` on separate devices. For example,
+`-a mo,pearl,randomx --devices1 0000:23:00 --devices2 0000:25:00 --devices3 cpu`
+keeps the second GPU on Pearl and the CPU on RandomX while the first GPU
+switches. Each algorithm needs its own pool and wallet. A second `mo` pool
+is another independent switching connection. Connections must use separate
+devices when either one switches; overlapping assignments are rejected.
+`--benchmark` and `--bench` do not combine with profit switching.
+
+The pool assigns one algorithm per connection. To let the CPU and GPUs switch
+independently, use two `mo` pools: same wallet, different worker passwords, each with
+its own `devices` and `mo_algos`. The release examples `start_moneroocean.bat`
+and `start_moneroocean.sh` are that one command. Cards on a connection are
+summed, and the pool's choice applies to all of them. A card that should
+switch on its own is another `mo` pool limited with `devices`.
+
+Clocks are per algorithm, in `oc_algos`, and a switch applies them only to
+the cards on that connection. The command-line form is `--oc-algo`:
+
+```
+--oc-algo pearl power=600 clock=2400 core=+400 mem=810
+--oc-algo cn/gpu power=600 clock=2400 mem=13801
+--oc-algo c29 power=600 clock=2400 mem=13801
+```
+
+`power`, `clock`, `core` and `mem` are `power_limit`, `lock_core_clock`,
+`core_clock_offset` and `lock_memory_clock`. The long names work too. `cn`
+in an algorithm list is `cn/gpu`, and that is the `oc_algos` key.
+
+Named OC presets work with both fixed mining and profit switching. Define
+them once in `oc_profiles`, then select a default with `--oc-profile eco` or
+choose per card with `--oc-profile 0000:23:00=eco`. The config equivalent is
+top-level `oc_profile` or `devices[].oc_profile`:
+
+```json
+{
+  "oc_profiles": {
+    "eco": {
+      "oc": {"power_limit":"150"},
+      "oc_algos": {
+        "pearl": {"lock_core_clock":"1200", "lock_memory_clock":"810"},
+        "cn/gpu": {"lock_core_clock":"1050"}
+      }
+    },
+    "steady": {"oc":{"power_limit":"140", "lock_core_clock":"1350"}}
+  },
+  "devices": [
+    {"pci":"0000:23:00", "oc_profile":"eco"},
+    {"pci":"0000:25:00", "oc_profile":"steady"}
+  ]
+}
+```
+
+These clock examples target the tested NVIDIA cards; choose settings supported
+by your own hardware. Use letters, digits and underscores in preset names.
+A profile's `oc_algos` overlays its base `oc`. Selected
+profiles overlay global `oc`/`oc_algos`; a card-specific profile overlays the
+default profile, and explicit per-card OC fields have highest priority.
+The algorithm settings also apply without `-a mo`. To define a preset entirely
+on the command line, use `--set oc_profiles.eco.oc.power_limit=150` and
+`--set oc_profiles.eco.oc_algos.pearl.lock_memory_clock=810` before selecting it.
+An unknown selected name is an error. A switch resets only its own cards before
+applying the new settings; CPU connections leave GPU controls alone. Per-card
+fan curves remain independent. Outside switching, each connection honors its
+OC delay after that connection reaches its pool; switches apply OC immediately.
+
+For example, GPU 0 above uses 150 W / 1200 MHz core / 810 MHz memory on Pearl,
+then 150 W / 1050 MHz core on `cn/gpu`. Its Pearl memory lock is cleared on the
+switch; a field absent from the new effective profile is not a request to retain
+the previous algorithm's value. GPU 1 keeps its own profile throughout.
+Power limits are watts and clocks are MHz; support for locks, offsets and fan
+controls depends on the GPU, driver and OS permissions.
+
+To reuse a profile without profit switching, select it on a fixed algorithm:
+
+```sh
+./bzminer --config independent-oc-profiles.txt -a pearl -p stratum+tcp://gulf.moneroocean.stream:10128 -w 4YOUR_MONERO_WALLET_HERE --pass rig1-gpu0~pearl --devices1 0000:23:00 --oc-profile 0000:23:00=gpu0
+```
+
+The config equivalent keeps `oc_profiles` and `devices` unchanged, replaces the
+GPU 0 pool's `algo` with `pearl`, removes its `mo_algos`, and sets its password
+to `rig1-gpu0~pearl`. To change presets later, select another defined name with
+`--oc-profile PCI=NAME` or `devices[].oc_profile`; there is no need to repeat all
+the individual OC options. Likewise, for fixed CPU RandomX use `algo: "randomx"`,
+`devices: "cpu"`, no `mo_algos`, and password `rig1-cpu~rx/0`.
+Use plain worker passwords for `mo` connections: `~algorithm` pins belong to
+fixed-algorithm connections and are stripped in switching mode.
+
 ## Mining several algorithms at once
 
 **One bzminer process mines every algorithm you give it**, each on its own
@@ -1427,17 +1622,18 @@ Addresses rather than numbers, because a card should keep its assignment if
 another is added or pulled. Normally a GPU is assigned to one algorithm; two entries of the
 same algorithm naming *different* devices are two groups.
 
-Compatible NVIDIA GPUs can share Pearl+C29 through a registered native dual
-route. Other pairs and unsupported devices retain ordinary device assignment.
+Compatible NVIDIA or AMD GPUs can share Pearl+C29 through a registered native dual
+route. AMD gfx1100/gfx1201 require at least 15 GiB usable VRAM. Other pairs and
+unsupported devices retain ordinary device assignment.
 
-### Pearl + C29 dual mining on MoneroOcean
+### Pearl + C29 on MoneroOcean
 
 Use `start_pearl_c29.bat` (Windows) or `start_pearl_c29.sh` (Linux). Replace both
 wallet placeholders with your XMR payout address; the same address can receive
 both payouts. Keep it bare, with worker names in the passwords:
 
 ```sh
-./bzminer -a pearl,c29 --nvidia 1 --cpu 0 \
+./bzminer -a pearl,c29 --nvidia 1 --amd 1 --cpu 0 \
   --p1 stratum+tcp://gulf.moneroocean.stream:10128 --w1 4YOUR_MONERO_WALLET_HERE --worker1 "" --pass1 rig1-pearl~pearl \
   --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET_HERE --worker2 "" --pass2 rig1-c29~c29
 ```
@@ -1453,11 +1649,11 @@ XMR wallet, pool `gulf.moneroocean.stream:10128`, password `rig1-pearl~pearl`.
 Add this in **Extra config arguments**, replacing the second wallet too:
 
 ```text
---a2 c29 --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET_HERE --worker2 "" --pass2 rig1-c29~c29 --nvidia 1 --cpu 0
+--a2 c29 --p2 stratum+tcp://gulf.moneroocean.stream:10128 --w2 4YOUR_MONERO_WALLET_HERE --worker2 "" --pass2 rig1-c29~c29 --nvidia 1 --amd 1 --cpu 0
 ```
 
 `--a2` adds C29 without replacing the main algorithm selected in HiveOS.
-`--worker2 ""` keeps the XMR login bare. This example mines on NVIDIA GPUs only.
+`--worker2 ""` keeps the XMR login bare. This example mines on supported NVIDIA and AMD GPUs; CPU mining is disabled.
 
 ## Farm on one pool connection (bzproxy)
 
@@ -1794,8 +1990,8 @@ Run modes:
                           on some boards and fault only under load - stress test before trusting
   --bc250-gpu-clock <mhz> AMD BC-250: pin the shader clock, 500-2000 MHz (stock 1500). Without it
                           the clock is left to the OS: an mmpOS/HiveOS overclock or a governor
-                          applies as set. 1800 measured +6.8 0x0.07e49b2186ef1p-1022nus for +100000003E351FE888ower; 2000 +3.4
-                          more for +34; below 1500 buys heat and power back on a packed chassis
+                          applies as set. 1800 measured +6.8% janus for +10% power; 2000 +3.4%
+                          more for +34%; below 1500 buys heat and power back on a packed chassis
   --bc250-gpu-mv <mv>     AMD BC-250: forced GPU core voltage, 700-1000 mV. Default: derived
                           from the clock (900 mV at 2000 MHz, ~855 at 1800), which measured
                           the same hashrate as 1000 mV for 49 W less; 800 hung the board
@@ -1954,6 +2150,26 @@ Configuration:
   -a, --algo <algo>[,..]  The algorithm(s) to mine. A comma list mines them ALL AT
                           ONCE, each on its own devices: the first is algorithm 1,
                           the second 2, and so on (--a1/--a2 name them singly)
+  -a mo                   MoneroOcean profit switching. Each mo pool is one connection
+                          and the pool picks that connection's algorithm. Two mo pools
+                          mine at once: -a mo,mo --devices1 gpu --mo-algos1 pearl,cn,c29
+                          --devices2 cpu --mo-algos2 randomx. Password worker~algo is a
+                          pin and is not sent.
+  --mo-algos <list>       Algorithms every mo pool offers, unless that pool sets its
+                          own with --mo-algos<N>. Empty: kawpow, ergo, etchash, cn/gpu,
+                          pearl, c29. cn means cn/gpu
+  --oc-profile <name>     Select a named oc_profiles preset; DEVICE=NAME selects
+                          one card (PCI id or ordinal). Works with fixed mining too.
+                          Define with --set oc_profiles.NAME.oc.power_limit=200
+                          and --set oc_profiles.NAME.oc_algos.pearl.lock_memory_clock=810
+  --oc-algo <algo> k=v..  Clocks used while that algorithm mines. Same fields as
+                          oc_algos in config.txt, short or long: power (power_limit),
+                          clock (lock_core_clock), core (core_clock_offset), mem
+                          (lock_memory_clock), mem_offset, voltage, fan.
+                          --oc-algo pearl power=600 clock=2400 core=+400 mem=810
+                          --oc-algo cn/gpu power=600 mem=13801
+                          See also --mo-cache, --mo-min-time, --mo-benchmark-seconds,
+                          --mo-rebenchmark
   -p, --pool, --url <url> Add a pool for algorithm 1. Repeat for backups: the first
                           is the primary, the rest are rotated through on
                           disconnection. --p2 <url> is algorithm 2's pool list
@@ -1970,9 +2186,9 @@ Configuration:
                             --devices2 nvidia   algorithm 2 mines on the NVIDIA cards only
                             --devices2 !1       ...on everything but device 1
                             --devices2 none     ...on nothing here (proxy it, or park it)
-                          Unset, the GPUs are dealt out among the algorithms that can
-                          use them and the CPU is shared by every one that can. A GPU
-                          mines ONE algorithm; the CPU can be named by several
+                          Unset = every device the algorithm can use. A device mines
+                          any number of algorithms side by side; to keep them on
+                          different cards, give each its own --devices<N>
   --cpu<N> / --nvidia<N> / --amd<N> / --intel<N> / --igpu<N> [0]
                           The same, as the Devices flags above with a number: --cpu2 0
                           keeps algorithm 2 off the CPU (= --devices2 !cpu), --nvidia2
@@ -2018,6 +2234,9 @@ Configuration:
                           (source/PTX overrides are not accepted)
 
 Settings (set in config.txt, or with --set <path>=<value>):
+  oc_profile                 Default named OC preset. CLI: --oc-profile NAME; per-card selection: --oc-profile PCI=NAME. Both fixed mining and profit switching use it
+  oc_profiles                Reusable presets: {"eco":{"oc":{"power_limit":"200"},"oc_algos":{"pearl":{"lock_memory_clock":"810"}}}}. Selected preset fields override global oc/oc_algos; explicit devices[] knobs win
+  oc_algos                   Per-algorithm OC defaults, also used outside profit switching. Example: {"pearl":{"power_limit":"200"}}. CLI: --oc-algo pearl power=200
   log.level                  Log verbosity: network, debug, info, warn, or error (network = the exact pool/stratum wire messages). `trace` is developer detail and is reached only with --internal-log; a config that still says trace is read as network
   log.file                   Write the log to this file instead of bzminer.worker.log. There is always a file log; this only changes its name/path
   log.file_level             Verbosity of the LOG FILE, when it should differ from the console. Same names as `level`. Empty = follow `level`, INCLUDING live changes from the [+/-] keys. Set this to pin the file: e.g. file_level debug with level info keeps the screen readable while still capturing a file worth sending to support (CLI: --logfile-level)
@@ -2111,10 +2330,11 @@ Settings (set in config.txt, or with --set <path>=<value>):
   pools[].algo               Algorithm (CLI: -a / --algo). Active pools are grouped by algorithm and every algorithm mines AT ONCE, each on its own devices: entries sharing an algorithm are one group, primary first, the rest its failovers
   pools[].ssl_verify         stratum+ssl: verify the pool's TLS certificate chain + hostname (CLI: --ssl-verify)
   pools[].user               LEGACY combined login, sent verbatim instead of wallet.worker. Only for a pool that wants something other than that shape - set wallet and worker instead (CLI: -u / --user)
-  pools[].devices            WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel, none. Bare entries = only those ("nvidia", "0,2"), '!' entries = everything but those ("!cpu" = this algorithm stays off the CPU and the others keep it; "!1" = all but device 1), "none" = nothing on this rig (an algorithm this rig only PROXIES). This is the per-algorithm form of device_types / device_select, which are rig-wide. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>, or --cpu<N> 0 / --nvidia<N> 0 / --amd<N> 0 / --intel<N> 0 for one type)
+  pools[].devices            WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel, none. Bare entries = only those ("nvidia", "0,2"), '!' entries = everything but those ("!cpu" = this algorithm stays off the CPU and the others keep it; "!1" = all but device 1), "none" = nothing on this rig (an algorithm this rig only PROXIES). This is the per-algorithm form of device_types / device_select, which are rig-wide. Empty = every device this algorithm can use. Any device mines any number of algorithms side by side (one context each, or a plugin's dual-mining route for a pair that has one), and the CPU's threads are split among them; to keep algorithms on different cards, give each its own list. Two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>, or --cpu<N> 0 / --nvidia<N> 0 / --amd<N> 0 / --intel<N> 0 for one type)
   pools[].cpu_threads        How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
   pools[].cpu_affinity       ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
   pools[].proxy_port         Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
+  pools[].mo_algos           Algorithms THIS pool offers when algo is mo. Empty uses mo.algos above. Two mo pools are two connections in the one miner: the pool picks one algorithm per connection, so the GPUs and the CPU each get their own list and their own devices. cn is cn/gpu. Clocks for each algorithm are oc_algos.<algo> (CLI: --mo-algos<N>, --oc-algo)
   devices[].index            WITHOUT pci: the enumeration ordinal this entry configures (counts EVERY device enumerated, so disabling one does not renumber the others). WITH pci: the device NUMBER that card is given - what --devices and pools[].devices select it by, and the order the mining table lists devices in; cards not renumbered keep enumeration order and fill the numbers left over. Omitted (-1) = this entry addresses whatever pci says and nothing else, so an entry that only names a card cannot also configure device 0
   devices[].intensity        Mining intensity: how much work one GPU launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which is 64. Higher keeps the card busy longer per launch; lower picks up a new job sooner. Shown as i<n> in the mining table's cfg column
   devices[].duplicates       Additional copies of this physical device (0..63); -1 inherits duplicate_devices. Copies have separate selection IDs and mining state, sharing physical sensors and clocks
@@ -2130,6 +2350,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   devices[].lock_memory_clock Pin THIS card's memory clock in MHz (0 = unlock). Empty = use the global oc.lock_memory_clock. Only accepted at one of the board's own supported clocks; bzminer says which one you will get if you ask for another
   devices[].lock_core_voltage Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
   devices[].fan_speed        This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
+  devices[].oc_profile       Named oc_profiles entry for this card. Includes its base oc and oc_algos settings, in both switching and fixed mining. Explicit card knobs win. CLI: --oc-profile <device>=<name>
   device_types.nvidia        Mine on NVIDIA devices. RIG-WIDE: false keeps them out of EVERY algorithm the rig mines; to keep them out of one algorithm of several, put "!nvidia" in that algorithm's pools[].devices (CLI: --nvidia, or --nvidia2 0 for algorithm 2 alone)
   device_types.amd           Mine on AMD devices. Rig-wide, as above: "!amd" in pools[].devices is the per-algorithm form (CLI: --amd, or --amd2 0)
   device_types.intel         Mine on Intel devices. Rig-wide, as above: "!intel" in pools[].devices is the per-algorithm form (CLI: --intel, or --intel2 0)
@@ -2146,6 +2367,11 @@ Settings (set in config.txt, or with --set <path>=<value>):
   oc.delay_ms                Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
   oc.reset                   Put every card back to driver defaults before applying anything above (CLI: --oc-reset)
   oc.accept_intel_waiver     Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
+  mo.algos                   Algorithms a MoneroOcean connection offers when that pool leaves mo_algos empty. Comma-separated registry names. Empty offers kawpow, ergo, etchash, cn/gpu, pearl and c29. randomx is not in that list; a pool that should mine it names randomx in its own mo_algos. A password of worker~algo is a pin and is removed, because a pin disables switching (CLI: --mo-algos)
+  mo.cache                   Where measured hashrates are kept, per PCI id per algorithm, so the next start can log in without measuring again (CLI: --mo-cache)
+  mo.benchmark_seconds       How long to hash each uncached algorithm before the login. The wait for the first hash is extra, up to three minutes. 0 uses the cache only and skips anything it does not cover (CLI: --mo-benchmark-seconds)
+  mo.min_time_seconds        algo-min-time sent to the pool: how long it should stay on an algorithm before picking another. The miner switches when the job's algorithm changes (CLI: --mo-min-time)
+  mo.rebenchmark             Ignore the cache and measure every offered algorithm this start (CLI: --mo-rebenchmark)
 
 Examples:
   bzminer -p stratum+tcp://pool:3333 -w <wallet> --worker rig --pass x -a sha256d
@@ -2178,6 +2404,12 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
 // values below are the defaults. Override any of them on the command line
 // with:  --set <path>=<value>
 {
+  // Default named OC preset. CLI: --oc-profile NAME; per-card selection: --oc-profile PCI=NAME. Both fixed mining and profit switching use it
+  "oc_profile": "",
+  // Reusable presets: {"eco":{"oc":{"power_limit":"200"},"oc_algos":{"pearl":{"lock_memory_clock":"810"}}}}. Selected preset fields override global oc/oc_algos; explicit devices[] knobs win
+  "oc_profiles": {},
+  // Per-algorithm OC defaults, also used outside profit switching. Example: {"pearl":{"power_limit":"200"}}. CLI: --oc-algo pearl power=200
+  "oc_algos": {},
   "log": {
     // Log verbosity: network, debug, info, warn, or error (network = the exact pool/stratum wire messages). `trace` is developer detail and is reached only with --internal-log; a config that still says trace is read as network
     "level": "info",
@@ -2380,14 +2612,16 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "ssl_verify": false,
       // LEGACY combined login, sent verbatim instead of wallet.worker. Only for a pool that wants something other than that shape - set wallet and worker instead (CLI: -u / --user)
       "user": "",
-      // WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel, none. Bare entries = only those ("nvidia", "0,2"), '!' entries = everything but those ("!cpu" = this algorithm stays off the CPU and the others keep it; "!1" = all but device 1), "none" = nothing on this rig (an algorithm this rig only PROXIES). This is the per-algorithm form of device_types / device_select, which are rig-wide. Empty = this algorithm's default share - the GPUs are dealt out among the algorithms that can use them, and the CPU is shared by every algorithm that can. A GPU belongs to one algorithm; two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>, or --cpu<N> 0 / --nvidia<N> 0 / --amd<N> 0 / --intel<N> 0 for one type)
+      // WHICH devices mine this pool's algorithm when the rig runs more than one: device numbers, pci ids, '!' exclusions, and the types cpu, gpu, nvidia, amd, intel, none. Bare entries = only those ("nvidia", "0,2"), '!' entries = everything but those ("!cpu" = this algorithm stays off the CPU and the others keep it; "!1" = all but device 1), "none" = nothing on this rig (an algorithm this rig only PROXIES). This is the per-algorithm form of device_types / device_select, which are rig-wide. Empty = every device this algorithm can use. Any device mines any number of algorithms side by side (one context each, or a plugin's dual-mining route for a pair that has one), and the CPU's threads are split among them; to keep algorithms on different cards, give each its own list. Two entries of the same algorithm naming DIFFERENT devices are two groups (CLI: --devices<N>, or --cpu<N> 0 / --nvidia<N> 0 / --amd<N> 0 / --intel<N> 0 for one type)
       "devices": "",
       // How many of the rig's CPU threads this algorithm gets when it shares the CPU with another. 0 = an even share of the rig-wide cpu_threads budget. Placed on unused processors first; counts that add up to more than there are overlap and share (CLI: --cpu_threads<N>)
       "cpu_threads": 0,
       // ...or the processors this algorithm mines on, named outright ("0-7,16"). Wins over cpu_threads and is honoured exactly, overlaps included (CLI: --cpu_affinity<N>)
       "cpu_affinity": "",
       // Serve this algorithm's work to OTHER bzminer instances on this TCP port: this instance keeps the one pool connection, and every bzminer started with -p bzproxy://<this host>:<port> mines the same jobs through it. Their shares go upstream from here, and each instance is shown here as one light-blue row with its hashrate, power and devices. The port is TLS. Each rig keeps its own dev fee and pays it through a tunnel this proxy opens to the algorithm's fee pools, so the rigs need no internet of their own; this proxy signals its own slice so the farm pays in one window. A proxy may mine on its own devices as well, or on none (--devices none). 0 = off. Per algorithm, like devices (CLI: --proxy_port<N>)
-      "proxy_port": 0
+      "proxy_port": 0,
+      // Algorithms THIS pool offers when algo is mo. Empty uses mo.algos above. Two mo pools are two connections in the one miner: the pool picks one algorithm per connection, so the GPUs and the CPU each get their own list and their own devices. cn is cn/gpu. Clocks for each algorithm are oc_algos.<algo> (CLI: --mo-algos<N>, --oc-algo)
+      "mo_algos": ""
     }
   ],
   "devices": [
@@ -2421,7 +2655,9 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       // Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
       "lock_core_voltage": "",
       // This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
-      "fan_speed": ""
+      "fan_speed": "",
+      // Named oc_profiles entry for this card. Includes its base oc and oc_algos settings, in both switching and fixed mining. Explicit card knobs win. CLI: --oc-profile <device>=<name>
+      "oc_profile": ""
     }
   ],
   "device_types": {
@@ -2459,6 +2695,18 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "reset": false,
     // Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
     "accept_intel_waiver": false
+  },
+  "mo": {
+    // Algorithms a MoneroOcean connection offers when that pool leaves mo_algos empty. Comma-separated registry names. Empty offers kawpow, ergo, etchash, cn/gpu, pearl and c29. randomx is not in that list; a pool that should mine it names randomx in its own mo_algos. A password of worker~algo is a pin and is removed, because a pin disables switching (CLI: --mo-algos)
+    "algos": "",
+    // Where measured hashrates are kept, per PCI id per algorithm, so the next start can log in without measuring again (CLI: --mo-cache)
+    "cache": "mo-perf.json",
+    // How long to hash each uncached algorithm before the login. The wait for the first hash is extra, up to three minutes. 0 uses the cache only and skips anything it does not cover (CLI: --mo-benchmark-seconds)
+    "benchmark_seconds": 30,
+    // algo-min-time sent to the pool: how long it should stay on an algorithm before picking another. The miner switches when the job's algorithm changes (CLI: --mo-min-time)
+    "min_time_seconds": 120,
+    // Ignore the cache and measure every offered algorithm this start (CLI: --mo-rebenchmark)
+    "rebenchmark": false
   }
 }
 ```
