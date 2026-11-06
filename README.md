@@ -3,6 +3,8 @@
 A high performance NVIDIA, AMD, Intel, Apple Silicon and CPU cryptocurrency miner
 and hardware monitor. Runs on Windows, Linux and macOS.
 
+discord link: https://discord.gg/NRty3PCVdB
+
 ## Algorithms and coins
 
 | `-a` name | coin | dev fee | devices | what it is |
