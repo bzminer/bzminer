@@ -3,7 +3,7 @@
 A high performance NVIDIA, AMD, Intel, Apple Silicon and CPU cryptocurrency miner
 and hardware monitor. Runs on Windows, Linux and macOS.
 
-discord link: https://discord.gg/NRty3PCVdB
+Join us on Discord: https://discord.gg/NRty3PCVdB
 
 ## Algorithms and coins
 
@@ -127,17 +127,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.70_docker.tar.gz` below.
+`bzminer_v100.80_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.70_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.80_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.70_docker.tar.gz && cd bzminer_v100.70_docker
-curl -LO .../bzminer_v100.70_linux.tar.gz
+tar xzf bzminer_v100.80_docker.tar.gz && cd bzminer_v100.80_docker
+curl -LO .../bzminer_v100.80_linux.tar.gz
 ./build.sh
 ```
 
@@ -147,7 +147,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.70 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.80 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -444,7 +444,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.70**, the version on this page, so they can be
+Both scripts fetch **v100.80**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -453,7 +453,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.70"
+export version="v100.80"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -468,7 +468,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.70
+version=v100.80
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1957,6 +1957,9 @@ Run modes:
                           mining_columns), incl. this rig's vendor keys, then exit
   --list-algos            Print this build's algorithms + dev fees as JSON, then exit
   --list-plugins          Print this build's plugins (static + dynamic) as JSON, then exit
+  --list-utilities        List hardware utilities and availability on this host
+  --utility <id>          Run one named utility and exit (Linux/root where required)
+  --startup-utility <id>  Run a utility before mining; repeat for several actions
   --build-info            Print version + whether release secrets were set; exit 3 if not
   --pawnio-dump           Dump the RyzenSMU PM-table (Zen4 per-CCD offset capture), then exit
   --print-config          Print the resolved settings as JSON, then exit
@@ -2107,9 +2110,14 @@ Overclocking (NVIDIA; every knob needs administrator on Windows, root on Linux):
                                     --oc-fan-speed "t:60[25-75] tm:80[50-100]"
   --oc-accept-intel-waiver        Intel Arc: you accept Intel's overclock waiver (a shorter life for
                                   the card), which Intel requires before any voltage change
+  --oc-power-tuner                NVIDIA: undervolt at the locked core clock for TH/W, giving up at
+                                  most --oc-power-tuner-loss % of the rate (default 4.5); needs
+                                  --oc-lock-core-clock. Saved in power-tuner.json; restarts while
+                                  tuning are normal. --oc-power-tuner-reset tunes again
   --oc-delay-ms <ms>              Apply the overclock <ms> after the pool connects, not at
                                   startup (0 = at startup)
-  --oc-reset                      Put every card back to driver defaults FIRST (offsets
+  --oc-reset [true|false]          Reset before OC; false also disables automatic switch resets
+                                  Put every card back to driver defaults FIRST (offsets
                                   cleared, clocks unlocked, power default, fan automatic).
                                   Use alone to undo settings a killed run left behind
   Every value may be one number for all cards, or a per-device list ('160,180').
@@ -2160,6 +2168,12 @@ Configuration:
   --mo-algos <list>       Algorithms every mo pool offers, unless that pool sets its
                           own with --mo-algos<N>. Empty: kawpow, ergo, etchash, cn/gpu,
                           pearl, c29. cn means cn/gpu
+  --mo-dual [2..6]        Opt in to solo/dual profit switching on GPU connections.
+                          Freshly measure solos, then pairs of the top 2 (default)
+                          profitable algorithms with interleaved solo controls.
+                          Requires current pool pricing and matching device rosters.
+                          --set mo.dual_seconds=30 sets each measured window;
+                          mo.dual_gain_percent=3 sets the required payout gain.
   --oc-profile <name>     Select a named oc_profiles preset; DEVICE=NAME selects
                           one card (PCI id or ordinal). Works with fixed mining too.
                           Define with --set oc_profiles.NAME.oc.power_limit=200
@@ -2367,13 +2381,24 @@ Settings (set in config.txt, or with --set <path>=<value>):
   oc.lock_core_voltage       Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
   oc.fan_speed               Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
   oc.delay_ms                Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
-  oc.reset                   Put every card back to driver defaults before applying anything above (CLI: --oc-reset)
+  oc.reset                   null = reset on algorithm switches; false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
   oc.accept_intel_waiver     Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
+  oc.power_tuner             NVIDIA: undervolt each mining card at its locked core clock (lock_core_clock is required), giving up at most power_tuner_loss percent of its rate for power. bzminer measures the starting point, raises the core offset a VF step at a time until the card faults or slows, then lowers the lock while the rate stays within the budget, and keeps the best TH/W point one step clear of any fault. Faults restart the worker and tuning resumes; expect 15-30 minutes per card, best done one card at a time. The result is saved per card, algorithm and starting overclock in power-tuner.json and reused on later starts; a fault in service moves it down a step (CLI: --oc-power-tuner)
+  oc.power_tuner_loss        Most rate the power tuner may give up, in percent of the starting point, 0.1-25 (CLI: --oc-power-tuner-loss)
+  oc.power_tuner_reset       Forget the saved power tuner result for the current setup and tune again (CLI: --oc-power-tuner-reset)
+  utilities.startup          Allowlisted utility IDs to complete before mining starts; any failure stops startup. CLI: --startup-utility ID (repeatable). List IDs with --list-utilities; run once with --utility ID. Empty by default.
   mo.algos                   Algorithms a MoneroOcean connection offers when that pool leaves mo_algos empty. Comma-separated registry names. Empty offers kawpow, ergo, etchash, cn/gpu, pearl and c29. randomx is not in that list; a pool that should mine it names randomx in its own mo_algos. A password of worker~algo is a pin and is removed, because a pin disables switching (CLI: --mo-algos)
   mo.cache                   Where measured hashrates are kept, per PCI id per algorithm, so the next start can log in without measuring again (CLI: --mo-cache)
   mo.benchmark_seconds       How long to hash each uncached algorithm before the login. The wait for the first hash is extra, up to three minutes. 0 uses the cache only and skips anything it does not cover (CLI: --mo-benchmark-seconds)
   mo.min_time_seconds        algo-min-time sent to the pool: how long it should stay on an algorithm before picking another. The miner switches when the job's algorithm changes (CLI: --mo-min-time)
   mo.rebenchmark             Ignore the cache and measure every offered algorithm this start (CLI: --mo-rebenchmark)
+  mo.dual_top                Opt-in measured dual switching: 0 disables; 2..6 shortlists the most profitable solo algorithms and tests each unordered pair. Fresh solo/pair calibration is required every start. GPU-only connections with matching device rosters. CLI: --mo-dual [2..6] (bare means 2)
+  mo.dual_seconds            Measured seconds per solo or pair after algorithm-specific warmup (30..3600). Each pair also runs solo controls before and after. CLI: --set mo.dual_seconds=30
+  mo.profit_url              MoneroOcean public pool_statistics profitability endpoint; quotes rank expected payout after existing fees, before electricity costs
+  mo.profit_refresh_seconds  Profitability refresh interval (10..3600 seconds)
+  mo.profit_max_age_seconds  Maximum quote age, from refresh interval through 86400 seconds. Stale quotes disable pairs and select measured solo operation
+  mo.dual_gain_percent       Minimum expected payout improvement (0..100 percent) before entering a pair or switching modes. min_time_seconds also controls local residence time
+  mo.dual_report             JSON benchmark report with concurrent rates, solo controls, clock owner and OC signature. Report is never reused as fresh calibration. Empty disables writing
 
 Examples:
   bzminer -p stratum+tcp://pool:3333 -w <wallet> --worker rig --pass x -a sha256d
@@ -2693,10 +2718,20 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "fan_speed": "",
     // Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
     "delay_ms": 0,
-    // Put every card back to driver defaults before applying anything above (CLI: --oc-reset)
-    "reset": false,
+    // null = reset on algorithm switches; false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
+    "reset": null,
     // Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
-    "accept_intel_waiver": false
+    "accept_intel_waiver": false,
+    // NVIDIA: undervolt each mining card at its locked core clock (lock_core_clock is required), giving up at most power_tuner_loss percent of its rate for power. bzminer measures the starting point, raises the core offset a VF step at a time until the card faults or slows, then lowers the lock while the rate stays within the budget, and keeps the best TH/W point one step clear of any fault. Faults restart the worker and tuning resumes; expect 15-30 minutes per card, best done one card at a time. The result is saved per card, algorithm and starting overclock in power-tuner.json and reused on later starts; a fault in service moves it down a step (CLI: --oc-power-tuner)
+    "power_tuner": false,
+    // Most rate the power tuner may give up, in percent of the starting point, 0.1-25 (CLI: --oc-power-tuner-loss)
+    "power_tuner_loss": 4.5,
+    // Forget the saved power tuner result for the current setup and tune again (CLI: --oc-power-tuner-reset)
+    "power_tuner_reset": false
+  },
+  "utilities": {
+    // Allowlisted utility IDs to complete before mining starts; any failure stops startup. CLI: --startup-utility ID (repeatable). List IDs with --list-utilities; run once with --utility ID. Empty by default.
+    "startup": []
   },
   "mo": {
     // Algorithms a MoneroOcean connection offers when that pool leaves mo_algos empty. Comma-separated registry names. Empty offers kawpow, ergo, etchash, cn/gpu, pearl and c29. randomx is not in that list; a pool that should mine it names randomx in its own mo_algos. A password of worker~algo is a pin and is removed, because a pin disables switching (CLI: --mo-algos)
@@ -2708,7 +2743,21 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     // algo-min-time sent to the pool: how long it should stay on an algorithm before picking another. The miner switches when the job's algorithm changes (CLI: --mo-min-time)
     "min_time_seconds": 120,
     // Ignore the cache and measure every offered algorithm this start (CLI: --mo-rebenchmark)
-    "rebenchmark": false
+    "rebenchmark": false,
+    // Opt-in measured dual switching: 0 disables; 2..6 shortlists the most profitable solo algorithms and tests each unordered pair. Fresh solo/pair calibration is required every start. GPU-only connections with matching device rosters. CLI: --mo-dual [2..6] (bare means 2)
+    "dual_top": 0,
+    // Measured seconds per solo or pair after algorithm-specific warmup (30..3600). Each pair also runs solo controls before and after. CLI: --set mo.dual_seconds=30
+    "dual_seconds": 30,
+    // MoneroOcean public pool_statistics profitability endpoint; quotes rank expected payout after existing fees, before electricity costs
+    "profit_url": "https://api.moneroocean.stream/pool/stats",
+    // Profitability refresh interval (10..3600 seconds)
+    "profit_refresh_seconds": 60,
+    // Maximum quote age, from refresh interval through 86400 seconds. Stale quotes disable pairs and select measured solo operation
+    "profit_max_age_seconds": 300,
+    // Minimum expected payout improvement (0..100 percent) before entering a pair or switching modes. min_time_seconds also controls local residence time
+    "dual_gain_percent": 3,
+    // JSON benchmark report with concurrent rates, solo controls, clock owner and OC signature. Report is never reused as fresh calibration. Empty disables writing
+    "dual_report": "mo-dual-perf.json"
   }
 }
 ```
