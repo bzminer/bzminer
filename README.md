@@ -9,6 +9,7 @@ Join us on Discord: https://discord.gg/NRty3PCVdB
 
 | `-a` name | coin | dev fee | devices | what it is |
 |---|---|---|---|---|
+| `bramring` | — | none | — | — |
 | `c29` | Tari | 1% | NVIDIA, Intel Arc Battlemage, AMD | Tari Cuckaroo29: 29-bit graph, chained SipHash block64, 42-edge cycles. Requires approximately 10 GiB free VRAM. Automatic optimization and measured performance qualification are RTX 3090-specific; other supported NVIDIA devices retain reference settings. CPU mining is not implemented. Not interchangeable with C29AE, C29D, C29Z or C29S. |
 | `cn/gpu` (or `cn`) | Conceal | 1% | NVIDIA · AMD · Intel · Apple · CPU | A privacy chain with on-chain deposits and interest, on CryptoNight-GPU since its 2021 fork. |
 | `cn/gpu` (or `cn`) | Ryo | 1% | NVIDIA · AMD · Intel · Apple · CPU | The chain CryptoNight-GPU was written for; mined here through MoneroOcean. |
@@ -127,17 +128,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.80_docker.tar.gz` below.
+`bzminer_v100.81_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.80_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.81_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.80_docker.tar.gz && cd bzminer_v100.80_docker
-curl -LO .../bzminer_v100.80_linux.tar.gz
+tar xzf bzminer_v100.81_docker.tar.gz && cd bzminer_v100.81_docker
+curl -LO .../bzminer_v100.81_linux.tar.gz
 ./build.sh
 ```
 
@@ -147,7 +148,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.80 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.81 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -444,7 +445,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.80**, the version on this page, so they can be
+Both scripts fetch **v100.81**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -453,7 +454,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.80"
+export version="v100.81"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -468,7 +469,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.80
+version=v100.81
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -2002,6 +2003,13 @@ Run modes:
                           the same hashrate as 1000 mV for 49 W less; 800 hung the board
   --disable_huge_pages    Allocate with ordinary pages, to measure what huge pages
                           are actually worth on this rig
+  --stall-guard <on|off>  Restart mining when the pool credits nothing for a long time
+                          (the longer of --stall-min-idle-s, default 900, and
+                          --stall-gap-multiple, default 20, x the expected share time =
+                          difficulty / hashrate) or a card adds no hashes for
+                          --worker-hang-s (default 300, 0 = off). off disables both
+  --worker-kill-s <s>     Then restart the miner process if that restart did not clear
+                          it (default 900, 0 = off). See stall_guard.* in --config-doc
   --watchdog-restarts <n> Restarts of a crashing worker before the watchdog gives up
                           (default 5; 0 = never). A worker that ran 10 minutes or
                           more resets the count.
@@ -2101,6 +2109,9 @@ Overclocking (NVIDIA; every knob needs administrator on Windows, root on Linux):
                                   --oc-lock-core-clock; Windows. NVIDIA: sets the core offset. Intel
                                   Arc: rewrites the card's voltage curve, and needs
                                   --oc-accept-intel-waiver; console: oc clock=2400 voltage=800)
+  --oc-core-voltage-offset <mV>   AMD: offset the whole core voltage curve, negative =
+                                  undervolt (-50); no clock lock needed. RDNA2 and newer,
+                                  range is the card's own (console: oc vo=-50)
   --oc-fan-speed <spec>           Either a fixed duty ('60') or a temperature curve:
                                     t:<target>[<min>-<max>]   keep the CORE at <target> C,
                                                               fan within <min>..<max> %
@@ -2290,13 +2301,13 @@ Settings (set in config.txt, or with --set <path>=<value>):
   safety.sustain_s           How long a card must stay over a limit before it is paused, in seconds (rejects transient spikes)
   safety.resume_margin       Resume only once the value drops to (limit - this), in the tripped limit's unit (C/W/A) - hysteresis so it does not flap
   safety.resume_s            And stayed under the resume point this long, in seconds
-  stall_guard.enabled        Restart mining (device implementations rebuilt, pools reconnected) when the rig is connected and reporting a hashrate but the pool credits no shares. false = off
-  stall_guard.min_idle_s     Never act before this long without an accepted share, in seconds
-  stall_guard.gap_multiple   Nor before this many times how long a share SHOULD take here - the measured mean interval between this algorithm's shares, or what the difficulty predicts (the est. tbs under the table) until two shares exist to measure one - whichever wait is longer. Shares are Poisson-distributed, so a genuine gap this long has probability e^-20. Lower it to detect a stall sooner on a rig whose shares are hours apart, at the cost of restarting a merely unlucky one
+  stall_guard.enabled        Restart mining (device implementations rebuilt, pools reconnected) when the rig is connected and reporting a hashrate but the pool credits no shares, or a card stops adding hashes (worker_hang_s). false = off: mining is never restarted for a stall. Every restart line names the setting that caused it. CLI: --stall-guard on|off
+  stall_guard.min_idle_s     Never act before this long without an accepted share, in seconds - the floor under gap_multiple. CLI: --stall-min-idle-s
+  stall_guard.gap_multiple   Nor before this many times how long a share SHOULD take here - the measured mean interval between this algorithm's shares, or what the difficulty predicts (the est. tbs under the table) until two shares exist to measure one - whichever wait is longer. Shares are Poisson-distributed, so a genuine gap this long has probability e^-20. Lower it to detect a stall sooner on a rig whose shares are hours apart, at the cost of restarting a merely unlucky one. CLI: --stall-gap-multiple
   stall_guard.cooldown_s     Minimum seconds between two recoveries
   stall_guard.max_ineffective Give up after this many recoveries in a row that produced no accepted share - a restart loop mines less than a stall. 0 = never give up
-  stall_guard.worker_hang_s  The OTHER signal: a device thread that has stopped hashing at all (no completed batch, so not one hash added) while the rig is mining and that card is not parked. Try a restart after this many seconds. Must clear the longest legitimate silence a device can have, which is a BUILD - a DAG, a kernel load, a PCIe probe - not a search. 0 = off
-  stall_guard.worker_kill_s  And if that did not help, or did not finish - a thread wedged inside a driver call cannot be joined, so the restart itself blocks on it - stop answering the process watchdog after this many seconds so it kills and restarts the miner. That is the only thing that clears such a thread. 0 = off
+  stall_guard.worker_hang_s  The OTHER signal: a device thread that has stopped hashing at all (no completed batch, so not one hash added) while the rig is mining and that card is not parked. Try a restart after this many seconds. Must clear the longest legitimate silence a device can have, which is a BUILD - a DAG, a kernel load, a PCIe probe - not a search. Counts HASHES, not shares: a healthy card adds some every batch at any pool difficulty, so unlike the share rule this window does not grow with the expected share time. When the power tuner is running, the point in force when the card stopped is counted as a fault. 0 = off. CLI: --worker-hang-s
+  stall_guard.worker_kill_s  And if that did not help, or did not finish - a thread wedged inside a driver call cannot be joined, so the restart itself blocks on it - stop answering the process watchdog after this many seconds so it kills and restarts the miner. That is the only thing that clears such a thread. 0 = off. CLI: --worker-kill-s
   auto-update                Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
   dmon                       Device-monitor mode: telemetry + web UI only, no mining (CLI: --dmon)
   http_enabled               Serve the monitoring web UI + JSON API (needs the webui plugin; no plugin = no HTTP server)
@@ -2365,6 +2376,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   devices[].lock_core_clock  Pin THIS card's core clock in MHz (0 = unlock). Empty = use the global oc.lock_core_clock. A lock pins the clock where an offset shifts the curve and still lets it boost - a card can carry both
   devices[].lock_memory_clock Pin THIS card's memory clock in MHz (0 = unlock). Empty = use the global oc.lock_memory_clock. Only accepted at one of the board's own supported clocks; bzminer says which one you will get if you ask for another
   devices[].lock_core_voltage Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
+  devices[].core_voltage_offset AMD: THIS card's core voltage offset in mV, negative = undervolt (0 = stock). Empty = use the global oc.core_voltage_offset
   devices[].fan_speed        This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
   devices[].oc_profile       Named oc_profiles entry for this card. Includes its base oc and oc_algos settings, in both switching and fixed mining. Explicit card knobs win. CLI: --oc-profile <device>=<name>
   device_types.nvidia        Mine on NVIDIA devices. RIG-WIDE: false keeps them out of EVERY algorithm the rig mines; to keep them out of one algorithm of several, put "!nvidia" in that algorithm's pools[].devices (CLI: --nvidia, or --nvidia2 0 for algorithm 2 alone)
@@ -2379,9 +2391,10 @@ Settings (set in config.txt, or with --set <path>=<value>):
   oc.lock_core_clock         Pin the core clock in MHz instead of letting boost wander; 0 = unlock (CLI: --oc-lock-core-clock)
   oc.lock_memory_clock       Pin the memory clock in MHz; 0 = unlock (CLI: --oc-lock-memory-clock)
   oc.lock_core_voltage       Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
+  oc.core_voltage_offset     AMD (RDNA2 and newer): offset the WHOLE core voltage/frequency curve by this many mV, negative = undervolt - AMD's voltage offset, the one LACT and Adrenalin set. Needs no clock lock: the card keeps boosting, at less voltage for every clock. Clamped to the card's own range (RDNA3 -450..0, RDNA4 -200..0) and never above 0. One value or a per-device list (CLI: --oc-core-voltage-offset)
   oc.fan_speed               Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
   oc.delay_ms                Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
-  oc.reset                   null = reset on algorithm switches; false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
+  oc.reset                   null = on an algorithm switch, reset a card this run overclocked (a card with no OC asked of it is never touched); false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
   oc.accept_intel_waiver     Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
   oc.power_tuner             NVIDIA: undervolt each mining card at its locked core clock (lock_core_clock is required), giving up at most power_tuner_loss percent of its rate for power. bzminer measures the starting point, raises the core offset a VF step at a time until the card faults or slows, then lowers the lock while the rate stays within the budget, and keeps the best TH/W point one step clear of any fault. Faults restart the worker and tuning resumes; expect 15-30 minutes per card, best done one card at a time. The result is saved per card, algorithm and starting overclock in power-tuner.json and reused on later starts; a fault in service moves it down a step (CLI: --oc-power-tuner)
   oc.power_tuner_loss        Most rate the power tuner may give up, in percent of the starting point, 0.1-25 (CLI: --oc-power-tuner-loss)
@@ -2524,19 +2537,19 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "resume_s": 5
   },
   "stall_guard": {
-    // Restart mining (device implementations rebuilt, pools reconnected) when the rig is connected and reporting a hashrate but the pool credits no shares. false = off
+    // Restart mining (device implementations rebuilt, pools reconnected) when the rig is connected and reporting a hashrate but the pool credits no shares, or a card stops adding hashes (worker_hang_s). false = off: mining is never restarted for a stall. Every restart line names the setting that caused it. CLI: --stall-guard on|off
     "enabled": true,
-    // Never act before this long without an accepted share, in seconds
+    // Never act before this long without an accepted share, in seconds - the floor under gap_multiple. CLI: --stall-min-idle-s
     "min_idle_s": 900,
-    // Nor before this many times how long a share SHOULD take here - the measured mean interval between this algorithm's shares, or what the difficulty predicts (the est. tbs under the table) until two shares exist to measure one - whichever wait is longer. Shares are Poisson-distributed, so a genuine gap this long has probability e^-20. Lower it to detect a stall sooner on a rig whose shares are hours apart, at the cost of restarting a merely unlucky one
+    // Nor before this many times how long a share SHOULD take here - the measured mean interval between this algorithm's shares, or what the difficulty predicts (the est. tbs under the table) until two shares exist to measure one - whichever wait is longer. Shares are Poisson-distributed, so a genuine gap this long has probability e^-20. Lower it to detect a stall sooner on a rig whose shares are hours apart, at the cost of restarting a merely unlucky one. CLI: --stall-gap-multiple
     "gap_multiple": 20,
     // Minimum seconds between two recoveries
     "cooldown_s": 1800,
     // Give up after this many recoveries in a row that produced no accepted share - a restart loop mines less than a stall. 0 = never give up
     "max_ineffective": 3,
-    // The OTHER signal: a device thread that has stopped hashing at all (no completed batch, so not one hash added) while the rig is mining and that card is not parked. Try a restart after this many seconds. Must clear the longest legitimate silence a device can have, which is a BUILD - a DAG, a kernel load, a PCIe probe - not a search. 0 = off
+    // The OTHER signal: a device thread that has stopped hashing at all (no completed batch, so not one hash added) while the rig is mining and that card is not parked. Try a restart after this many seconds. Must clear the longest legitimate silence a device can have, which is a BUILD - a DAG, a kernel load, a PCIe probe - not a search. Counts HASHES, not shares: a healthy card adds some every batch at any pool difficulty, so unlike the share rule this window does not grow with the expected share time. When the power tuner is running, the point in force when the card stopped is counted as a fault. 0 = off. CLI: --worker-hang-s
     "worker_hang_s": 300,
-    // And if that did not help, or did not finish - a thread wedged inside a driver call cannot be joined, so the restart itself blocks on it - stop answering the process watchdog after this many seconds so it kills and restarts the miner. That is the only thing that clears such a thread. 0 = off
+    // And if that did not help, or did not finish - a thread wedged inside a driver call cannot be joined, so the restart itself blocks on it - stop answering the process watchdog after this many seconds so it kills and restarts the miner. That is the only thing that clears such a thread. 0 = off. CLI: --worker-kill-s
     "worker_kill_s": 900
   },
   // Signed executable update on launch: off, latest, or a GitHub version tag (e.g. v100.21). CLI: --auto-update
@@ -2681,6 +2694,8 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "lock_memory_clock": "",
       // Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
       "lock_core_voltage": "",
+      // AMD: THIS card's core voltage offset in mV, negative = undervolt (0 = stock). Empty = use the global oc.core_voltage_offset
+      "core_voltage_offset": "",
       // This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
       "fan_speed": "",
       // Named oc_profiles entry for this card. Includes its base oc and oc_algos settings, in both switching and fixed mining. Explicit card knobs win. CLI: --oc-profile <device>=<name>
@@ -2714,11 +2729,13 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "lock_memory_clock": "",
     // Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
     "lock_core_voltage": "",
+    // AMD (RDNA2 and newer): offset the WHOLE core voltage/frequency curve by this many mV, negative = undervolt - AMD's voltage offset, the one LACT and Adrenalin set. Needs no clock lock: the card keeps boosting, at less voltage for every clock. Clamped to the card's own range (RDNA3 -450..0, RDNA4 -200..0) and never above 0. One value or a per-device list (CLI: --oc-core-voltage-offset)
+    "core_voltage_offset": "",
     // Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
     "fan_speed": "",
     // Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
     "delay_ms": 0,
-    // null = reset on algorithm switches; false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
+    // null = on an algorithm switch, reset a card this run overclocked (a card with no OC asked of it is never touched); false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
     "reset": null,
     // Intel Arc: accept Intel's overclock waiver, which Intel requires before any VOLTAGE change (lock_core_voltage). Intel records that YOU accept a shorter life for the card; bzminer never accepts it for you, and without this the voltage knob stays refused (CLI: --oc-accept-intel-waiver)
     "accept_intel_waiver": false,
