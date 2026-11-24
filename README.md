@@ -25,7 +25,7 @@ Join us on Discord: https://discord.gg/NRty3PCVdB
 | `pearl`, `pearlhash` | Pearl | 2% | NVIDIA · AMD · Intel · Apple · CPU | A zk proof-of-work chain: every share is a STARK proof, so it is far heavier per hash than an ordinary algorithm and the hashrate numbers look small. Also mines solo against your own node. Wallet addresses start with 'prl1'. |
 | `quantus` | Quantus | 2% | NVIDIA · AMD · Intel Battlemage · CPU | A post-quantum proof-of-work chain. Its hash is Poseidon2 over the 64-bit Goldilocks field, which is arithmetic rather than memory work, so it runs on the GPU and the CPU alike. Also mines solo against your own node. Wallet addresses start with 'q' and are 49 characters long. |
 | `randomx`, `rx/0`, `xmr`, `monero`, `zeph`, `zephyr`, `sal`, `salvium` | Monero, Zephyr, Salvium | 1% | NVIDIA · AMD · CPU | A privacy chain that hides sender, receiver and amount by default. RandomX (rx/0) is deliberately CPU-friendly and ASIC-hostile; it runs on a GPU too, but slower than the CPU beside it. A Monero address. The worker name is a separate --worker argument, not a suffix on the address. |
-| `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool stratum, bench job source. Not worth mining; SHA-256d is ASIC territory. |
+| `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool-stratum scaffold, bench job source. Not worth mining; SHA-256d is ASIC territory. |
 | `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `warthog` | Warthog | 2% | NVIDIA · AMD · Intel · Apple **and** CPU | A chain whose janushash proof-of-work is deliberately split across both processors: the GPU filters sha256t and the CPU runs VerusHash over the same nonces. Neither half finds anything alone. Wallet addresses are 48 hex characters. |
 | `xelis` | XELIS | 1% | NVIDIA · AMD · Intel · CPU | A privacy-oriented BlockDAG with encrypted balances and homomorphic transfers. Wallet addresses start with 'xel:'. |
@@ -128,17 +128,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.81_docker.tar.gz` below.
+`bzminer_v100.83_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.81_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.83_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.81_docker.tar.gz && cd bzminer_v100.81_docker
-curl -LO .../bzminer_v100.81_linux.tar.gz
+tar xzf bzminer_v100.83_docker.tar.gz && cd bzminer_v100.83_docker
+curl -LO .../bzminer_v100.83_linux.tar.gz
 ./build.sh
 ```
 
@@ -148,7 +148,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.81 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.83 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -445,7 +445,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.81**, the version on this page, so they can be
+Both scripts fetch **v100.83**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -454,7 +454,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.81"
+export version="v100.83"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -469,7 +469,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.81
+version=v100.83
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -1018,6 +1018,89 @@ JSON, for scripting or your own dashboard:
 | `/status` | the shape other mining dashboards expect |
 | `/hive_status` | HiveOS |
 
+## Utilities
+
+The **Utilities** section of the dashboard sidebar collects the tools that act
+on the machine rather than on the mining job: measurements of the hardware,
+the unlock suites for the cards that need one, and the host controls. Every
+page shows its prerequisites beside the actions it cannot run, and says why.
+The dashboard is on port 4014 by default - open **<http://localhost:4014>**
+on the rig.
+
+| Page | What it does |
+| --- | --- |
+| **CMP 170HX** | Reports the running NVIDIA driver release, board identity, reported VRAM, BAR1 aperture, PCIe link speed and current and pending ECC state for each CMP 170HX. Save a baseline before a driver change and open the page again to see what moved. |
+| **CMP Unlocker** | Reports what is unlocked on every NVIDIA CMP card on the rig, and installs or removes the unlock suite that restores the capabilities the firmware holds back: VRAM geometry, PCIe Gen2, ECC, the full BAR1 aperture, the JTAG and profiling masks, the product name and the CMP SKU flag. It also installs or removes the **kernel unlock**, a patched NVIDIA driver module that opens the framebuffer geometry while GSP boots - the only route to the full geometry. |
+| **CMP 90HX**, **CMP 100–210** | The same readings for the other CMP SKUs, and the compute unlock where one exists. |
+| **BC-250** | The AMD BC-250: unlock the additional compute units (24 → 40), or restore the factory mask. |
+| **NVIDIA Tensor Cores** | Measures dense matrix-instruction throughput on a chosen CUDA GPU - FP16 with FP16 accumulation as a reference, plus FP16, BF16 and TF32 with FP32 accumulation. Each result is the median of five GPU-timed launches, and the kernel's accumulator outputs are checked. |
+| **Tensor Unlock** | Lifts the GeForce rate cap: RTX 20/30/40 cards run FP16, BF16 and TF32 with FP32 accumulation at about half the rate of the same silicon sold as a professional card. On Linux this builds a kernel module and arms it for the next boot, and the page shows what the change did by measuring the rates before and after. On Windows the upstream work is a UEFI application, so there is nothing to install: the page reports whether the host meets its requirements (Secure Boot off, BitLocker not protecting a volume, a FAT32 removable drive, exactly one covered card) and carries the procedure. |
+| **Bandwidth** | Measures host-to-device and device-to-host transfers on one GPU. |
+| **VRAM Test** | Writes and verifies a 64 MiB device allocation and reports any mismatched byte. It covers that allocation only. |
+| **Processes** | Lists host processes with their CPU and memory use, and can end one. It also lists the NVIDIA driver packages the host's repositories offer, so a driver can be installed from the same page. |
+| **System** | Schedules a reboot of the rig, and carries the same driver-package list. |
+
+### Using them
+
+- **Stop mining first.** Stop releases the mining GPU contexts; Pause keeps
+  them allocated. A hardware action or a GPU test that runs against a live
+  mining context either measures the wrong thing or fails outright.
+- **The host controls are off by default.** Set `BZMINER_WEB_ADMIN_TOKEN` to
+  a random token of 32–128 letters, digits, hyphens or underscores and
+  restart bzminer; the page asks for it. Those requests have to reach
+  bzminer over loopback, so use an HTTPS reverse proxy if you want to reach
+  them from another machine.
+- **From the shell**, the same actions are `bzminer --list-utilities`,
+  `bzminer --utility <id>` (run once and exit) and
+  `bzminer --startup-utility <id>` (run before the worker starts, once per
+  supervisor). The equivalent configuration is
+  `{"utilities":{"startup":["cmp100-unlock"]}}`.
+
+  | ID | What it does |
+  | --- | --- |
+  | `bc250-unlock` | Live 24 → 40 CU operation on an AMD BC-250, with register readback. |
+  | `bc250-restore` | Restore the factory CU mask. |
+  | `cmp100-unlock` | Start the installed `cmp100-unlock.service` before mining. |
+  | `cmp170-unlock` | Start the installed `bzminer-cmp170-unlock.service` before mining (compute unlock only). |
+  | `cmp90-unlock` | Start the installed `bzminer-cmp90-unlock.service` before mining. |
+
+- **Linux and root, for the startup actions.** They reload driver modules, so
+  they need root, and they are unavailable inside the web worker: monitor
+  handles can still hold the driver open after a Stop. Run one miner
+  supervisor per host when a driver-reloading startup action is in play.
+  The pages that only measure need neither.
+
+### At your own risk
+
+These tools change the machine: driver modules, firmware, registry state, a
+GPU reset. They are here for operators who know their hardware. bzminer
+gives you the measurements and the state, not a guarantee.
+
+- The **GeForce tensor unlock** resets the card and hands it back to the
+  driver. On a driver whose GSP does not accept that handover the card does
+  not come back, and that cannot be undone from software - it needs a power
+  cycle. The install therefore refuses on a driver newer than 610.43.03 and
+  says what to do instead.
+- The **CMP kernel unlock** replaces the distribution's driver modules with a
+  patched build of NVIDIA's own source (downloaded by digest and patched
+  with bzminer's patch). It moves the distribution's modules aside and puts
+  them back when it is removed, and it backs up everything it replaces, but
+  a write the card rejects can leave it unable to initialise until the rig
+  is rebooted.
+- **bzminer does not download vendor firmware.** The boot firmware the
+  tensor unlock module runs, NVIDIA's 610.43.03 set, has to be on the
+  machine already, in `/lib/firmware/gpu-unlock/610.43.03` or
+  `/var/lib/bzminer/gpu-unlock/firmware/610.43.03`. The install refuses
+  until the files the rig's cards need are there, and names the ones that
+  are missing. The CMP unlock suite is an administrator-installed helper
+  that bzminer drives and never replaces.
+- **Qualify on the target machine.** The pages say which boards upstream has
+  validated, and a card that is not on that list may not behave. Stress-test
+  an unlocked board before you point a fleet at it.
+
+Before an install or a removal starts, its page says what it will change
+and whether a reboot has to follow.
+
 ## Hotkeys
 
 The same on every screen. `h` prints this list *in the miner*, with the current
@@ -1220,8 +1303,8 @@ and where it landed.
 ### What to reach for, per algorithm
 
 Starting points, not measured claims — every card is different, and the honest
-test is [`--benchmark`](#benchmarking-and-mining-without-a-pool) at a fixed
-difficulty, comparing accepted shares.
+test is [`--benchmark`](#benchmarking-and-mining-without-a-pool), comparing the
+pool-hashrate column it derives from accepted shares.
 
 | algorithm | bound by | what usually pays |
 |---|---|---|
@@ -1275,24 +1358,34 @@ nothing else.
 **`--benchmark [difficulty]`** — the measurement tool. bzminer starts a **real
 stratum server inside itself**, on a local port, then connects to it over TCP like
 any other pool. The whole client path runs: subscribe, authorize, `mining.notify`,
-share submit, the pool's verdict, the a/r/s counters and the pool-hashrate column.
-It is the honest way to measure a card, because a share only counts once the server
-has accepted it.
+share submit, the server's answer, the a/r/s counters and the pool-hashrate column.
+With no difficulty, each algorithm serves the target its `--bench` job uses, so a
+plain `--benchmark` does the same work on the devices as `--bench`, with the pool
+path on top. The local server accepts every share without checking it (C29's is the
+exception), so it tests the path rather than the shares — the miner checks its own
+shares before it submits them.
 
 ```bash
-./bzminer --benchmark -a warthog              # default difficulty 1000
+./bzminer --benchmark -a warthog              # the --bench target
 ./bzminer --benchmark 25000000000000 -a pearl # fixed difficulty 25T
 ```
 
-**Pick the difficulty deliberately.** Too low and a fast rig floods the local
-server with submissions and measures the plumbing instead of the kernel; too high
-and you will wait a long time for enough shares to mean anything. As a rule aim for
-a share every few seconds: Pearl on a big GPU wants `25000000000000` (25T), xelis
-wants something in the thousands.
+The difficulty is in the algorithm's own pool units — what a pool's difficulty
+means to that algorithm: about 2^32 hashes for ethash, kawpow and nexa, 2^16 for
+verus, one hash for xelis, ergo and Pearl. Each plugin's README says which.
+sha256d, cn, randomx, quantus and bramring have no benchmark server: they mine
+their `--bench` job and ignore the difficulty and the job interval, and the start
+line says so.
 
-**The share count is what to trust.** `shares × difficulty ÷ seconds` is a rate
-the miner cannot flatter — compare it against the displayed hashrate, and if the
-two disagree for long, one of them is lying.
+**If you give a difficulty, pick it deliberately.** Too low and a fast rig floods
+the local server with submissions and measures the plumbing instead of the kernel;
+too high and you will wait a long time for enough shares to mean anything. As a
+rule aim for a share every few seconds: Pearl on a big GPU wants `25000000000000`
+(25T). One the algorithm's client cannot use is replaced, and the log says so.
+
+**The pool-hashrate column is what to trust.** Accepted shares × the work each is
+worth ÷ seconds is a rate the miner cannot flatter — compare it against the
+displayed hashrate, and if the two disagree for long, one of them is lying.
 
 Each benchmark job is held for ten minutes by default so that a memory-hard kernel
 is not thrown away mid-batch every time the job refreshes, which would make
@@ -1893,6 +1986,7 @@ benefit is a rig you can still log into.
 
 ```bash
 --cpu_threads 12               # mine on 12 threads (bzminer 1.x's option, same meaning)
+--cpu_threads -4               # mine on 28 threads when 32 are available
 --cpu_threads 0                # auto — the default described above
 --cpu_affinity 0-7,16,18       # mine on exactly these processors
 ```
@@ -1900,8 +1994,9 @@ benefit is a rig you can still log into.
 `--cpu_affinity` **takes precedence** over `--cpu_threads`: it names the
 processors outright, so a count alongside it could only disagree. Whatever is left
 over — the processors not mining — is where the miner's own threads are pinned.
-Both are also config settings (`cpu_threads`, `cpu_affinity`), and `t` / `T` move
-the count live.
+Negative counts subtract from the logical processors available at launch, with
+a minimum of one mining thread. Both are also config settings (`cpu_threads`,
+`cpu_affinity`), and `t` / `T` move the count live.
 
 If you want every thread mining, ask for it: `--cpu_threads <all of them>`.
 
@@ -1965,9 +2060,18 @@ Run modes:
   --pawnio-dump           Dump the RyzenSMU PM-table (Zen4 per-CCD offset capture), then exit
   --print-config          Print the resolved settings as JSON, then exit
   --config-doc            Print a commented config.txt template, then exit
-  --bench, --test         Mine a local bench job (default sha256d; select with -a)
-  --benchmark [diff]      Run a local stratum server and mine it over real TCP
-                          (default algo xelis, difficulty 1000; e.g. --benchmark -a xelis)
+  --bench, --test         Mine each algorithm's in-process bench job: no pool, no
+                          network (default algo xelis; select with -a)
+  --benchmark [diff]      Mine a local stratum server over real TCP through the
+                          algorithm's own pool client (default algo xelis; select
+                          with -a). With no [diff] each algorithm serves the share
+                          target of its --bench job, so both modes do the same work.
+                          [diff] is in the algorithm's POOL units - what its pools
+                          mean by a difficulty, which differs between algorithms (see
+                          its plugin's README). Algorithms of the sha256d, cn,
+                          randomx, quantus and bramring plugins have no benchmark
+                          server: they mine their --bench job and ignore [diff] and
+                          --benchmark-job-interval
   --test-dev-fee <s>[:<s>]
                           Dev-fee TEST CYCLE: mine for you <s> seconds, then for the
                           algorithm's author, and repeat. `--test-dev-fee 30` is 30
@@ -2022,10 +2126,13 @@ Run modes:
                           per launch; shown as i<n> in the mining table's cfg column
   --cpu_threads <n>       How many CPU threads mine (0 = auto, which leaves one or
                           two for everything else so the machine stays usable)
+                          A negative value reserves logical processors (-4 uses
+                          28 of 32) and leaves at least one mining thread
   --cpu_affinity <list>   Which processors mine: 0-7,16,18. Takes precedence over
                           --cpu_threads; the rest run the miner's own threads
   --benchmark-job-interval <ms>  Keep each deterministic benchmark job this long
-                          (default 600000; use 4000 to stress stale-job handling)
+                          (1000 or more; default 600000; use 4000 to stress
+                          stale-job handling). --benchmark only
   --no-watchdog           Disable watchdog supervision/restarts (debugging)
   -h, --help              Show this help, then exit
   -V, --version           Print version, then exit
@@ -2087,10 +2194,10 @@ Devices:
                             --devices none      no GPU at all (a proxy-only rig)
                           The startup roster prints both ids for every device found.
                           GPUs only - the CPU has --cpu / --cpu_threads of its own
-  --bandwidth-test [arg]  Measure each GPU's host<->device PCIe bandwidth at startup and
-                          publish it (pcie.h2d / pcie.d2h). on | off | <MiB buffer size>;
-                          default on, 64 MiB. Algorithms that stream results off the GPU
-                          (e.g. warthog) use it to tell an x16 slot from a x1 riser
+  --bandwidth-test [arg]  Measure each GPU's host<->device PCIe bandwidth at startup, for
+                          algorithms that stream results off the GPU (warthog) - they use
+                          it to tell an x16 slot from a x1 riser; others skip it.
+                          on | off | <MiB buffer size>; default on, 64 MiB
   --no-bandwidth-test     Skip it (saves ~1s per GPU at startup)
                           --devices above is the per-card form; devices[].enabled =
                           false in config.txt does the same thing permanently (an index
@@ -2317,8 +2424,11 @@ Settings (set in config.txt, or with --set <path>=<value>):
   proxy_bind                 Address the proxy listener (pools[].proxy_port) binds: "0.0.0.0" for every interface, or one interface's address. Rig-wide - a farm has one network. CLI: --proxy_bind
   proxy_pass                 Password every instance connecting to this proxy must present (its --pass). Empty accepts any instance that can reach the port - fine on a private LAN, not elsewhere. CLI: --proxy_pass
   save_effective             On startup, write the resolved config to config.effective.json
-  benchmark_diff             Run a local stratum server at this fixed share difficulty and mine against it - no pool, no wallet. 0 = off. The CLI form is --benchmark [difficulty]
-  benchmark_job_interval_ms  How long --benchmark keeps one deterministic job, in ms. A persistent job makes fixed-difficulty share accounting honest for memory-hard kernels. CLI: --benchmark-job-interval
+  oc_card_defaults           Apply bzminer's built-in, measured overclock to the few cards that have one, only when nothing (oc, oc_algos, an oc_profile or a devices[] knob) asks an overclock of that card. Today: Pearl on the RTX PRO 6000 Blackwell Workstation Edition, fan 100% with the core locked at 2700 MHz and a +1000 MHz offset. It is logged when applied and reset at exit like any startup overclock. CLI: --oc-card-defaults 0
+  bench                      Mine each algorithm's in-process bench job instead of a pool: no network, no wallet. Benches the active pools' algorithms without dialling their URLs, or xelis when no pool is active. CLI: --bench (or --test), which benches xelis unless -a names another algorithm
+  benchmark                  Run a local stratum server and mine it over real TCP through each algorithm's own pool client: no pool, no wallet. Share difficulty: benchmark_diff. Benchmarks the active pools' algorithms without dialling their URLs, or xelis when no pool is active. CLI: --benchmark [difficulty], which benchmarks xelis unless -a names another algorithm
+  benchmark_diff             The --benchmark share difficulty, in each algorithm's POOL units - what its pools mean by a difficulty, which is not the same work for every algorithm (each plugin's README gives its unit). 0 = none given: every algorithm serves the share target of its --bench job, so the two modes do the same work. Above 0 also turns benchmark mode on. A difficulty an algorithm's pool client cannot use is replaced by one it can (its plugin's README says which), and the log says so. Algorithms of the sha256d, cn, randomx, quantus and bramring plugins have no benchmark server: they mine their --bench job and ignore this. 0 or more. CLI: --benchmark <difficulty>
+  benchmark_job_interval_ms  How long --benchmark keeps one deterministic job, in ms (1000 or more). A persistent job makes fixed-difficulty share accounting honest for memory-hard kernels. Ignored by --bench, whose job sources keep a fixed cadence of their own, and by the algorithms with no benchmark server. CLI: --benchmark-job-interval
   log_table_interval         How often the 'log' output reprints the device/pool table, in ms. Separate from --interval, which is how often the engine PUBLISHES a snapshot (the web UI and metrics want that fast). 0 = print on every snapshot. CLI: --log-table-interval
   tui_interval               How often the 'tui' dashboard redraws, in ms. A keypress redraws immediately regardless. CLI: --tui-interval
   metrics                    Columns on the MONITORING sensor table (--dmon, and the monitoring screen of the tui/log outputs). Comma- or space-separated. Takes single columns (memused, memfree, memtotal, util, memutil, core, mem, temp, memtemp, hotspot, toptemps, power, fan), sensor GROUPS that expand to everything present (temps, clocks, powers, fans, volts, currents, pcie, memory, utilization, performance, all), and any vendor metric key this rig's backends emit (pcie.tx, temp.vr_core, ...). Empty = memused,memfree,util,memutil,core,mem,temp,memtemp,hotspot. Run 'bzminer --list-columns' for every name available on THIS machine. CLI: --metrics
@@ -2344,9 +2454,9 @@ Settings (set in config.txt, or with --set <path>=<value>):
   watchdog_restarts          How many times the watchdog restarts a crashed or hung worker before giving up. Counts only crashes that come close together: a worker that ran for 10 minutes or more resets the count, so a rig that crashes once in a while keeps being restarted. 0 = never give up. CLI: --watchdog-restarts
   duplicate_devices          Additional independent mining instances per CPU/GPU (0..63). 0 means no copies; 1 means two instances. devices[].duplicates overrides this per physical device. CLI: --duplicate-devices
   intensity                  Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
-  cpu_threads                How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
+  cpu_threads                How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. A negative value leaves that many available logical processors free for other work (-4 uses 28 of 32), with at least one mining thread. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
   cpu_affinity               Which processors mine, as a list: "0-7,16,18". Takes PRECEDENCE over cpu_threads, since it names the processors outright. Everything not listed is left for the miner's management threads. CLI: --cpu_affinity
-  bandwidth_test             Measure each GPU's host<->device PCIe bandwidth once at startup and publish it (pcie.h2d / pcie.d2h). Costs ~1s per GPU; algorithms that stream results off the GPU use it as a hard ceiling. CLI: --bandwidth-test
+  bandwidth_test             Measure each GPU's host<->device PCIe bandwidth once at startup, for algorithms that stream results off the GPU and use it as a hard ceiling (warthog); other algorithms skip it. Costs ~1s per GPU. CLI: --bandwidth-test
   bandwidth_test_mb          Per-copy buffer size for that measurement, in MiB. Large enough to measure throughput rather than launch latency
   test_dev_fee_user_seconds  Dev-fee TEST CYCLE: mine for you this many seconds, then for the algorithm's author, and repeat. 0 = off, the normal schedule. The real one pays the fee as a time debt, so its first slice is five minutes into a run and its second an hour later - correct, and impossible to sit and watch. This makes the whole cycle visible in a minute: the switch, the dev pool's subscribe, the switch back, your own work resuming. A diagnostic, not a tuning knob - the cycle can only ever pay MORE than the declared fee, never less. CLI: --test-dev-fee <user_s>[:<dev_s>]
   test_dev_fee_dev_seconds   How long each dev leg of that cycle runs. 0 = the same as test_dev_fee_user_seconds, so a bare `--test-dev-fee 30` is 30 seconds each way. Raised automatically if the split you asked for would come to less than the declared fee
@@ -2570,9 +2680,15 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "proxy_pass": "",
   // On startup, write the resolved config to config.effective.json
   "save_effective": false,
-  // Run a local stratum server at this fixed share difficulty and mine against it - no pool, no wallet. 0 = off. The CLI form is --benchmark [difficulty]
+  // Apply bzminer's built-in, measured overclock to the few cards that have one, only when nothing (oc, oc_algos, an oc_profile or a devices[] knob) asks an overclock of that card. Today: Pearl on the RTX PRO 6000 Blackwell Workstation Edition, fan 100% with the core locked at 2700 MHz and a +1000 MHz offset. It is logged when applied and reset at exit like any startup overclock. CLI: --oc-card-defaults 0
+  "oc_card_defaults": true,
+  // Mine each algorithm's in-process bench job instead of a pool: no network, no wallet. Benches the active pools' algorithms without dialling their URLs, or xelis when no pool is active. CLI: --bench (or --test), which benches xelis unless -a names another algorithm
+  "bench": false,
+  // Run a local stratum server and mine it over real TCP through each algorithm's own pool client: no pool, no wallet. Share difficulty: benchmark_diff. Benchmarks the active pools' algorithms without dialling their URLs, or xelis when no pool is active. CLI: --benchmark [difficulty], which benchmarks xelis unless -a names another algorithm
+  "benchmark": false,
+  // The --benchmark share difficulty, in each algorithm's POOL units - what its pools mean by a difficulty, which is not the same work for every algorithm (each plugin's README gives its unit). 0 = none given: every algorithm serves the share target of its --bench job, so the two modes do the same work. Above 0 also turns benchmark mode on. A difficulty an algorithm's pool client cannot use is replaced by one it can (its plugin's README says which), and the log says so. Algorithms of the sha256d, cn, randomx, quantus and bramring plugins have no benchmark server: they mine their --bench job and ignore this. 0 or more. CLI: --benchmark <difficulty>
   "benchmark_diff": 0,
-  // How long --benchmark keeps one deterministic job, in ms. A persistent job makes fixed-difficulty share accounting honest for memory-hard kernels. CLI: --benchmark-job-interval
+  // How long --benchmark keeps one deterministic job, in ms (1000 or more). A persistent job makes fixed-difficulty share accounting honest for memory-hard kernels. Ignored by --bench, whose job sources keep a fixed cadence of their own, and by the algorithms with no benchmark server. CLI: --benchmark-job-interval
   "benchmark_job_interval_ms": 600000,
   // How often the 'log' output reprints the device/pool table, in ms. Separate from --interval, which is how often the engine PUBLISHES a snapshot (the web UI and metrics want that fast). 0 = print on every snapshot. CLI: --log-table-interval
   "log_table_interval": 30000,
@@ -2624,11 +2740,11 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
   "duplicate_devices": 0,
   // Mining intensity for every GPU that does not name its own in devices[]: how much work one launch is asked for, in units of 65536 nonces (1-4096). 0 = auto, which lets the algorithm choose. devices[].intensity is addressed by enumeration index and still wins where it is set, so this is the one to use for a whole rig. Shown as i<n> in the mining table's cfg column. CLI: --intensity
   "intensity": 0,
-  // How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
+  // How many CPU threads mine. 0 = auto, which holds back one processor on a small machine and two above 8 threads, so the miner's own threads - and yours - are not competing with workers. A negative value leaves that many available logical processors free for other work (-4 uses 28 of 32), with at least one mining thread. Set it to the full thread count to mine on everything. Caps every CPU pool the run starts, including an algorithm's own - Pearl's share prover used to size itself from the machine and ignore this. Movable while mining with the console's [t]/[T] keys. CLI: --cpu_threads
   "cpu_threads": 0,
   // Which processors mine, as a list: "0-7,16,18". Takes PRECEDENCE over cpu_threads, since it names the processors outright. Everything not listed is left for the miner's management threads. CLI: --cpu_affinity
   "cpu_affinity": "",
-  // Measure each GPU's host<->device PCIe bandwidth once at startup and publish it (pcie.h2d / pcie.d2h). Costs ~1s per GPU; algorithms that stream results off the GPU use it as a hard ceiling. CLI: --bandwidth-test
+  // Measure each GPU's host<->device PCIe bandwidth once at startup, for algorithms that stream results off the GPU and use it as a hard ceiling (warthog); other algorithms skip it. Costs ~1s per GPU. CLI: --bandwidth-test
   "bandwidth_test": true,
   // Per-copy buffer size for that measurement, in MiB. Large enough to measure throughput rather than launch latency
   "bandwidth_test_mb": 64,
