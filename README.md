@@ -28,6 +28,7 @@ Join us on Discord: https://discord.gg/NRty3PCVdB
 | `sha256d` | — | none | NVIDIA · AMD · Intel · CPU | The open-source SDK example: a complete algorithm plugin - CPU and GPU kernels, pool-stratum scaffold, bench job source. Not worth mining; SHA-256d is ASIC territory. |
 | `verus` | VERUS | 1% | CPU | A hybrid proof-of-work / proof-of-stake chain with an identity and currency protocol on top. VerusHash v2.2 is CPU-only by design. A Verus R-address. The worker name is a separate --worker argument, not a suffix on the address. |
 | `warthog` | Warthog | 2% | NVIDIA · AMD · Intel · Apple **and** CPU | A chain whose janushash proof-of-work is deliberately split across both processors: the GPU filters sha256t and the CPU runs VerusHash over the same nonces. Neither half finds anything alone. Wallet addresses are 48 hex characters. |
+| `x16rv2`, `bcbo`, `bitcoboost` | BitcoBoost | 1% | NVIDIA · AMD · Intel · Apple · CPU | BitcoBoost, a Bitcoin Core fork mined with X16RV2. A BitcoBoost bech32 address (bb1q...). The pool pays it directly in the block's coinbase; there is no account to register. |
 | `xelis` | XELIS | 1% | NVIDIA · AMD · Intel · CPU | A privacy-oriented BlockDAG with encrypted balances and homomorphic transfers. Wallet addresses start with 'xel:'. |
 
 **Warthog needs both a GPU and the CPU.** Neither half finds anything alone, so
@@ -128,17 +129,17 @@ docker run --rm -it --device /dev/dri --group-add render bzminer/bzminer ...
 Without those groups every `open()` is `EACCES` and the cards simply do not
 appear. A commented `docker-compose.yml` covering all three, plus what
 overclocking and the MSR profiles additionally need, is in
-`bzminer_v100.83_docker.tar.gz` below.
+`bzminer_v100.84_docker.tar.gz` below.
 
 ### Or build the image yourself
 
-`bzminer_v100.83_docker.tar.gz` is the same `Dockerfile`, entrypoint and
+`bzminer_v100.84_docker.tar.gz` is the same `Dockerfile`, entrypoint and
 compose file the published image is built from, plus a `build.sh` that assembles
 it from the Linux download:
 
 ```bash
-tar xzf bzminer_v100.83_docker.tar.gz && cd bzminer_v100.83_docker
-curl -LO .../bzminer_v100.83_linux.tar.gz
+tar xzf bzminer_v100.84_docker.tar.gz && cd bzminer_v100.84_docker
+curl -LO .../bzminer_v100.84_linux.tar.gz
 ./build.sh
 ```
 
@@ -148,7 +149,7 @@ air-gapped rig, a private registry, or your own Docker Hub namespace:
 
 ```bash
 docker login
-./build.sh --tag docker.io/<youruser>/bzminer:v100.83 --push
+./build.sh --tag docker.io/<youruser>/bzminer:v100.84 --push
 ```
 
 `BUILDING.md` inside that archive covers pinning ROCm, changing the base image,
@@ -445,7 +446,7 @@ ASIC territory — it is there to be read and copied, not to earn.
 
 ### Updating on a mining OS
 
-Both scripts fetch **v100.83**, the version on this page, so they can be
+Both scripts fetch **v100.84**, the version on this page, so they can be
 pasted as they are. To move a rig to a later release, change the version at the
 top of the script.
 
@@ -454,7 +455,7 @@ miner launch"*. It downloads once; on every later launch the `if` sees the archi
 already in `/tmp` and exits immediately, so it costs nothing per restart.
 
 ```bash
-export version="v100.83"
+export version="v100.84"
 if [ -f "/tmp/bzminer_${version}_linux.tar.gz" ]; then
 exit 0
 else
@@ -469,7 +470,7 @@ replaces the binary in *every* bzminer folder it finds and whichever one your
 flight sheet points at gets the new build.
 
 ```bash
-version=v100.83
+version=v100.84
 cd /tmp && wget -q https://github.com/bzminer/bzminer/releases/download/${version}/bzminer_${version}_linux.tar.gz && tar -xf bzminer_${version}_linux.tar.gz || { echo "download failed"; exit 1; }
 miner stop
 n=0; for d in /hive/miners/bzminer/*/; do [ -d "$d" ] && cp -f "bzminer_${version}_linux/bzminer" "$d" && n=$((n+1)); done
@@ -976,7 +977,7 @@ Two tabs, with a poll-interval selector (0.5s / 1s / 2s / 5s / off):
 
 - **Monitoring** — a card per GPU (usage, core/mem/hotspot temp, power, fan,
   clocks vs. rated, PCIe gen×width and TX/RX, GDDR timings), grouped advanced
-  sections for fan RPM, rail power/current/voltage, engine utilization, PCIe
+  sections for fan RPM, core and rail voltage, rail power/current, engine utilization, PCIe
   errors and performance limits; an lstopo-style CPU topology map with
   Utilization/Temperature and Boxes/Tree toggles; per-DIMM RAM cards with a
   temperature graph; and storage volumes. **Click any metric to chart it over
@@ -1162,19 +1163,21 @@ expose the clock-offset API for this device") instead of failing quietly.
 
 ### What each device type can do
 
-| device | power | core clock | memory clock | fan |
-|---|---|---|---|---|
-| **NVIDIA** | yes | offset **and** lock | offset **and** lock | duty, temperature target, or automatic |
-| **AMD** | — | — | — | duty, temperature target, or automatic |
-| **Intel** | — | — | — | — |
-| **CPU** | — | — | — | — |
+| device | power | core clock | memory clock | core voltage | fan |
+|---|---|---|---|---|---|
+| **NVIDIA** | yes | offset **and** lock | offset **and** lock | **lock**, held while mining, **and offset** | duty, temperature target, or automatic |
+| **AMD** | yes | offset (and lock on Linux) | offset (and lock on Linux) | **offset** (RDNA2 and newer) | duty, temperature target, or automatic |
+| **Intel Arc** (Windows) | yes | offset **and** lock | offset | **lock** (needs Intel's waiver) | — |
+| **CPU** | — | — | — | — | — |
 
-NVIDIA is the full set, through NVML and NvAPI. On AMD only the fan is settable —
-ask for a clock or a power limit on a Radeon and bzminer says so by name rather
-than reporting a card that is not there. The fan curve below works on both, because
-it is computed by bzminer and handed to the driver as a duty. Intel cards report
-their fan but expose no way to drive it, and everything else about them is
-read-only. There is no CPU overclocking; use
+All three GPU vendors now take a core voltage setting — see
+[Core voltage](#core-voltage) below. NVIDIA goes through NVML, plus NvAPI on Windows
+and the driver's own interface on Linux. AMD goes through amdgpu's overdrive on Linux
+and ADL Overdrive8 on Windows. Intel Arc goes through Intel's control library and is
+Windows only. A knob a card cannot do is named, with the driver's reason, rather than
+silently ignored. The fan curve below works on NVIDIA and AMD, because it is computed
+by bzminer and handed to the driver as a duty; Intel cards report their fan but expose
+no way to drive it. There is no CPU overclocking; use
 [`--cpu_threads` / `--cpu_affinity`](#how-much-of-the-cpu-mines) to decide how
 much of the processor mines instead.
 
@@ -1191,6 +1194,8 @@ when it exits.
 --oc-memory-clock-offset 1000    memory offset, MHz
 --oc-lock-core-clock 1600        pin the core clock; 0 unlocks
 --oc-lock-memory-clock 810       pin the memory clock; 0 unlocks
+--oc-lock-core-voltage 750       run the locked core clock at this voltage, mV (NVIDIA, Intel Arc)
+--oc-core-voltage-offset -50     move the whole voltage curve, mV; negative = undervolt (AMD, NVIDIA)
 --oc-fan-speed 60                fan duty, or a temperature target (below)
 --oc-reset                       back to driver defaults
 ```
@@ -1229,6 +1234,64 @@ card 1, which asks for 130 W and gets it.
 The underscore spellings from bzminer 1.x (`--oc_power_limit`, `--oc_fan_speed`,
 `--oc_core_clock_offset`, …) are all accepted, so an old start script needs no
 editing.
+
+### Core voltage
+
+Voltage is the setting that matters most for mining efficiency — a card's power
+goes roughly with the square of it — and every GPU vendor takes one now.
+
+**NVIDIA and Intel Arc: lock it.** `--oc-lock-core-voltage <mV>` runs the
+*locked* core clock at that voltage, so it goes with `--oc-lock-core-clock`:
+
+```
+--oc-lock-core-clock 1500 --oc-lock-core-voltage 750
+```
+
+The console form is `oc clock=1500 voltage=750`, and in the web dashboard it is
+*Tune* → *Lock voltage*. One value for every card or one per card, like the other knobs.
+
+- **NVIDIA, on Windows and Linux.** bzminer reads the card's voltage/frequency
+  curve and sets the core offset that puts the locked clock on your voltage, so it
+  replaces `--oc-core-clock-offset`. The curve shifts as the card warms, so while
+  mining it is re-checked every 5 seconds and put back. The voltage is kept inside
+  the card's own minimum and maximum. The curve moves in steps (6.25 mV on Ampere),
+  so bzminer says which voltage it landed on.
+- **The memory clock sets a floor.** On GDDR6 and GDDR6X cards the core voltage
+  never drops below what the memory clock needs. With memory at full speed an RTX
+  3070 Ti needs about 830 mV, so a 750 mV lock reads 831. Lock the memory to 810 as
+  well and it reads 750.00 — and Pearl doesn't need the memory speed. Measured on that
+  card at a 1500 MHz core lock: the same ~73 TH/s, at 139 W with memory at 9251 and
+  85 W with memory at 810. bzminer tells you when the floor is in the way.
+- **Intel Arc, on Windows.** bzminer moves the card's voltage curve so the locked
+  clock lands on your voltage, within −150..+60 mV of the card's own. Intel requires
+  *you* to accept its overclock waiver first: `--oc-accept-intel-waiver`.
+- A card with no core offset cannot be voltage-locked: the CMP 170HX refuses every
+  offset, and bzminer says so in the log and in place of the dashboard knob.
+
+**AMD and NVIDIA: offset the whole curve.** `--oc-core-voltage-offset -50` needs
+no clock lock — the card keeps boosting as usual, at less voltage for every clock.
+
+- **AMD** (RDNA2 and newer): the voltage offset LACT and Adrenalin's slider set —
+  every point of the card's curve moves down by that much. On Linux through amdgpu
+  (kernel 6.7 or newer), on Windows through ADL. Measured on an RX 9070 XT: −50 mV
+  gave 4.3% more Pearl at the same 316 W.
+- **NVIDIA** (Windows and Linux): the driver has no voltage offset, so bzminer turns
+  it into the core offset, which moves the curve up in MHz so each clock comes at a
+  lower voltage. MHz per mV changes along a curve, so the offset is aimed at the top
+  of the card's voltage range, where the curve is flattest, and then held back until
+  no clock anywhere in the range is undervolted by more than you asked — lower
+  voltages get less. It tells you the result: on an RTX 5060 Ti `-50` became "core
+  +98 MHz (at most −50 mV anywhere from 635 to 1080 mV, typically −25)". Mining Pearl
+  on an RTX 3070 Ti at 1815 MHz, `-50` took the core from ~990 to 963 mV. It replaces
+  `--oc-core-clock-offset`, and goes down to −250. For an exact voltage, use the lock.
+
+**Seeing it.** Every NVIDIA card's live core voltage is on its card in the web
+dashboard (*Core Voltage*) and in the mining table (*Volt*), with the memory floor
+and the card's limits under *Show all metrics*, on Windows and Linux alike.
+
+Too low a voltage does not slow a card down — it makes it compute wrong answers and
+then hang. Step down 10–25 mV at a time, run each step for minutes, and watch the
+rejected-share count.
 
 ### Fan control
 
@@ -2213,12 +2276,15 @@ Overclocking (NVIDIA; every knob needs administrator on Windows, root on Linux):
                                   (0 = unlock)
   --oc-lock-memory-clock <MHz>    Pin the memory clock (0 = unlock)
   --oc-lock-core-voltage <mV>     Run the locked core clock at this voltage (needs
-                                  --oc-lock-core-clock; Windows. NVIDIA: sets the core offset. Intel
+                                  --oc-lock-core-clock. NVIDIA, Windows and Linux: sets the core
+                                  offset and keeps it there as the card warms. Intel
                                   Arc: rewrites the card's voltage curve, and needs
                                   --oc-accept-intel-waiver; console: oc clock=2400 voltage=800)
-  --oc-core-voltage-offset <mV>   AMD: offset the whole core voltage curve, negative =
-                                  undervolt (-50); no clock lock needed. RDNA2 and newer,
-                                  range is the card's own (console: oc vo=-50)
+  --oc-core-voltage-offset <mV>   Offset the whole core voltage curve, negative =
+                                  undervolt (-50); no clock lock needed. AMD RDNA2 and newer,
+                                  range is the card's own. NVIDIA: becomes the core offset
+                                  that undervolts at most that many mV anywhere in the
+                                  card's range (less lower down), -250..0 (console: oc vo=-50)
   --oc-fan-speed <spec>           Either a fixed duty ('60') or a temperature curve:
                                     t:<target>[<min>-<max>]   keep the CORE at <target> C,
                                                               fan within <min>..<max> %
@@ -2486,7 +2552,7 @@ Settings (set in config.txt, or with --set <path>=<value>):
   devices[].lock_core_clock  Pin THIS card's core clock in MHz (0 = unlock). Empty = use the global oc.lock_core_clock. A lock pins the clock where an offset shifts the curve and still lets it boost - a card can carry both
   devices[].lock_memory_clock Pin THIS card's memory clock in MHz (0 = unlock). Empty = use the global oc.lock_memory_clock. Only accepted at one of the board's own supported clocks; bzminer says which one you will get if you ask for another
   devices[].lock_core_voltage Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
-  devices[].core_voltage_offset AMD: THIS card's core voltage offset in mV, negative = undervolt (0 = stock). Empty = use the global oc.core_voltage_offset
+  devices[].core_voltage_offset THIS card's core voltage offset in mV, negative = undervolt (0 = stock); AMD, and NVIDIA through its core offset. Empty = use the global oc.core_voltage_offset
   devices[].fan_speed        This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
   devices[].oc_profile       Named oc_profiles entry for this card. Includes its base oc and oc_algos settings, in both switching and fixed mining. Explicit card knobs win. CLI: --oc-profile <device>=<name>
   device_types.nvidia        Mine on NVIDIA devices. RIG-WIDE: false keeps them out of EVERY algorithm the rig mines; to keep them out of one algorithm of several, put "!nvidia" in that algorithm's pools[].devices (CLI: --nvidia, or --nvidia2 0 for algorithm 2 alone)
@@ -2500,8 +2566,8 @@ Settings (set in config.txt, or with --set <path>=<value>):
   oc.memory_clock_offset     Memory VF-curve offset in MHz (CLI: --oc-memory-clock-offset)
   oc.lock_core_clock         Pin the core clock in MHz instead of letting boost wander; 0 = unlock (CLI: --oc-lock-core-clock)
   oc.lock_memory_clock       Pin the memory clock in MHz; 0 = unlock (CLI: --oc-lock-memory-clock)
-  oc.lock_core_voltage       Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
-  oc.core_voltage_offset     AMD (RDNA2 and newer): offset the WHOLE core voltage/frequency curve by this many mV, negative = undervolt - AMD's voltage offset, the one LACT and Adrenalin set. Needs no clock lock: the card keeps boosting, at less voltage for every clock. Clamped to the card's own range (RDNA3 -450..0, RDNA4 -200..0) and never above 0. One value or a per-device list (CLI: --oc-core-voltage-offset)
+  oc.lock_core_voltage       Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). 0 = release. NVIDIA (Windows and Linux): by moving the core offset, bounded by the card's own minimum and maximum voltage, and HELD there - the curve shifts as the card warms, so bzminer re-checks it every 5 s and moves the offset back; a card with no core offset (CMP 170HX) cannot take it. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
+  oc.core_voltage_offset     AMD (RDNA2 and newer): offset the WHOLE core voltage/frequency curve by this many mV, negative = undervolt - AMD's voltage offset, the one LACT and Adrenalin set. Needs no clock lock: the card keeps boosting, at less voltage for every clock. Clamped to the card's own range (RDNA3 -450..0, RDNA4 -200..0) and never above 0. NVIDIA (-250..0): its driver has no such setting, so bzminer reads the card's curve and sets the core offset that undervolts by at most this many mV anywhere in the card's voltage range - about that much at the top, less lower down where the curve is steeper - and says how much typically; it replaces core_clock_offset. One value or a per-device list (CLI: --oc-core-voltage-offset)
   oc.fan_speed               Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
   oc.delay_ms                Apply the whole startup overclock this many milliseconds AFTER the pool connects, instead of at startup. A card clocked before it has a job can crash on its first launch, and a rig that never reaches its pool is never clocked. Mining only - monitoring mode has no pool and applies immediately. 0 = at startup (CLI: --oc-delay-ms)
   oc.reset                   null = on an algorithm switch, reset a card this run overclocked (a card with no OC asked of it is never touched); false = preserve external OC; true = reset before applying OC (CLI: --oc-reset [true|false])
@@ -2810,7 +2876,7 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
       "lock_memory_clock": "",
       // Run THIS card's locked core clock at this voltage, in mV (0 = release). Empty = use the global oc.lock_core_voltage
       "lock_core_voltage": "",
-      // AMD: THIS card's core voltage offset in mV, negative = undervolt (0 = stock). Empty = use the global oc.core_voltage_offset
+      // THIS card's core voltage offset in mV, negative = undervolt (0 = stock); AMD, and NVIDIA through its core offset. Empty = use the global oc.core_voltage_offset
       "core_voltage_offset": "",
       // This card's fan: a fixed duty ("70") or a temperature curve, same syntax as oc.fan_speed. Empty = use the global one
       "fan_speed": "",
@@ -2843,9 +2909,9 @@ fresh install does not start hashing to a placeholder wallet. Put your wallet in
     "lock_core_clock": "",
     // Pin the memory clock in MHz; 0 = unlock (CLI: --oc-lock-memory-clock)
     "lock_memory_clock": "",
-    // Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). Windows only; 0 = release. NVIDIA: by moving the core offset. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
+    // Run the LOCKED core clock at this voltage, in mV - what Afterburner calls locking a voltage to a frequency, and an undervolt when the voltage is below what the card would use. Needs lock_core_clock, and replaces core_clock_offset: bzminer reads the card's voltage/frequency curve and sets the offset that puts this voltage at the locked clock, then says which voltage it landed on (the curve moves in steps, so it can be one step off). 0 = release. NVIDIA (Windows and Linux): by moving the core offset, bounded by the card's own minimum and maximum voltage, and HELD there - the curve shifts as the card warms, so bzminer re-checks it every 5 s and moves the offset back; a card with no core offset (CMP 170HX) cannot take it. Intel Arc: by rewriting the card's voltage curve (the whole curve moves so the locked clock lands on this voltage, within -150..+60 mV of the card's own), which Intel refuses until YOU accept its overclock waiver - set accept_intel_waiver. Console: oc clock=2400 voltage=800 (CLI: --oc-lock-core-voltage)
     "lock_core_voltage": "",
-    // AMD (RDNA2 and newer): offset the WHOLE core voltage/frequency curve by this many mV, negative = undervolt - AMD's voltage offset, the one LACT and Adrenalin set. Needs no clock lock: the card keeps boosting, at less voltage for every clock. Clamped to the card's own range (RDNA3 -450..0, RDNA4 -200..0) and never above 0. One value or a per-device list (CLI: --oc-core-voltage-offset)
+    // AMD (RDNA2 and newer): offset the WHOLE core voltage/frequency curve by this many mV, negative = undervolt - AMD's voltage offset, the one LACT and Adrenalin set. Needs no clock lock: the card keeps boosting, at less voltage for every clock. Clamped to the card's own range (RDNA3 -450..0, RDNA4 -200..0) and never above 0. NVIDIA (-250..0): its driver has no such setting, so bzminer reads the card's curve and sets the core offset that undervolts by at most this many mV anywhere in the card's voltage range - about that much at the top, less lower down where the curve is steeper - and says how much typically; it replaces core_clock_offset. One value or a per-device list (CLI: --oc-core-voltage-offset)
     "core_voltage_offset": "",
     // Fixed duty ("60") or a temperature curve: t:<target>[<min>-<max>] for CORE temp, th:... for HOTSPOT, tm:... for MEMORY, e.g. "t:60[25-75] tm:80[50-100]". With several clauses the one demanding the most cooling wins. The fan moves about a point per second toward the target, so it settles instead of hunting. NVIDIA and AMD; an Intel card reports its fan but exposes no way to drive it (CLI: --oc-fan-speed)
     "fan_speed": "",
@@ -2906,7 +2972,7 @@ device found and the pool being tried. Start there, then:
 | no GPUs found | update the GPU driver; `--gpu-info` shows what bzminer can see |
 | a GPU is listed at startup but never mines | the log says why on its own line — no kernel for that architecture, a driver too old to load one, or not enough VRAM for the algorithm's table |
 | pool rejects shares | almost always the wallet — press `u` to see exactly what is being sent, and check it is an address for the coin you are mining |
-| overclock does nothing | on Linux these are privileged; run as root. On AMD only the fan is settable at all. The miner reports which knob the driver refused and why |
+| overclock does nothing | on Linux these are privileged; run as root. The miner reports which knob the driver refused and why |
 | dashboard not reachable | it listens on `127.0.0.1` only unless you set `http_address` |
 | warthog finds nothing | it needs both a GPU and the CPU; check neither is disabled |
 | ergo skips a card | the ~2 GB table has to fit in VRAM alongside everything else on the card |
